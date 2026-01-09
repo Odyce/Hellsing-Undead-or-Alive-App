@@ -30,7 +30,7 @@ class Skill {
   );
 }
 
-enum Affinities { firearm, explosive, oneHandSharp, twoHandShard, bow, throwable, none, choiceNonExplosive}
+enum Affinities { firearm, explosive, oneHandBlade, twoHandBlade, bow, throwable, none, choiceNonExplosive}
 
 class Class {
   final int id;
