@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "409439944456",
+    "project_id": "hellsing-undead-or-applive",
+    "storage_bucket": "hellsing-undead-or-applive.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409439944456:android:6de210c4387fcc30bcb6bd",
+        "android_client_info": {
+          "package_name": "com.example.hellsing_undead_or_applive"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzSaC66DBsTpufU-PFMFNT5QsFyxDgV5A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
