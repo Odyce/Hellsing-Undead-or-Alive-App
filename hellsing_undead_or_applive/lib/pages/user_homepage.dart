@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('remember_me', false); // empêche l’auto-login au prochain lancement
+    await FirebaseAuth.instance.signOut();     // déconnecte maintenant (AuthGate fera le reste)
+  }
+
 
   Stream<String> _pseudoStream() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -31,54 +39,73 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Accueil'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            StreamBuilder<String>(
-              stream: _pseudoStream(),
-              builder: (context, snapshot) {
-                final pseudo = snapshot.data ?? '...';
-                return Text(
-                  'Bienvenue à $pseudo',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                );
-              },
-            ),
-            const SizedBox(height: 16),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                StreamBuilder<String>(
+                  stream: _pseudoStream(),
+                  builder: (context, snapshot) {
+                    final pseudo = snapshot.data ?? '...';
+                    return Text(
+                      'Bienvenue à $pseudo',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
 
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                children: [
-                  _HomeButton(
-                    label: 'Bouton 1',
-                    icon: Icons.grid_view,
-                    onTap: () {},
+                Expanded(
+                  child: GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    children: [
+                      _HomeButton(
+                        label: 'Bouton 1',
+                        icon: Icons.grid_view,
+                        onTap: () {},
+                      ),
+                      _HomeButton(
+                        label: 'Bouton 2',
+                        icon: Icons.person,
+                        onTap: () {},
+                      ),
+                      _HomeButton(
+                        label: 'Bouton 3',
+                        icon: Icons.settings,
+                        onTap: () {},
+                      ),
+                      _HomeButton(
+                        label: 'Bouton 4',
+                        icon: Icons.info,
+                        onTap: () {},
+                      ),
+                    ],
                   ),
-                  _HomeButton(
-                    label: 'Bouton 2',
-                    icon: Icons.person,
-                    onTap: () {},
+                ),
+
+                Positioned(
+                  left: 16,
+                  bottom: 16,
+                  child: InkWell(
+                    onTap: _logout,
+                    child: Text(
+                      'Déconnexion',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
-                  _HomeButton(
-                    label: 'Bouton 3',
-                    icon: Icons.settings,
-                    onTap: () {},
-                  ),
-                  _HomeButton(
-                    label: 'Bouton 4',
-                    icon: Icons.info,
-                    onTap: () {},
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

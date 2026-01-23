@@ -27,8 +27,13 @@ class _LoginPageState extends State<LoginPage> {
   final _confirmPasswordController = TextEditingController();
   final _pseudoController = TextEditingController();
 
+  void _safeSetState(VoidCallback fn) {
+    if (!mounted) return;
+    setState(fn);
+  }
+
   Future<void> _signIn() async {
-    setState(() {
+    _safeSetState(() {
       _loading = true;
       _error = null;
     });
@@ -84,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _signUp() async {
-    setState(() {
+    _safeSetState(() {
       _loading = true;
       _error = null;
     });
@@ -94,21 +99,18 @@ class _LoginPageState extends State<LoginPage> {
       final password = _passwordController.text;
       final confirm = _confirmPasswordController.text;
       final pseudo = _pseudoController.text.trim();
-      final uid = FirebaseAuth.instance.currentUser!.uid;
 
       if (email.isEmpty || password.isEmpty) {
         throw Exception("Accréditation et code secret requis.");
       }
-
       if (password != confirm) {
         throw Exception("Les codes secrets ne correspondent pas.");
       }
-
       if (pseudo.isEmpty) {
         throw Exception("Pseudo requis.");
       }
 
-      // Sur Web, on applique la persistance avant auth (comme pour login)
+      // Web: persistance avant auth
       if (kIsWeb) {
         await FirebaseAuth.instance.setPersistence(
           _rememberMe ? Persistence.LOCAL : Persistence.SESSION,
@@ -118,8 +120,9 @@ class _LoginPageState extends State<LoginPage> {
       final cred = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      // Optionnel mais recommandé : vérification email
-      await cred.user?.sendEmailVerification();
+      final uid = cred.user!.uid; // ✅ ici, l'utilisateur existe
+
+      await cred.user!.sendEmailVerification();
 
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'pseudo': pseudo,
@@ -127,12 +130,10 @@ class _LoginPageState extends State<LoginPage> {
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: false));
 
-      // Sauver le choix remember (sans jamais sauvegarder le mdp)
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('remember_me', _rememberMe);
       await prefs.setString('remembered_email', email);
 
-      // Pour tes tests, tu peux afficher un message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Compte créé. Bienvenue, vérifie tes emails s'il te plaît.")),
@@ -291,7 +292,7 @@ class _LoginPageState extends State<LoginPage> {
                                   controller: _confirmPasswordController,
                                   obscureText: _hideConfirmPassword,
                                   decoration: InputDecoration(
-                                    labelText: "Es-tu sur de vouloir ce code secret ?",
+                                    labelText: "Veux-tu bien réécrire ton code secret ?",
                                     border: const OutlineInputBorder(),
                                     suffixIcon: IconButton(
                                       tooltip: _hideConfirmPassword ? 'Afficher' : 'Masquer',
