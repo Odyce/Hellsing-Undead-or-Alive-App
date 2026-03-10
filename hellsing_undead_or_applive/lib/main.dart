@@ -4,12 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hellsing_undead_or_applive/pages/calendar/moon_calendar_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
-import 'package:hellsing_undead_or_applive/pages/login_page.dart';
-import 'package:hellsing_undead_or_applive/pages/user_homepage.dart';
-import 'package:hellsing_undead_or_applive/pages/auth_gate.dart';
+import 'package:hellsing_undead_or_applive/pages/models.dart';
 
 
 Future<void> main() async {
@@ -45,6 +44,10 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (_) => const LoginPage(),
         '/home': (_) => const HomePage(),
+        '/agentlist': (_) => const AgentsListPage(),
+        '/agentcreate': (_) => const CreateAgentPage(),
+        '/rulebook': (_) => const BookViewerPage(),
+        '/calendar': (_) => const MoonCalendarPage(),
         // '/settings': (_) => const SettingsPage(),
         // etc.
       },

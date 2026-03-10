@@ -32,6 +32,30 @@ class _LoginPageState extends State<LoginPage> {
     setState(fn);
   }
 
+  Future<void> _ensureUserDocument(User user) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+    final userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+      await userRef.set({
+        'pseudo': user.email?.split('@').first ?? 'Utilisateur',
+        'role': 'user',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    
+    final agentsMetaRef = userRef.collection('agents').doc('_meta_');
+
+    final agentsSnapMeta = await agentsMetaRef.get();
+
+    if (!agentsSnapMeta.exists) {
+      await agentsMetaRef.set({
+        'initializedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
   Future<void> _signIn() async {
     _safeSetState(() {
       _loading = true;
@@ -54,22 +78,33 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       // Connexion
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-      ); // :contentReference[oaicite:5]{index=5}
+      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = cred.user;
+      if (user != null) {
+        await _ensureUserDocument(user);
+      }
     
       // Côté mobile: on stocke juste le choix "remember"
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('remember_me', _rememberMe);
       await prefs.setString('remembered_email', email);
-  
+
     } on FirebaseAuthException catch (e) {
-      setState(() => _error = _friendlyAuthError(e));
+      _safeSetState(() {
+        _error = _friendlyAuthError(e);
+      });
     } catch (e) {
-      setState(() => _error = e.toString());
+      _safeSetState(() {
+        _error = e.toString();
+      });
     } finally {
-      setState(() => _loading = false);
+      _safeSetState(() {
+        _loading = false;
+      });
     }
   }
 
@@ -129,6 +164,10 @@ class _LoginPageState extends State<LoginPage> {
         'role': 'user',
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: false));
+
+      await FirebaseFirestore.instance.collection('users').doc(uid).collection('agents').doc('_meta_').set({
+        'initializedAt': FieldValue.serverTimestamp(),
+      });
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('remember_me', _rememberMe);
@@ -331,7 +370,11 @@ class _LoginPageState extends State<LoginPage> {
                               ],
 
                               ElevatedButton(
-                                onPressed: _loading ? null : (_isRegisterMode ? _signUp :  _signIn),
+                                onPressed: _loading ? null : () {
+                                  _isRegisterMode ?
+                                  _signUp() :
+                                  _signIn();
+                                },
                                 child: _loading
                                   ? const SizedBox(
                                     height: 18,

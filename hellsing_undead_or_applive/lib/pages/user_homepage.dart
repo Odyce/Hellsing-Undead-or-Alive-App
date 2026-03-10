@@ -3,13 +3,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'models.dart';
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  Future<void> _logout() async {
+  Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('remember_me', false); // empêche l’auto-login au prochain lancement
+
     await FirebaseAuth.instance.signOut();     // déconnecte maintenant (AuthGate fera le reste)
+
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthGate()),
+      (route) => false,
+    );
   }
 
 
@@ -65,19 +75,25 @@ class HomePage extends StatelessWidget {
                     mainAxisSpacing: 12,
                     children: [
                       _HomeButton(
-                        label: 'Bouton 1',
+                        label: 'AgentList',
                         icon: Icons.grid_view,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.pushReplacementNamed(context, '/agentlist');
+                        },
                       ),
                       _HomeButton(
-                        label: 'Bouton 2',
+                        label: 'Livre de règles',
                         icon: Icons.person,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.pushReplacementNamed(context, '/rulebook');
+                        },
                       ),
                       _HomeButton(
-                        label: 'Bouton 3',
-                        icon: Icons.settings,
-                        onTap: () {},
+                        label: 'Calendrier',
+                        icon: Icons.calendar_month,
+                        onTap: () {
+                          Navigator.pushReplacementNamed(context, '/calendar');
+                        },
                       ),
                       _HomeButton(
                         label: 'Bouton 4',
@@ -92,7 +108,7 @@ class HomePage extends StatelessWidget {
                   left: 16,
                   bottom: 16,
                   child: InkWell(
-                    onTap: _logout,
+                    onTap: () => _logout(context),
                     child: Text(
                       'Déconnexion',
                       style: TextStyle(
