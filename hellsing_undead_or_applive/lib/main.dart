@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hellsing_undead_or_applive/pages/archives/mission/mission_menu.dart';
 import 'package:hellsing_undead_or_applive/pages/calendar/moon_calendar_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -48,6 +49,10 @@ class MyApp extends StatelessWidget {
         '/agentcreate': (_) => const CreateAgentPage(),
         '/rulebook': (_) => const BookViewerPage(),
         '/calendar': (_) => const MoonCalendarPage(),
+        '/archives': (_) => const ArchiveMenuPage(),
+        '/missions': (_) => const MissionMenuPage(),
+        '/chrono': (_) => const MissionChronologyPage(),
+        '/missioncreate': (_) => const CreateMissionPage(),
         // '/settings': (_) => const SettingsPage(),
         // etc.
       },
