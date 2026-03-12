@@ -464,7 +464,7 @@ class _DayCell extends StatelessWidget {
                       missionTitles.join('\n'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 8,
+                        fontSize: 10,
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w500,
                         height: 1.2,
