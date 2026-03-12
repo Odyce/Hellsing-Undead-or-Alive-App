@@ -96,9 +96,11 @@ class HomePage extends StatelessWidget {
                         },
                       ),
                       _HomeButton(
-                        label: 'Bouton 4',
+                        label: 'Archives',
                         icon: Icons.info,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.pushReplacementNamed(context, '/archives');
+                        },
                       ),
                     ],
                   ),

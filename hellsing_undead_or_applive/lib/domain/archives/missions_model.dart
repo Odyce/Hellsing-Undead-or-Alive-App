@@ -1,6 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 
-enum Difficulty { basse, moyenne, haute, inconnu }
+enum Difficulty { basse, moyenne, haute, inconnu, tresHaute }
 
 enum CladName { osiris, blackLotus, pennyDreadful }
 
@@ -103,9 +104,9 @@ class Mission {
       "illustrationPath": illustrationPath,
       "difficulty": difficulty.name,
       "clad": clad.name,
-      "postedAt": postedAt.toIso8601String(),
-      "playedAt": playedAt?.toIso8601String(),
-      "completedAt": completedAt?.toIso8601String(),
+      "postedAt": Timestamp.fromDate(postedAt),
+      "playedAt": playedAt != null ? Timestamp.fromDate(playedAt!) : null,
+      "completedAt": completedAt != null ? Timestamp.fromDate(completedAt!) : null,
       "agentInvolved": agentInvolved?.map((a) => a.toMap()).toList(),
       "pnjInvolved": pnjInvolved?.map((a) => a.toMap()).toList(),
       "monsterInvolved": monsterInvolved?.map((a) => a.toMap()).toList(),
@@ -116,19 +117,27 @@ class Mission {
     };
   }
 
+  /// Convertit un champ date Firestore, qu'il soit Timestamp ou String (anciens docs).
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
   factory Mission.fromMap(Map<String, dynamic> map) {
     return Mission(
-      id: map["id"],
-      title: map["title"],
-      notesForDM: map["notesForDM"],
-      descriptionIntro: map["descriptionIntro"],
-      descriptionOutro: map["descriptionOutro"],
-      illustrationPath: map["illustrationPath"],
-      difficulty: Difficulty.values.byName(map["difficulty"]),
-      clad: CladName.values.byName(map["clad"]),
-      postedAt: DateTime.parse(map["postedAt"]),
-      playedAt: map["playedAt"] != null ? DateTime.parse(map["playedAt"]) : null,
-      completedAt: map["completedAt"] != null ? DateTime.parse(map["completedAt"]) : null,
+      id: (map["id"] as num?)?.toInt() ?? 0,
+      title: map["title"] as String? ?? '',
+      notesForDM: map["notesForDM"] as String?,
+      descriptionIntro: map["descriptionIntro"] as String? ?? '',
+      descriptionOutro: map["descriptionOutro"] as String?,
+      illustrationPath: map["illustrationPath"] as String?,
+      difficulty: Difficulty.values.byName(map["difficulty"] as String? ?? 'inconnu'),
+      clad: CladName.values.byName(map["clad"] as String? ?? 'osiris'),
+      postedAt: _parseDate(map["postedAt"]) ?? DateTime.now(),
+      playedAt: _parseDate(map["playedAt"]),
+      completedAt: _parseDate(map["completedAt"]),
       agentInvolved: map["agentInvolved"] != null
           ? (map["agentInvolved"] as List).map((a) => Agent.fromMap(a)).toList()
           : null,
@@ -138,14 +147,14 @@ class Mission {
       monsterInvolved: map["monsterInvolved"] != null
           ? (map["monsterInvolved"] as List).map((a) => Monster.fromMap(a)).toList()
           : null,
-      bounty: map["bounty"],
+      bounty: (map["bounty"] as num?)?.toInt() ?? 0,
       reportPaths: map["reportPaths"] != null
           ? List<String>.from(map["reportPaths"])
           : null,
       agentDeceased: map["agentDeceased"] != null
           ? (map["agentDeceased"] as List).map((a) => Agent.fromMap(a)).toList()
           : null,
-      urgent: map["urgent"],
+      urgent: map["urgent"] as bool? ?? false,
     );
   }
 

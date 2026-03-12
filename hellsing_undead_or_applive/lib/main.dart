@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:hellsing_undead_or_applive/pages/archives/mission/mission_menu.dart';
-import 'package:hellsing_undead_or_applive/pages/calendar/moon_calendar_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
@@ -53,6 +51,7 @@ class MyApp extends StatelessWidget {
         '/missions': (_) => const MissionMenuPage(),
         '/chrono': (_) => const MissionChronologyPage(),
         '/missioncreate': (_) => const CreateMissionPage(),
+        '/missionsheet': (_) => const MissionSheetPage(),
         // '/settings': (_) => const SettingsPage(),
         // etc.
       },
