@@ -156,7 +156,7 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
           ),
           columns: const [
             DataColumn(
-              label: Text('Race',
+              label: Text('Name',
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             DataColumn(
@@ -183,7 +183,7 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
               DataCell(
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 140),
-                  child: Text(monster.race),
+                  child: Text(monster.name),
                 ),
               ),
 

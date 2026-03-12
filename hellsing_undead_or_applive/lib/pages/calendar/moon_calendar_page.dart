@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:apsl_sun_calc/apsl_sun_calc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hellsing_undead_or_applive/domain/archives/missions_model.dart';
 
 enum MoonMajorPhase {
   newMoon,
@@ -39,40 +41,69 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
   DateTime? _selectedDay;
   final CalendarFormat _format = CalendarFormat.month;
 
+  // Missions indexées par date normalisée "yyyy-M-d"
+  Map<String, List<Mission>> _completedByDay = {};
+
   @override
   void initState() {
     super.initState();
-    _focusedDay = _initialMonth; // => s’ouvre toujours sur Mars 1877
+    _focusedDay = _initialMonth;
+    _loadCompletedMissions();
   }
 
+  Future<void> _loadCompletedMissions() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('common')
+        .doc('archives')
+        .collection('missions')
+        .get();
+
+    final Map<String, List<Mission>> result = {};
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      if (data['completedAt'] == null) continue;
+
+      final mission = Mission.fromMap(data);
+      if (mission.completedAt == null) continue;
+
+      final key = _dateKey(mission.completedAt!);
+      result.putIfAbsent(key, () => []).add(mission);
+    }
+
+    if (mounted) {
+      setState(() => _completedByDay = result);
+    }
+  }
+
+  String _dateKey(DateTime d) => '${d.year}-${d.month}-${d.day}';
+
+  List<Mission> _missionsForDay(DateTime day) =>
+      _completedByDay[_dateKey(day)] ?? [];
+
   DateTime _asUtcMidday(DateTime d) {
-    // Midi UTC = évite les soucis de changement d’heure / minuit local
     return DateTime.utc(d.year, d.month, d.day, 12);
   }
 
   double _circularDistance(double a, double b) {
     final d = (a - b).abs();
-    return d > 0.5 ? 1.0 - d : d; // distance sur un cercle
+    return d > 0.5 ? 1.0 - d : d;
   }
 
   double _moonPhaseValue(DateTime day) {
     final d = _asUtcMidday(day);
-    final moon = SunCalc.getMoonIllumination(d); // Map<String, num>
+    final moon = SunCalc.getMoonIllumination(d);
     final p = ((moon['phase'] ?? 0)).toDouble() % 1.0;
     return p < 0 ? p + 1.0 : p;
   }
 
-  /// Retourne la phase majeure si "transition day", sinon null.
   MoonPhaseInfo? _transitionPhaseForDay(DateTime day) {
     final pPrev = _moonPhaseValue(day.subtract(const Duration(days: 1)));
     final pNow  = _moonPhaseValue(day);
     final pNext = _moonPhaseValue(day.add(const Duration(days: 1)));
 
-    // tolérance en fraction de cycle : plus petit = moins de jours marqués.
-    // ~0.03 ≈ 0.03 * 29.53j ≈ 0.9 jour
     const tol = 0.03;
 
-    // 8 repères
     const targets = <double>[
       0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875,
     ];
@@ -86,7 +117,6 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
       final dNow  = _circularDistance(pNow, t);
       final dNext = _circularDistance(pNext, t);
 
-      // "minimum local" : aujourd’hui est le plus proche de ce repère
       final isLocalMin = (dNow <= dPrev) && (dNow < dNext);
 
       if (isLocalMin && dNow < bestD) {
@@ -120,25 +150,10 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
   MoonPhaseInfo _moonPhaseForDay(DateTime day) {
     final d = _asUtcMidday(day);
 
-    // apsl_sun_calc calcule une phase continue (0..1)
-    // 0 = nouvelle lune, 0.25 = premier quartier, 0.5 = pleine lune, 0.75 = dernier quartier.
     final moon = SunCalc.getMoonIllumination(d);
     final double p = ((moon['phase'] ?? 0)).toDouble() % 1.0;
 
-    // Mapping en 8 catégories (octants)
-    // 0.000  New
-    // 0.125  Waxing Crescent
-    // 0.250  First Quarter
-    // 0.375  Waxing Gibbous
-    // 0.500  Full
-    // 0.625  Waning Gibbous
-    // 0.750  Last Quarter
-    // 0.875  Waning Crescent
     int idx = ((p * 8.0).round()) % 8;
-
-    // Pour éviter qu’un round pile sur la frontière fasse “sauter” de manière bizarre,
-    // tu peux remplacer round() par floor() si tu préfères :
-    // int idx = ((p * 8.0).floor()) % 8;
 
     switch (idx) {
       case 0:
@@ -162,6 +177,9 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedMissions =
+        _selectedDay != null ? _missionsForDay(_selectedDay!) : <Mission>[];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Calendrier"),
@@ -211,7 +229,9 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
                 messenger.showSnackBar(
                   SnackBar(
                     duration: const Duration(milliseconds: 900),
-                    content: Text("${selected.day}/${selected.month}/${selected.year} — ${info.emoji} ${info.label}"),
+                    content: Text(
+                      "${selected.day}/${selected.month}/${selected.year} — ${info.emoji} ${info.label}",
+                    ),
                   ),
                 );
               },
@@ -228,6 +248,9 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
                     focusedDay: _focusedDay,
                     selected: isSameDay(_selectedDay, day),
                     emoji: transition?.emoji,
+                    missionTitles: _missionsForDay(day)
+                        .map((m) => m.title)
+                        .toList(),
                   );
                 },
 
@@ -239,6 +262,9 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
                     selected: isSameDay(_selectedDay, day),
                     emoji: transition?.emoji,
                     isToday: true,
+                    missionTitles: _missionsForDay(day)
+                        .map((m) => m.title)
+                        .toList(),
                   );
                 },
 
@@ -249,11 +275,39 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
                     focusedDay: _focusedDay,
                     selected: true,
                     emoji: transition?.emoji,
+                    missionTitles: _missionsForDay(day)
+                        .map((m) => m.title)
+                        .toList(),
                   );
                 },
               ),
             ),
           ),
+
+          // ── Missions du jour sélectionné ──────────────────────────────────────
+          if (selectedMissions.isNotEmpty) ...[
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 8),
+                itemCount: selectedMissions.length,
+                itemBuilder: (context, index) {
+                  final mission = selectedMissions[index];
+                  return _MissionButton(
+                    mission: mission,
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      '/missionsheet',
+                      arguments: mission,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ] else
+            const Spacer(),
+
           Align(
             alignment: Alignment.bottomLeft,
             child: TextButton(
@@ -267,12 +321,88 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
   }
 }
 
+// ─── Bouton de mission ────────────────────────────────────────────────────────
+
+class _MissionButton extends StatelessWidget {
+  final Mission mission;
+  final VoidCallback onTap;
+
+  const _MissionButton({required this.mission, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(color: Theme.of(context).dividerColor),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              // Miniature illustration
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: mission.illustrationPath != null
+                      ? Image.network(
+                          mission.illustrationPath!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const _PlaceholderThumbnail(),
+                        )
+                      : const _PlaceholderThumbnail(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Titre
+              Expanded(
+                child: Text(
+                  mission.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlaceholderThumbnail extends StatelessWidget {
+  const _PlaceholderThumbnail();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: const Icon(Icons.image_not_supported_outlined, size: 24),
+    );
+  }
+}
+
+// ─── Cellule calendrier ───────────────────────────────────────────────────────
+
 class _DayCell extends StatelessWidget {
   final DateTime day;
   final DateTime focusedDay;
   final bool selected;
   final bool isToday;
   final String? emoji;
+  final List<String> missionTitles;
 
   const _DayCell({
     required this.day,
@@ -280,6 +410,7 @@ class _DayCell extends StatelessWidget {
     required this.selected,
     required this.emoji,
     this.isToday = false,
+    this.missionTitles = const [],
   });
 
   @override
@@ -298,12 +429,12 @@ class _DayCell extends StatelessWidget {
       child: Opacity(
         opacity: isOutside ? 0.35 : 1.0,
         child: Container(
-          margin: EdgeInsets.zero, // important
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
           decoration: BoxDecoration(
             color: bgColor,
             border: Border.all(color: borderColor, width: selected ? 2 : 1),
-            borderRadius: BorderRadius.circular(0), // style "papier"
+            borderRadius: BorderRadius.circular(0),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -312,18 +443,36 @@ class _DayCell extends StatelessWidget {
                 "${day.day}",
                 maxLines: 1,
                 overflow: TextOverflow.clip,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600),
               ),
-              // Empêche tout overflow de l’emoji
               if (emoji != null) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(emoji!, style: const TextStyle(fontSize: 16)),
+                    child: Text(emoji!, style: const TextStyle(fontSize: 14)),
                   ),
                 ),
-              ]
+              ],
+              if (missionTitles.isNotEmpty) ...[
+                const SizedBox(height: 1),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      missionTitles.join('\n'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
