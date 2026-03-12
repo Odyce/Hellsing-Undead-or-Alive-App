@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MissionSheetPage extends StatelessWidget {
   const MissionSheetPage({super.key});
@@ -176,15 +176,13 @@ class MissionSheetPage extends StatelessWidget {
                                 title: Text(name),
                                 trailing: const Icon(Icons.open_in_new,
                                     size: 18),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => _PdfReportViewer(
-                                      url: url,
-                                      name: name,
-                                    ),
-                                  ),
-                                ),
+                                onTap: () async {
+                                  final uri = Uri.tryParse(url);
+                                  if (uri != null && await canLaunchUrl(uri)) {
+                                    await launchUrl(uri,
+                                        mode: LaunchMode.externalApplication);
+                                  }
+                                },
                               );
                             }),
                           ],
@@ -212,25 +210,6 @@ class MissionSheetPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ─── PDF Viewer ───────────────────────────────────────────────────────────────
-
-class _PdfReportViewer extends StatelessWidget {
-  final String url;
-  final String name;
-
-  const _PdfReportViewer({required this.url, required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(name, overflow: TextOverflow.ellipsis),
-      ),
-      body: SfPdfViewer.network(url),
     );
   }
 }

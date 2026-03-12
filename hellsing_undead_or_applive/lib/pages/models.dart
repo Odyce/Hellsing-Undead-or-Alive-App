@@ -12,4 +12,7 @@ export 'archives/mission/create_mission_form.dart';
 export 'archives/mission/mission_menu.dart';
 export 'archives/mission/mission_sheet.dart';
 export 'archives/archive_menu.dart';
+export 'archives/bestiary/bestiary_list.dart';
+export 'archives/bestiary/bestiary_sheet.dart';
+export 'archives/bestiary/create_bestiary_form.dart';
 export 'calendar/moon_calendar_page.dart';

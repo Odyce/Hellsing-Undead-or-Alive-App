@@ -52,6 +52,8 @@ class MyApp extends StatelessWidget {
         '/chrono': (_) => const MissionChronologyPage(),
         '/missioncreate': (_) => const CreateMissionPage(),
         '/missionsheet': (_) => const MissionSheetPage(),
+        '/bestiary': (_) => const BestiaryListPage(),
+        '/bestiaryCreate': (_) => const CreateBestiaryPage(),
         // '/settings': (_) => const SettingsPage(),
         // etc.
       },

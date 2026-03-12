@@ -10,5 +10,5 @@ export 'inventory/inventory_slot.dart';
 export 'inventory/inventory_model.dart';
 export 'inventory/weapons_model.dart';
 export 'archives/missions_model.dart';
-export 'archives/mission_repository.dart';
+export 'archives/archives_repository.dart';
 export 'archives/npc_model.dart';

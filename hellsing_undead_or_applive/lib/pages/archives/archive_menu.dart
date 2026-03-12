@@ -40,7 +40,9 @@ class ArchiveMenuPage extends StatelessWidget {
               const SizedBox(height: 16),
 
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, '/bestiary');
+                },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Text(
