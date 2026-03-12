@@ -76,25 +76,14 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
             // ── En-tête ──────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Text(
-                    'Chronologie',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+              child: Center(
+                child: const Text(
+                  'Chronologie',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () =>
-                          Navigator.pushReplacementNamed(context, '/missions'),
-                      child: const Text('Retour'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
@@ -114,6 +103,19 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                               child: Text('Aucune mission enregistrée.'),
                             )
                           : _buildCarousel(),
+            ),
+
+            // ── Bouton retour en bas ─────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () =>
+                      Navigator.pushReplacementNamed(context, '/missions'),
+                  child: const Text('Retour'),
+                ),
+              ),
             ),
           ],
         ),
@@ -224,7 +226,6 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
           scale: scale,
           child: GestureDetector(
             // Cliquable uniquement lorsque la mission est au centre
-            // TODO: ajouter '/missionsheet' dans main.dart quand mission_sheet.dart sera prête
             onTap: isCurrent
                 ? () => Navigator.pushNamed(
                       context,

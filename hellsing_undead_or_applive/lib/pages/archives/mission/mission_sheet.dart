@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 class MissionSheetPage extends StatelessWidget {
   const MissionSheetPage({super.key});
@@ -28,28 +29,21 @@ class MissionSheetPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // En-tête fixe
+            // ── En-tête (titre uniquement) ────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Text(
-                    'Fiche de mission',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              child: Center(
+                child: Text(
+                  'Fiche de mission',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Retour'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
-            // Contenu scrollable
+            // ── Contenu scrollable ────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -171,23 +165,31 @@ class MissionSheetPage extends StatelessWidget {
                             ...mission.reportPaths!.asMap().entries.map((e) {
                               final index = e.key + 1;
                               final url   = e.value;
-                              // Extrait le nom de fichier depuis l'URL Cloudinary
-                              final name  = Uri.tryParse(url)?.pathSegments.lastOrNull
-                                  ?? 'Rapport $index';
+                              final name  = Uri.tryParse(url)
+                                      ?.pathSegments
+                                      .lastOrNull ??
+                                  'Rapport $index';
                               return ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 leading: const Icon(Icons.picture_as_pdf,
                                     color: Colors.red),
                                 title: Text(name),
-                                subtitle: SelectableText(
-                                  url,
-                                  style: const TextStyle(fontSize: 11),
+                                trailing: const Icon(Icons.open_in_new,
+                                    size: 18),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => _PdfReportViewer(
+                                      url: url,
+                                      name: name,
+                                    ),
+                                  ),
                                 ),
                               );
                             }),
                           ],
 
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 8),
                         ],
                       ),
                     ),
@@ -195,9 +197,40 @@ class MissionSheetPage extends StatelessWidget {
                 ),
               ),
             ),
+
+            // ── Bouton retour en bas ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Retour'),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── PDF Viewer ───────────────────────────────────────────────────────────────
+
+class _PdfReportViewer extends StatelessWidget {
+  final String url;
+  final String name;
+
+  const _PdfReportViewer({required this.url, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(name, overflow: TextOverflow.ellipsis),
+      ),
+      body: SfPdfViewer.network(url),
     );
   }
 }
