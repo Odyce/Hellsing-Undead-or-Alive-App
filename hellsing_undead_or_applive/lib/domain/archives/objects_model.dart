@@ -9,6 +9,8 @@ class Artefacts {
   final bool limitedUses;
   final int? usesLeft;
   final List<Agent>? owner;
+  final Mission? missionRetrievedAt;
+  final DateTime? dateRetrievedAt;
 
   const Artefacts({
     required this.id,
@@ -19,6 +21,8 @@ class Artefacts {
     required this.limitedUses,
     this.usesLeft,
     this.owner,
+    this.missionRetrievedAt,
+    this.dateRetrievedAt,
   });
 
   // --------------------
@@ -33,6 +37,8 @@ class Artefacts {
     bool? limitedUses,
     int? usesLeft,
     List<Agent>? owner,
+    Mission? missionRetrievedAt,
+    DateTime? dateRetrievedAt,
   }) {
     return Artefacts(
       id: id ?? this.id,
@@ -43,6 +49,8 @@ class Artefacts {
       limitedUses: limitedUses ?? this.limitedUses,
       usesLeft: usesLeft ?? this.usesLeft,
       owner: owner ?? this.owner,
+      missionRetrievedAt: missionRetrievedAt ?? this.missionRetrievedAt,
+      dateRetrievedAt: dateRetrievedAt ?? this.dateRetrievedAt,
     );
   }
 
@@ -51,6 +59,7 @@ class Artefacts {
   // --------------------
   Map<String, dynamic> toMap() {
     return {
+      "isWeapon": false,
       "id": id,
       "name": name,
       "description": description,
@@ -59,6 +68,8 @@ class Artefacts {
       "limitedUses": limitedUses,
       "usesLeft": usesLeft,
       "owner": owner?.map((a) => a.toMap()).toList(),
+      "missionRetrievedAt": missionRetrievedAt?.toMap(),
+      "dateRetrievedAt": dateRetrievedAt?.toIso8601String(),
     };
   }
 
@@ -74,6 +85,12 @@ class Artefacts {
       owner: map["owner"] != null
           ? (map["owner"] as List).map((a) => Agent.fromMap(a)).toList()
           : null,
+      missionRetrievedAt: map["missionRetrievedAt"] != null
+          ? Mission.fromMap(map["missionRetrievedAt"])
+          : null,
+      dateRetrievedAt: map["dateRetrievedAt"] != null
+          ? DateTime.tryParse(map["dateRetrievedAt"])
+          : null,
     );
   }
 
@@ -82,6 +99,7 @@ class Artefacts {
   // --------------------
   Map<String, dynamic> toJson() {
     return {
+      "isWeapon": false,
       "id": id,
       "name": name,
       "description": description,
@@ -90,6 +108,8 @@ class Artefacts {
       "limitedUses": limitedUses,
       "usesLeft": usesLeft,
       "owner": owner?.map((a) => a.toJson()).toList(),
+      "missionRetrievedAt": missionRetrievedAt?.toJson(),
+      "dateRetrievedAt": dateRetrievedAt?.toIso8601String(),
     };
   }
 
@@ -104,6 +124,12 @@ class Artefacts {
       usesLeft: json["usesLeft"],
       owner: json["owner"] != null
           ? (json["owner"] as List).map((a) => Agent.fromJson(a)).toList()
+          : null,
+      missionRetrievedAt: json["missionRetrievedAt"] != null
+          ? Mission.fromJson(json["missionRetrievedAt"])
+          : null,
+      dateRetrievedAt: json["dateRetrievedAt"] != null
+          ? DateTime.tryParse(json["dateRetrievedAt"])
           : null,
     );
   }
@@ -131,6 +157,8 @@ class ArtefactWeapon {
   final bool limitedUses;
   final int? usesLeft;
   final List<Agent>? owner;
+  final Mission? missionRetrievedAt;
+  final DateTime? dateRetrievedAt;
 
   const ArtefactWeapon({
     required this.id,
@@ -154,6 +182,8 @@ class ArtefactWeapon {
     required this.limitedUses,
     this.usesLeft,
     this.owner,
+    this.missionRetrievedAt,
+    this.dateRetrievedAt,
   });
 
   // --------------------
@@ -181,6 +211,8 @@ class ArtefactWeapon {
     bool? limitedUses,
     int? usesLeft,
     List<Agent>? owner,
+    Mission? missionRetrievedAt,
+    DateTime? dateRetrievedAt,
   }) {
     return ArtefactWeapon(
       id: id ?? this.id,
@@ -204,6 +236,8 @@ class ArtefactWeapon {
       limitedUses: limitedUses ?? this.limitedUses,
       usesLeft: usesLeft ?? this.usesLeft,
       owner: owner ?? this.owner,
+      missionRetrievedAt: missionRetrievedAt ?? this.missionRetrievedAt,
+      dateRetrievedAt: dateRetrievedAt ?? this.dateRetrievedAt,
     );
   }
 
@@ -233,6 +267,9 @@ class ArtefactWeapon {
       "limitedUses": limitedUses,
       "usesLeft": usesLeft,
       "owner": owner?.map((a) => a.toMap()).toList(),
+      "missionRetrievedAt": missionRetrievedAt?.toMap(),
+      "dateRetrievedAt": dateRetrievedAt?.toIso8601String(),
+      "isWeapon": true,
     };
   }
 
@@ -263,6 +300,12 @@ class ArtefactWeapon {
       owner: map["owner"] != null
           ? (map["owner"] as List).map((a) => Agent.fromMap(a)).toList()
           : null,
+      missionRetrievedAt: map["missionRetrievedAt"] != null
+          ? Mission.fromMap(map["missionRetrievedAt"])
+          : null,
+      dateRetrievedAt: map["dateRetrievedAt"] != null
+          ? DateTime.tryParse(map["dateRetrievedAt"])
+          : null,
     );
   }
 
@@ -271,6 +314,7 @@ class ArtefactWeapon {
   // --------------------
   Map<String, dynamic> toJson() {
     return {
+      "isWeapon": true,
       "id": id,
       "name": name,
       "description": description,
@@ -292,6 +336,8 @@ class ArtefactWeapon {
       "limitedUses": limitedUses,
       "usesLeft": usesLeft,
       "owner": owner?.map((a) => a.toJson()).toList(),
+      "missionRetrievedAt": missionRetrievedAt?.toJson(),
+      "dateRetrievedAt": dateRetrievedAt?.toIso8601String(),
     };
   }
 
@@ -322,6 +368,12 @@ class ArtefactWeapon {
       owner: json["owner"] != null
           ? (json["owner"] as List).map((a) => Agent.fromJson(a)).toList()
           : null,
+      missionRetrievedAt: json["missionRetrievedAt"] != null
+          ? Mission.fromJson(json["missionRetrievedAt"])
+          : null,
+      dateRetrievedAt: json["dateRetrievedAt"] != null
+          ? DateTime.tryParse(json["dateRetrievedAt"])
+          : null,
     );
   }
 }
@@ -333,6 +385,7 @@ class ResDevProject {
   final String? picturePath;
   final List<Agent> benefactor;
   final List<String> prerequisite;
+  final List<Agent?> prerequisiteAgents;
   final int cost;
   final bool prerequisiteCompletes;
   final bool completed;
@@ -344,6 +397,7 @@ class ResDevProject {
     this.picturePath,
     required this.benefactor,
     required this.prerequisite,
+    required this.prerequisiteAgents,
     required this.cost,
     required this.prerequisiteCompletes,
     required this.completed,
@@ -359,6 +413,7 @@ class ResDevProject {
     String? picturePath,
     List<Agent>? benefactor,
     List<String>? prerequisite,
+    List<Agent?>? prerequisiteAgents,
     int? cost,
     bool? prerequisiteCompletes,
     bool? completed,
@@ -370,6 +425,7 @@ class ResDevProject {
       picturePath: picturePath ?? this.picturePath,
       benefactor: benefactor ?? this.benefactor,
       prerequisite: prerequisite ?? this.prerequisite,
+      prerequisiteAgents: prerequisiteAgents ?? this.prerequisiteAgents,
       cost: cost ?? this.cost,
       prerequisiteCompletes: prerequisiteCompletes ?? this.prerequisiteCompletes,
       completed: completed ?? this.completed,
@@ -387,6 +443,7 @@ class ResDevProject {
       "picturePath": picturePath,
       "benefactor": benefactor.map((a) => a.toMap()).toList(),
       "prerequisite": prerequisite,
+      "prerequisiteAgents": prerequisiteAgents.map((a) => a?.toMap()).toList(),
       "cost": cost,
       "prerequisiteCompletes": prerequisiteCompletes,
       "completed": completed,
@@ -394,13 +451,21 @@ class ResDevProject {
   }
 
   factory ResDevProject.fromMap(Map<String, dynamic> map) {
+    final prereqs = List<String>.from(map["prerequisite"]);
     return ResDevProject(
       id: map["id"],
       name: map["name"],
       description: map["description"],
       picturePath: map["picturePath"],
       benefactor: (map["benefactor"] as List).map((a) => Agent.fromMap(a)).toList(),
-      prerequisite: List<String>.from(map["prerequisite"]),
+      prerequisite: prereqs,
+      prerequisiteAgents: map["prerequisiteAgents"] != null
+          ? (map["prerequisiteAgents"] as List)
+              .map((a) => a != null
+                  ? Agent.fromMap(Map<String, dynamic>.from(a))
+                  : null)
+              .toList()
+          : List<Agent?>.filled(prereqs.length, null),
       cost: map["cost"],
       prerequisiteCompletes: map["prerequisiteCompletes"],
       completed: map["completed"],
@@ -418,6 +483,7 @@ class ResDevProject {
       "picturePath": picturePath,
       "benefactor": benefactor.map((a) => a.toJson()).toList(),
       "prerequisite": prerequisite,
+      "prerequisiteAgents": prerequisiteAgents.map((a) => a?.toJson()).toList(),
       "cost": cost,
       "prerequisiteCompletes": prerequisiteCompletes,
       "completed": completed,
@@ -425,13 +491,21 @@ class ResDevProject {
   }
 
   factory ResDevProject.fromJson(Map<String, dynamic> json) {
+    final prereqs = List<String>.from(json["prerequisite"]);
     return ResDevProject(
       id: json["id"],
       name: json["name"],
       description: json["description"],
       picturePath: json["picturePath"],
       benefactor: (json["benefactor"] as List).map((a) => Agent.fromJson(a)).toList(),
-      prerequisite: List<String>.from(json["prerequisite"]),
+      prerequisite: prereqs,
+      prerequisiteAgents: json["prerequisiteAgents"] != null
+          ? (json["prerequisiteAgents"] as List)
+              .map((a) => a != null
+                  ? Agent.fromJson(Map<String, dynamic>.from(a))
+                  : null)
+              .toList()
+          : List<Agent?>.filled(prereqs.length, null),
       cost: json["cost"],
       prerequisiteCompletes: json["prerequisiteCompletes"],
       completed: json["completed"],
@@ -447,6 +521,7 @@ class ResDev {
   final Stockage stockage;
   final double size;
   final double? number; // NONE = 1
+  final int projectId;
 
   const ResDev({
     required this.id,
@@ -456,6 +531,7 @@ class ResDev {
     required this.stockage,
     required this.size,
     this.number,
+    required this.projectId,
   });
 
   // --------------------
@@ -469,6 +545,7 @@ class ResDev {
     Stockage? stockage,
     double? size,
     double? number,
+    int? projectId,
   }) {
     return ResDev(
       id: id ?? this.id,
@@ -478,6 +555,7 @@ class ResDev {
       stockage: stockage ?? this.stockage,
       size: size ?? this.size,
       number: number ?? this.number,
+      projectId: projectId ?? this.projectId,
     );
   }
 
@@ -486,6 +564,7 @@ class ResDev {
   // --------------------
   Map<String, dynamic> toMap() {
     return {
+      "isWeapon": false,
       "id": id,
       "name": name,
       "description": description,
@@ -493,6 +572,7 @@ class ResDev {
       "stockage": stockage.name,
       "size": size,
       "number": number,
+      "projectId": projectId,
     };
   }
 
@@ -505,6 +585,7 @@ class ResDev {
       stockage: Stockage.values.byName(map["stockage"]),
       size: (map["size"] as num).toDouble(),
       number: (map["number"] as num?)?.toDouble(),
+      projectId: map["projectId"] ?? 0,
     );
   }
 
@@ -513,6 +594,7 @@ class ResDev {
   // --------------------
   Map<String, dynamic> toJson() {
     return {
+      "isWeapon": false,
       "id": id,
       "name": name,
       "description": description,
@@ -520,6 +602,7 @@ class ResDev {
       "stockage": stockage.name,
       "size": size,
       "number": number,
+      "projectId": projectId,
     };
   }
 
@@ -532,6 +615,7 @@ class ResDev {
       stockage: Stockage.values.byName(json["stockage"]),
       size: (json["size"] as num).toDouble(),
       number: (json["number"] as num?)?.toDouble(),
+      projectId: json["projectId"] ?? 0,
     );
   }
 }
@@ -555,6 +639,7 @@ class ResDevWeapon {
   final bool? secondMagazine;
   final int? secondMagazineSize;
   final Firing? firing;
+  final int projectId;
 
   const ResDevWeapon({
     required this.id,
@@ -575,6 +660,7 @@ class ResDevWeapon {
     this.secondMagazine,
     this.secondMagazineSize,
     this.firing,
+    required this.projectId,
   });
 
   // --------------------
@@ -599,6 +685,7 @@ class ResDevWeapon {
     bool? secondMagazine,
     int? secondMagazineSize,
     Firing? firing,
+    int? projectId,
   }) {
     return ResDevWeapon(
       id: id ?? this.id,
@@ -619,6 +706,7 @@ class ResDevWeapon {
       secondMagazine: secondMagazine ?? this.secondMagazine,
       secondMagazineSize: secondMagazineSize ?? this.secondMagazineSize,
       firing: firing ?? this.firing,
+      projectId: projectId ?? this.projectId,
     );
   }
 
@@ -627,6 +715,7 @@ class ResDevWeapon {
   // --------------------
   Map<String, dynamic> toMap() {
     return {
+      "isWeapon": true,
       "id": id,
       "name": name,
       "description": description,
@@ -645,6 +734,7 @@ class ResDevWeapon {
       "secondMagazine": secondMagazine,
       "secondMagazineSize": secondMagazineSize,
       "firing": firing?.name,
+      "projectId": projectId,
     };
   }
 
@@ -670,6 +760,7 @@ class ResDevWeapon {
       secondMagazine: map["secondMagazine"],
       secondMagazineSize: map["secondMagazineSize"],
       firing: map["firing"] != null ? Firing.values.byName(map["firing"]) : null,
+      projectId: map["projectId"] ?? 0,
     );
   }
 
@@ -678,6 +769,7 @@ class ResDevWeapon {
   // --------------------
   Map<String, dynamic> toJson() {
     return {
+      "isWeapon": true,
       "id": id,
       "name": name,
       "description": description,
@@ -696,6 +788,7 @@ class ResDevWeapon {
       "secondMagazine": secondMagazine,
       "secondMagazineSize": secondMagazineSize,
       "firing": firing?.name,
+      "projectId": projectId,
     };
   }
 
@@ -721,6 +814,7 @@ class ResDevWeapon {
       secondMagazine: json["secondMagazine"],
       secondMagazineSize: json["secondMagazineSize"],
       firing: json["firing"] != null ? Firing.values.byName(json["firing"]) : null,
+      projectId: json["projectId"] ?? 0,
     );
   }
 }
