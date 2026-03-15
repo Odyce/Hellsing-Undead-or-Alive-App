@@ -228,7 +228,7 @@ class _CreateBestiaryPageState extends State<CreateBestiaryPage> {
                         _illustrations[i],
                         width: 110,
                         height: 110,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                       ),
                     ),
                     Positioned(

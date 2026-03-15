@@ -18,7 +18,7 @@ class BookPageTemplate extends StatelessWidget {
           color: Color(0xFFF3E6C8),
           image: DecorationImage(
             image: AssetImage("assets/images/parchment.jpg"),
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),

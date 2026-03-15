@@ -38,7 +38,7 @@ class NpcSheetPage extends StatelessWidget {
                   child: Image.network(
                     pnj.picturePath!,
                     height: 220,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Icon(
                       Icons.broken_image,
                       size: 80,

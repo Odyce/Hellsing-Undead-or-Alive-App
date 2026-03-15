@@ -199,7 +199,7 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
                           firstImage,
                           width: 52,
                           height: 52,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => const Icon(
                             Icons.close,
                             color: Colors.red,

@@ -55,7 +55,7 @@ class MissionSheetPage extends StatelessWidget {
                         mission.illustrationPath!,
                         width: double.infinity,
                         height: 220,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                         loadingBuilder: (_, child, progress) => progress == null
                             ? child
                             : const SizedBox(

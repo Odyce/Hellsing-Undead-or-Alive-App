@@ -10,12 +10,11 @@ class MissionChronologyPage extends StatefulWidget {
 }
 
 class _MissionChronologyPageState extends State<MissionChronologyPage> {
-  // Fraction de la hauteur totale occupée par chaque item du carousel
-  static const double _viewportFraction = 0.38;
+  // Espacement entre items en fraction de la hauteur totale (7 items visibles)
+  static const double _itemSpacingFraction = 0.145;
 
-  late final PageController _pageController = PageController(
-    viewportFraction: _viewportFraction,
-  );
+  // PageController sans viewportFraction custom — utilisé uniquement pour le snap
+  late final PageController _pageController = PageController();
 
   List<Mission> _missions = [];
   bool _loading = true;
@@ -134,14 +133,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
         ),
 
         // Carousel des missions au centre
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            scrollDirection: Axis.vertical,
-            itemCount: _missions.length,
-            itemBuilder: (context, index) => _buildMissionItem(index),
-          ),
-        ),
+        Expanded(child: _buildMissionStack()),
       ],
     );
   }
@@ -158,7 +150,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
             final page = _pageController.hasClients
                 ? (_pageController.page ?? 0.0)
                 : 0.0;
-            final itemHeight = totalHeight * _viewportFraction;
+            final itemHeight = totalHeight * _itemSpacingFraction;
 
             return ClipRect(
               child: Stack(
@@ -167,9 +159,11 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                 children: List.generate(_missions.length, (i) {
                   final offset   = i - page;
                   final distance = offset.abs();
-                  final dy       = offset * itemHeight;
-                  final scale    = (1.0 - distance * 0.25).clamp(0.3, 1.0);
-                  final opacity  = (1.0 - distance * 0.45).clamp(0.0, 1.0);
+                  if (distance > 3.5) return const SizedBox.shrink();
+
+                  final dy      = offset * itemHeight;
+                  final scale   = (1.0 - distance * 0.18).clamp(0.3, 1.0);
+                  final opacity = (1.0 - distance * 0.25).clamp(0.0, 1.0);
                   final isCurrent = page.round() == i;
 
                   final year =
@@ -206,80 +200,143 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
     );
   }
 
-  // ─── Item mission du carousel (centre) ────────────────────────────────────────
-  Widget _buildMissionItem(int index) {
-    final mission = _missions[index];
+  // ─── Stack des missions (droite) ──────────────────────────────────────────────
+  //
+  // Séparation en deux couches :
+  //   1. PageView invisible → gère uniquement le scroll/snap vertical
+  //   2. Stack animé → rendu visuel dans le bon z-order (éloignés peints
+  //      en premier, central peint en dernier donc par-dessus)
+  Widget _buildMissionStack() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalHeight = constraints.maxHeight;
 
-    return AnimatedBuilder(
-      animation: _pageController,
-      builder: (context, _) {
-        double scale    = 1.0;
-        bool isCurrent  = false;
+        return Stack(
+          children: [
+            // ── Couche 1 : scroll/snap invisible ────────────────────────────
+            PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              itemCount: _missions.length,
+              // Items vides — uniquement pour la mécanique de défilement
+              itemBuilder: (_, __) => const SizedBox.expand(),
+            ),
 
-        if (_pageController.hasClients && _pageController.page != null) {
-          final distance = (_pageController.page! - index).abs();
-          scale      = (1.0 - distance * 0.22).clamp(0.5, 1.0);
-          isCurrent  = distance < 0.5;
-        }
+            // ── Couche 2 : rendu visuel des cartes ───────────────────────────
+            AnimatedBuilder(
+              animation: _pageController,
+              builder: (context, _) {
+                final page = _pageController.hasClients
+                    ? (_pageController.page ?? 0.0)
+                    : 0.0;
 
-        return Transform.scale(
-          scale: scale,
-          child: GestureDetector(
-            // Cliquable uniquement lorsque la mission est au centre
-            onTap: isCurrent
-                ? () => Navigator.pushNamed(
-                      context,
-                      '/missionsheet',
-                      arguments: mission,
-                    )
-                : null,
-            child: Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              elevation: isCurrent ? 6 : 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      mission.title,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: isCurrent ? 18 : 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                // Trier les indices : les plus éloignés du centre en premier,
+                // le central en dernier → peint par-dessus ses voisins (z-order).
+                final indices = List.generate(_missions.length, (i) => i)
+                  ..sort((a, b) {
+                    final da = (a - page).abs();
+                    final db = (b - page).abs();
+                    return db.compareTo(da);
+                  });
 
-                    if (mission.illustrationPath != null) ...[
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Image.network(
-                          mission.illustrationPath!,
-                          height: 110,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (_, child, progress) => progress == null
-                              ? child
-                              : const SizedBox(
-                                  height: 110,
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                ),
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                return Stack(
+                  alignment: Alignment.center,
+                  children: indices.map((i) {
+                    final dist = (i - page).abs();
+                    // N'afficher que les 3 de chaque côté + le central
+                    if (dist > 3.5) return const SizedBox.shrink();
+
+                    final dy       = (i - page) * _itemSpacingFraction * totalHeight;
+                    final scale    = (1.0 - dist * 0.18).clamp(0.46, 1.0);
+                    final opacity  = (1.0 - dist * 0.25).clamp(0.15, 1.0);
+                    final isCurrent = page.round() == i;
+
+                    return Transform.translate(
+                      offset: Offset(0, dy),
+                      child: IgnorePointer(
+                        // Seule la carte centrale reçoit les taps ;
+                        // les autres laissent passer les événements au PageView.
+                        ignoring: !isCurrent,
+                        child: Transform.scale(
+                          scale: scale,
+                          child: Opacity(
+                            opacity: opacity,
+                            child: _buildMissionCard(i, isCurrent),
+                          ),
                         ),
                       ),
-                    ],
-                  ],
-                ),
-              ),
+                    );
+                  }).toList(),
+                );
+              },
             ),
-          ),
+          ],
         );
       },
+    );
+  }
+
+  // ─── Carte individuelle d'une mission ────────────────────────────────────────
+  Widget _buildMissionCard(int index, bool isCurrent) {
+    final mission = _missions[index];
+
+    return GestureDetector(
+      onTap: isCurrent
+          ? () => Navigator.pushNamed(
+                context,
+                '/missionsheet',
+                arguments: mission,
+              )
+          : null,
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        elevation: isCurrent ? 6 : 2,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // ── Illustration à gauche (toutes les cartes) ───────────────
+              if (mission.illustrationPath != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    mission.illustrationPath!,
+                    // Taille fixe : le Transform.scale du parent la réduit
+                    // proportionnellement pour les cartes non-centrales.
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (_, child, progress) => progress == null
+                        ? child
+                        : const SizedBox(
+                            width: 64,
+                            height: 64,
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+
+              if (mission.illustrationPath != null) const SizedBox(width: 10),
+
+              // ── Titre à droite ──────────────────────────────────────────
+              Expanded(
+                child: Text(
+                  mission.title,
+                  textAlign: TextAlign.start,
+                  style: TextStyle(
+                    fontSize: isCurrent ? 18 : 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

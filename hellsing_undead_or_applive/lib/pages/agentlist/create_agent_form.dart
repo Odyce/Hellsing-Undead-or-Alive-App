@@ -613,7 +613,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
                     _selectedImage!,
                     height: 150,
                     width: 150,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 8),

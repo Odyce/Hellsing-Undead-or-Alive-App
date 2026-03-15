@@ -207,7 +207,7 @@ class _CreateNpcPageState extends State<CreateNpcPage> {
                     _picture!,
                     width: 110,
                     height: 110,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 Positioned(

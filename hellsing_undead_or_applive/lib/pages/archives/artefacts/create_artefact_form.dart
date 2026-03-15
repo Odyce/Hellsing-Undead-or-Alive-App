@@ -321,7 +321,7 @@ class _CreateArtefactPageState extends State<CreateArtefactPage> {
                     _picture!,
                     width: 110,
                     height: 110,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 Positioned(

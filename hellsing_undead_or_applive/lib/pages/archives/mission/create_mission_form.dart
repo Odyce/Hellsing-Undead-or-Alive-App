@@ -437,7 +437,7 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
                 _illustration!,
                 height: 180,
                 width: double.infinity,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
               ),
             ),
             const SizedBox(height: 8),

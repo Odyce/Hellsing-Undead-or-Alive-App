@@ -353,7 +353,7 @@ class _MissionButton extends StatelessWidget {
                   child: mission.illustrationPath != null
                       ? Image.network(
                           mission.illustrationPath!,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) =>
                               const _PlaceholderThumbnail(),
                         )

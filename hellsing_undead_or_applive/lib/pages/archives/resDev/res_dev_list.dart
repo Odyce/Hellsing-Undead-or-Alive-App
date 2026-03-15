@@ -270,7 +270,7 @@ class _ProjectCard extends StatelessWidget {
                       p.picturePath!,
                       width: completed ? 36 : 48,
                       height: completed ? 36 : 48,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                     ),
                   )
                 else
@@ -356,7 +356,7 @@ class _ResDevCard extends StatelessWidget {
                     picturePath,
                     width: 48,
                     height: 48,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 )
               else

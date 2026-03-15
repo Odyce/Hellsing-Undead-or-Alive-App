@@ -152,7 +152,7 @@ class _ResDevProjectSheetPageState extends State<ResDevProjectSheetPage> {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(p.picturePath!,
-                  height: 200, fit: BoxFit.cover),
+                  height: 200, fit: BoxFit.contain),
             ),
             const SizedBox(height: 16),
           ],

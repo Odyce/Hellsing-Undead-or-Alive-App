@@ -39,7 +39,7 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
                   images[_currentImageIndex],
                   height: 220,
                   width: double.infinity,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => const SizedBox(
                     height: 220,
                     child: Center(
@@ -79,7 +79,7 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
                               images[i],
                               width: 60,
                               height: 60,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.broken_image,
                                 color: Colors.grey,

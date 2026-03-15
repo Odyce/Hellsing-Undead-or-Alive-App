@@ -103,7 +103,7 @@ class ResDevSheetPage extends StatelessWidget {
                   picturePath,
                   height: 220,
                   width: double.infinity,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => const SizedBox(
                     height: 220,
                     child: Center(

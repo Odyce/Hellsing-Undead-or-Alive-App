@@ -187,7 +187,7 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
                             picture,
                             width: 52,
                             height: 52,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const Icon(
                               Icons.close,
                               color: Colors.red,

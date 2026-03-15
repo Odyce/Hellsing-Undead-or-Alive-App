@@ -255,7 +255,7 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
             const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.file(_picture!, height: 160, fit: BoxFit.cover),
+              child: Image.file(_picture!, height: 160, fit: BoxFit.contain),
             ),
           ],
           const SizedBox(height: 24),
