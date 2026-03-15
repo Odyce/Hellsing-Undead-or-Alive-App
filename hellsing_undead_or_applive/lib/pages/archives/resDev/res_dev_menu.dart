@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class ArchiveMenuPage extends StatelessWidget {
-  const ArchiveMenuPage({super.key});
+class ResDevMenuPage extends StatelessWidget {
+  const ResDevMenuPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class ArchiveMenuPage extends StatelessWidget {
             children: [
               const Center(
                 child: Text(
-                  "Archives",
+                  'Menu R&D',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -26,72 +26,42 @@ class ArchiveMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/missions');
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    "Missions",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/bestiary');
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    "Bestiaire",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/artefacts');
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    "Artéfacts",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/npcs');
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    "PNJs",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              ElevatedButton(
-                onPressed: () {
                   Navigator.pushReplacementNamed(context, '/resDev');
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Text(
-                    "R&D",
+                    'Liste R&D',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, '/resDevProjectCreate');
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Créer un projet R&D',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, '/resDevCreate');
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Créer un R&D développé',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
@@ -103,9 +73,9 @@ class ArchiveMenuPage extends StatelessWidget {
                 alignment: Alignment.bottomLeft,
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/home');
+                    Navigator.pushReplacementNamed(context, '/archives');
                   },
-                  child: const Text("Retour"),
+                  child: const Text('Retour'),
                 ),
               ),
             ],

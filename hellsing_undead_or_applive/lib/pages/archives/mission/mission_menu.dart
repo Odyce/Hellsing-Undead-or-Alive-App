@@ -26,6 +26,21 @@ class MissionMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
+                  Navigator.pushReplacementNamed(context, '/missionboard');
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    "Tableau d'affichage",
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton(
+                onPressed: () {
                   Navigator.pushReplacementNamed(context, '/chrono');
                 },
                 child: const Padding(

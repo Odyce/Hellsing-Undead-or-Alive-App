@@ -37,6 +37,8 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
 
       final missions = snapshot.docs
           .map((doc) => Mission.fromMap(doc.data()))
+          // Seules les missions terminées apparaissent dans la chronologie
+          .where((m) => m.completedAt != null)
           .toList();
 
       // La plus ancienne completedAt tout en haut — nulls à la fin

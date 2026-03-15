@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hellsing_undead_or_applive/pages/archives/resDev/res_dev_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
@@ -39,7 +40,6 @@ class MyApp extends StatelessWidget {
       title: 'Hellsing App',
       theme: ThemeData(useMaterial3: true),
 
-      // Routes pour plus tard
       routes: {
         '/login': (_) => const LoginPage(),
         '/home': (_) => const HomePage(),
@@ -49,6 +49,7 @@ class MyApp extends StatelessWidget {
         '/calendar': (_) => const MoonCalendarPage(),
         '/archives': (_) => const ArchiveMenuPage(),
         '/missions': (_) => const MissionMenuPage(),
+        '/missionboard': (_) => const DisplayMissionPage(),
         '/chrono': (_) => const MissionChronologyPage(),
         '/missionsheet': (_) => const MissionSheetPage(),
         '/missioncreate': (_) => const CreateMissionPage(),
@@ -61,7 +62,8 @@ class MyApp extends StatelessWidget {
         '/artefacts': (_) => const ArtefactListPage(),
         '/artefactSheet': (_) => const ArtefactSheetPage(),
         '/artefactCreate': (_) => const CreateArtefactPage(),
-        '/resDev': (_) => const ResDevListPage(),
+        '/resDev': (_) => const ResDevMenuPage(),
+        '/resDevList': (_) => const ResDevListPage(),
         '/resDevSheet': (_) => const ResDevSheetPage(),
         '/resDevCreate': (_) => const CreateResDevPage(),
         '/resDevProjectSheet': (_) => const ResDevProjectSheetPage(),

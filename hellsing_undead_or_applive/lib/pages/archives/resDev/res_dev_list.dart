@@ -141,7 +141,23 @@ class _ResDevListPageState extends State<ResDevListPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _buildContent(),
+          : Column(
+              children: [
+                Expanded(child: _buildContent()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => Navigator.pushReplacementNamed(
+                          context, '/archives'),
+                      child: const Text('Retour'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 

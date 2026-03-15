@@ -539,7 +539,17 @@ class _CreateResDevPageState extends State<CreateResDevPage> {
                   )
                 : const Text('Créer'),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 8),
+
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () =>
+                  Navigator.pushReplacementNamed(context, '/resDev'),
+              child: const Text('Retour'),
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );

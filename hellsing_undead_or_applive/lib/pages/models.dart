@@ -10,6 +10,7 @@ export 'rulebook/book_viewer_page.dart';
 export 'archives/mission/mission_chronology.dart';
 export 'archives/mission/create_mission_form.dart';
 export 'archives/mission/mission_menu.dart';
+export 'archives/mission/display_mission.dart';
 export 'archives/mission/mission_sheet.dart';
 export 'archives/archive_menu.dart';
 export 'archives/bestiary/bestiary_list.dart';

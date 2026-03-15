@@ -277,6 +277,15 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
                   )
                 : const Text('Créer le projet'),
           ),
+
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () =>
+                  Navigator.pushReplacementNamed(context, '/resDev'),
+              child: const Text('Retour'),
+            ),
+          ),
         ],
       ),
     );

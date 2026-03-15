@@ -205,6 +205,15 @@ class _ResDevProjectSheetPageState extends State<ResDevProjectSheetPage> {
             ),
           ],
           const SizedBox(height: 32),
+
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () =>
+                  Navigator.pushReplacementNamed(context, '/resDev'),
+              child: const Text('Retour'),
+            ),
+          ),
         ],
       ),
     );
