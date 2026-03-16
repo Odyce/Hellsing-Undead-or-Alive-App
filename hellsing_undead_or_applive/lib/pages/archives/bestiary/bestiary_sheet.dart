@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/pages/archives/widgets/field_notes_section.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class BestiarySheetPage extends StatefulWidget {
@@ -161,6 +162,10 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 32),
+
+            // ── Notes des agents ──────────────────────────────────────────────
+            FieldNotesSection(targetType: 'monster', targetId: monster.id),
             const SizedBox(height: 32),
 
             // ── Retour ────────────────────────────────────────────────────────

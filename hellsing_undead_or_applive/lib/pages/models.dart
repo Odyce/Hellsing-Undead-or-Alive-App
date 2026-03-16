@@ -28,4 +28,5 @@ export 'archives/resDev/res_dev_sheet.dart';
 export 'archives/resDev/create_res_dev_form.dart';
 export 'archives/resDev/res_dev_project_form.dart';
 export 'archives/resDev/res_dev_project_sheet.dart';
+export 'archives/widgets/field_notes_section.dart';
 export 'calendar/moon_calendar_page.dart';

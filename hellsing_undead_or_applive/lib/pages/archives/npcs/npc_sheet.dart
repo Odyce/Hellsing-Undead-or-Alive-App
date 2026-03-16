@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/pages/archives/widgets/field_notes_section.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class NpcSheetPage extends StatelessWidget {
@@ -101,6 +102,10 @@ class NpcSheetPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(pnj.description),
+            const SizedBox(height: 32),
+
+            // ── Notes des agents ──────────────────────────────────────────────
+            FieldNotesSection(targetType: 'npc', targetId: pnj.id),
             const SizedBox(height: 32),
 
             // ── Retour ────────────────────────────────────────────────────────
