@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 // Wrapper pour transporter docId + projet ensemble
 class _ProjectEntry {
@@ -91,14 +92,14 @@ class _ResDevListPageState extends State<ResDevListPage> {
   // ─── Navigation vers la fiche projet ─────────────────────────────────────────
   void _openProject(_ProjectEntry entry) {
     Navigator.of(context).pushNamed(
-      '/resDevProjectSheet',
+      Routes.resDevProjectSheet,
       arguments: {'project': entry.project, 'docId': entry.docId},
     );
   }
 
   // Navigue vers la fiche d'un item ResDev / ResDevWeapon
   void _openResDevItem(Object item) {
-    Navigator.of(context).pushNamed('/resDevSheet', arguments: item);
+    Navigator.of(context).pushNamed(Routes.resDevSheet, arguments: item);
   }
 
   // ─── Labels ───────────────────────────────────────────────────────────────────
@@ -125,14 +126,14 @@ class _ResDevListPageState extends State<ResDevListPage> {
         children: [
           FloatingActionButton.extended(
             heroTag: 'newProject',
-            onPressed: () => Navigator.of(context).pushNamed('/resDevProjectCreate'),
+            onPressed: () => Navigator.of(context).pushNamed(Routes.resDevProjectCreate),
             icon: const Icon(Icons.science_outlined),
             label: const Text('Nouveau projet'),
           ),
           const SizedBox(height: 10),
           FloatingActionButton.extended(
             heroTag: 'newResDev',
-            onPressed: () => Navigator.of(context).pushNamed('/resDevCreate'),
+            onPressed: () => Navigator.of(context).pushNamed(Routes.resDevCreate),
             icon: const Icon(Icons.build_outlined),
             label: const Text('Nouveau R&D'),
           ),
@@ -151,7 +152,7 @@ class _ResDevListPageState extends State<ResDevListPage> {
                     alignment: Alignment.centerLeft,
                     child: TextButton(
                       onPressed: () => Navigator.pushReplacementNamed(
-                          context, '/archives'),
+                          context, Routes.archives),
                       child: const Text('Retour'),
                     ),
                   ),

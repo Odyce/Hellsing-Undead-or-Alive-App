@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class ResDevSheetPage extends StatelessWidget {
   const ResDevSheetPage({super.key});
@@ -200,7 +201,7 @@ class ResDevSheetPage extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: () =>
-                    Navigator.pushReplacementNamed(context, '/resDev'),
+                    Navigator.pushReplacementNamed(context, Routes.resDev),
                 child: const Text('Retour'),
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class CreateNpcPage extends StatefulWidget {
   const CreateNpcPage({super.key});
@@ -116,7 +117,7 @@ class _CreateNpcPageState extends State<CreateNpcPage> {
       );
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/npcs');
+      Navigator.pushReplacementNamed(context, Routes.npcs);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -278,7 +279,7 @@ class _CreateNpcPageState extends State<CreateNpcPage> {
             alignment: Alignment.bottomLeft,
             child: TextButton(
               onPressed: () =>
-                  Navigator.pushReplacementNamed(context, '/npcs'),
+                  Navigator.pushReplacementNamed(context, Routes.npcs),
               child: const Text('Retour'),
             ),
           ),

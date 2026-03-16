@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class ArtefactListPage extends StatefulWidget {
   const ArtefactListPage({super.key});
@@ -90,7 +91,7 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
               child: Center(
                 child: ElevatedButton.icon(
                   onPressed: () =>
-                      Navigator.pushNamed(context, '/artefactCreate'),
+                      Navigator.pushNamed(context, Routes.artefactCreate),
                   icon: const Icon(Icons.add),
                   label: const Text('Nouvel artefact'),
                 ),
@@ -122,7 +123,7 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/archives'),
+                      Navigator.pushReplacementNamed(context, Routes.archives),
                   child: const Text('Retour'),
                 ),
               ),
@@ -166,7 +167,7 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
             return DataRow(
               onSelectChanged: (_) => Navigator.pushNamed(
                 context,
-                '/artefactSheet',
+                Routes.artefactSheet,
                 arguments: item,
               ),
               cells: [

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class AgentSheetPage extends StatelessWidget {
   final String agentDocId;
@@ -110,7 +111,7 @@ class AgentSheetPage extends StatelessWidget {
                   Align(
                     alignment: Alignment.bottomLeft,
                     child: TextButton(
-                      onPressed: () => Navigator.pushReplacementNamed(context, '/agentlist'),
+                      onPressed: () => Navigator.pushReplacementNamed(context, Routes.agentList),
                       child: const Text("Retour"),
                     ),
                   ),

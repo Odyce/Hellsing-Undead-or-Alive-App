@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class BestiaryListPage extends StatefulWidget {
   const BestiaryListPage({super.key});
@@ -94,7 +95,7 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
               child: Center(
                 child: ElevatedButton.icon(
                   onPressed: () =>
-                      Navigator.pushNamed(context, '/bestiaryCreate'),
+                      Navigator.pushNamed(context, Routes.bestiaryCreate),
                   icon: const Icon(Icons.add),
                   label: const Text('Nouvelle entrée'),
                 ),
@@ -126,7 +127,7 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/archives'),
+                      Navigator.pushReplacementNamed(context, Routes.archives),
                   child: const Text('Retour'),
                 ),
               ),

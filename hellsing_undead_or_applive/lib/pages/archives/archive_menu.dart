@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class ArchiveMenuPage extends StatelessWidget {
   const ArchiveMenuPage({super.key});
@@ -26,7 +27,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/missions');
+                  Navigator.pushReplacementNamed(context, Routes.missions);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -41,7 +42,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/bestiary');
+                  Navigator.pushReplacementNamed(context, Routes.bestiary);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -56,7 +57,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/artefacts');
+                  Navigator.pushReplacementNamed(context, Routes.artefacts);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -71,7 +72,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/npcs');
+                  Navigator.pushReplacementNamed(context, Routes.npcs);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -86,7 +87,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/resDev');
+                  Navigator.pushReplacementNamed(context, Routes.resDev);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -103,7 +104,7 @@ class ArchiveMenuPage extends StatelessWidget {
                 alignment: Alignment.bottomLeft,
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/home');
+                    Navigator.pushReplacementNamed(context, Routes.home);
                   },
                   child: const Text("Retour"),
                 ),

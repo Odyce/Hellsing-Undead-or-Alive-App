@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class NpcListPage extends StatefulWidget {
   const NpcListPage({super.key});
@@ -101,7 +102,7 @@ class _NpcListPageState extends State<NpcListPage> {
               child: Center(
                 child: ElevatedButton.icon(
                   onPressed: () =>
-                      Navigator.pushNamed(context, '/npcCreate'),
+                      Navigator.pushNamed(context, Routes.npcCreate),
                   icon: const Icon(Icons.add),
                   label: const Text('Nouveau PNJ'),
                 ),
@@ -133,7 +134,7 @@ class _NpcListPageState extends State<NpcListPage> {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/archives'),
+                      Navigator.pushReplacementNamed(context, Routes.archives),
                   child: const Text('Retour'),
                 ),
               ),
@@ -193,7 +194,7 @@ class _NpcListPageState extends State<NpcListPage> {
             return DataRow(
               onSelectChanged: (_) => Navigator.pushNamed(
                 context,
-                '/npcSheet',
+                Routes.npcSheet,
                 arguments: pnj,
               ),
               cells: [

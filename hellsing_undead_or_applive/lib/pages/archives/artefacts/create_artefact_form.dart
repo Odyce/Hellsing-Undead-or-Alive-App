@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class CreateArtefactPage extends StatefulWidget {
   const CreateArtefactPage({super.key});
@@ -198,7 +199,7 @@ class _CreateArtefactPageState extends State<CreateArtefactPage> {
       }
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/artefacts');
+      Navigator.pushReplacementNamed(context, Routes.artefacts);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -686,7 +687,7 @@ class _CreateArtefactPageState extends State<CreateArtefactPage> {
             alignment: Alignment.bottomLeft,
             child: TextButton(
               onPressed: () =>
-                  Navigator.pushReplacementNamed(context, '/artefacts'),
+                  Navigator.pushReplacementNamed(context, Routes.artefacts),
               child: const Text('Retour'),
             ),
           ),

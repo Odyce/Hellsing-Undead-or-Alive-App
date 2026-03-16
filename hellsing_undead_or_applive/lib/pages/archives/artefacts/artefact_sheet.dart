@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class ArtefactSheetPage extends StatelessWidget {
   const ArtefactSheetPage({super.key});
@@ -184,7 +185,7 @@ class ArtefactSheetPage extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: () =>
-                    Navigator.pushReplacementNamed(context, '/artefacts'),
+                    Navigator.pushReplacementNamed(context, Routes.artefacts),
                 child: const Text('Retour'),
               ),
             ),

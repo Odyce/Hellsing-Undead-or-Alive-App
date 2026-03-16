@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class BestiarySheetPage extends StatefulWidget {
   const BestiarySheetPage({super.key});
@@ -167,7 +168,7 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: () =>
-                    Navigator.pushReplacementNamed(context, '/bestiary'),
+                    Navigator.pushReplacementNamed(context, Routes.bestiary),
                 child: const Text('Retour'),
               ),
             ),

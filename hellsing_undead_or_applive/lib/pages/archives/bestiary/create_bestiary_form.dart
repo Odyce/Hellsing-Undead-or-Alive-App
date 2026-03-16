@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class CreateBestiaryPage extends StatefulWidget {
   const CreateBestiaryPage({super.key});
@@ -146,7 +147,7 @@ class _CreateBestiaryPageState extends State<CreateBestiaryPage> {
       );
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/bestiary');
+      Navigator.pushReplacementNamed(context, Routes.bestiary);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -392,7 +393,7 @@ class _CreateBestiaryPageState extends State<CreateBestiaryPage> {
             alignment: Alignment.bottomLeft,
             child: TextButton(
               onPressed: () =>
-                  Navigator.pushReplacementNamed(context, '/bestiary'),
+                  Navigator.pushReplacementNamed(context, Routes.bestiary),
               child: const Text('Retour'),
             ),
           ),

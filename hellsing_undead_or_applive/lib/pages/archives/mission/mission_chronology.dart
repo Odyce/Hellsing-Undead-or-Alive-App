@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class MissionChronologyPage extends StatefulWidget {
   const MissionChronologyPage({super.key});
@@ -113,7 +114,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/missions'),
+                      Navigator.pushReplacementNamed(context, Routes.missions),
                   child: const Text('Retour'),
                 ),
               ),
@@ -286,7 +287,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
       onTap: isCurrent
           ? () => Navigator.pushNamed(
                 context,
-                '/missionsheet',
+                Routes.missionSheet,
                 arguments: mission,
               )
           : null,

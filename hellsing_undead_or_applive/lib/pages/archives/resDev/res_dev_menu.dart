@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class ResDevMenuPage extends StatelessWidget {
   const ResDevMenuPage({super.key});
@@ -26,7 +27,7 @@ class ResDevMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/resDev');
+                  Navigator.pushReplacementNamed(context, Routes.resDev);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -41,7 +42,7 @@ class ResDevMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/resDevProjectCreate');
+                  Navigator.pushReplacementNamed(context, Routes.resDevProjectCreate);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -56,7 +57,7 @@ class ResDevMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/resDevCreate');
+                  Navigator.pushReplacementNamed(context, Routes.resDevCreate);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -73,7 +74,7 @@ class ResDevMenuPage extends StatelessWidget {
                 alignment: Alignment.bottomLeft,
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/archives');
+                    Navigator.pushReplacementNamed(context, Routes.archives);
                   },
                   child: const Text('Retour'),
                 ),

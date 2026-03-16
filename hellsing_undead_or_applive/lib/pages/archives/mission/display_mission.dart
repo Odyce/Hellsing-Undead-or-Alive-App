@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class DisplayMissionPage extends StatefulWidget {
   const DisplayMissionPage({super.key});
@@ -131,7 +132,7 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/missions'),
+                      Navigator.pushReplacementNamed(context, Routes.missions),
                   child: const Text('Retour'),
                 ),
               ),

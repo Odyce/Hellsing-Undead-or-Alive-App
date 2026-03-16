@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class CreateMissionPage extends StatefulWidget {
   const CreateMissionPage({super.key});
@@ -213,7 +214,7 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
       );
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/missions');
+      Navigator.pushReplacementNamed(context, Routes.missions);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -526,7 +527,7 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
             alignment: Alignment.bottomLeft,
             child: TextButton(
               onPressed: () =>
-                  Navigator.pushReplacementNamed(context, '/missions'),
+                  Navigator.pushReplacementNamed(context, Routes.missions),
               child: const Text('Retour'),
             ),
           ),

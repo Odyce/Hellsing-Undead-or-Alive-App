@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -188,7 +189,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
       );
 
       if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/agentlist'); // retour après création
+        Navigator.pushReplacementNamed(context, Routes.agentList); // retour après création
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -1045,7 +1046,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           Align(
             alignment: Alignment.bottomLeft,
             child: TextButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, '/agentlist'),
+              onPressed: () => Navigator.pushReplacementNamed(context, Routes.agentList),
               child: const Text("Retour"),
             ),
           ),

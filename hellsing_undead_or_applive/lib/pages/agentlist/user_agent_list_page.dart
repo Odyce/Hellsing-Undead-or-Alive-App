@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hellsing_undead_or_applive/pages/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class AgentsListPage extends StatelessWidget {
   const AgentsListPage({super.key});
@@ -64,7 +65,7 @@ class AgentsListPage extends StatelessWidget {
                       return Center(
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.pushReplacementNamed(context, '/agentcreate');
+                            Navigator.pushReplacementNamed(context, Routes.agentCreate);
                           },
                           child: const Text("Créer un nouvel agent"),
                         ),
@@ -156,7 +157,7 @@ class AgentsListPage extends StatelessWidget {
                 alignment: Alignment.bottomLeft,
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/home');
+                    Navigator.pushReplacementNamed(context, Routes.home);
                   },
                   child: const Text("Retour"),
                 ),

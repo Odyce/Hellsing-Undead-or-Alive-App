@@ -22,6 +22,7 @@ export 'archives/npcs/create_npc_form.dart';
 export 'archives/artefacts/artefact_list.dart';
 export 'archives/artefacts/artefact_sheet.dart';
 export 'archives/artefacts/create_artefact_form.dart';
+export 'archives/resDev/res_dev_menu.dart';
 export 'archives/resDev/res_dev_list.dart';
 export 'archives/resDev/res_dev_sheet.dart';
 export 'archives/resDev/create_res_dev_form.dart';

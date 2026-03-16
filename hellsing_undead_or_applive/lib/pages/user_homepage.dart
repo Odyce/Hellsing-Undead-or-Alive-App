@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -78,28 +79,28 @@ class HomePage extends StatelessWidget {
                         label: 'AgentList',
                         icon: Icons.grid_view,
                         onTap: () {
-                          Navigator.pushReplacementNamed(context, '/agentlist');
+                          Navigator.pushReplacementNamed(context, Routes.agentList);
                         },
                       ),
                       _HomeButton(
                         label: 'Livre de règles',
                         icon: Icons.person,
                         onTap: () {
-                          Navigator.pushReplacementNamed(context, '/rulebook');
+                          Navigator.pushReplacementNamed(context, Routes.rulebook);
                         },
                       ),
                       _HomeButton(
                         label: 'Calendrier',
                         icon: Icons.calendar_month,
                         onTap: () {
-                          Navigator.pushReplacementNamed(context, '/calendar');
+                          Navigator.pushReplacementNamed(context, Routes.calendar);
                         },
                       ),
                       _HomeButton(
                         label: 'Archives',
                         icon: Icons.info,
                         onTap: () {
-                          Navigator.pushReplacementNamed(context, '/archives');
+                          Navigator.pushReplacementNamed(context, Routes.archives);
                         },
                       ),
                     ],

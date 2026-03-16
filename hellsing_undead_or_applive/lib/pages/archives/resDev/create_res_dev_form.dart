@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class CreateResDevPage extends StatefulWidget {
   const CreateResDevPage({super.key});
@@ -183,7 +184,7 @@ class _CreateResDevPageState extends State<CreateResDevPage> {
       // Marquer le projet comme complété
       await _projectRepo.setCompleted(_selectedDocId!);
 
-      if (mounted) Navigator.of(context).pushReplacementNamed('/resDev');
+      if (mounted) Navigator.of(context).pushReplacementNamed(Routes.resDev);
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }
@@ -545,7 +546,7 @@ class _CreateResDevPageState extends State<CreateResDevPage> {
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: () =>
-                  Navigator.pushReplacementNamed(context, '/resDev'),
+                  Navigator.pushReplacementNamed(context, Routes.resDev),
               child: const Text('Retour'),
             ),
           ),

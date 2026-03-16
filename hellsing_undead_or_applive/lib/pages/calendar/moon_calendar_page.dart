@@ -3,6 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:apsl_sun_calc/apsl_sun_calc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hellsing_undead_or_applive/domain/archives/missions_model.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 enum MoonMajorPhase {
   newMoon,
@@ -298,7 +299,7 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
                     mission: mission,
                     onTap: () => Navigator.pushNamed(
                       context,
-                      '/missionsheet',
+                      Routes.missionSheet,
                       arguments: mission,
                     ),
                   );
@@ -311,7 +312,7 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
           Align(
             alignment: Alignment.bottomLeft,
             child: TextButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+              onPressed: () => Navigator.pushReplacementNamed(context, Routes.home),
               child: const Text("Retour"),
             ),
           ),

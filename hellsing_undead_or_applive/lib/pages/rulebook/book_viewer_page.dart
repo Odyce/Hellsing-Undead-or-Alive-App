@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:page_flip/page_flip.dart';
 
 import 'package:hellsing_undead_or_applive/pages/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class BookViewerPage extends StatefulWidget {
   const BookViewerPage({super.key});
@@ -87,7 +88,7 @@ class _BookViewerPageState extends State<BookViewerPage> {
             Align(
               alignment: Alignment.bottomLeft,
               child: TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                onPressed: () => Navigator.pushReplacementNamed(context, Routes.home),
                 child: const Text("Retour"),
               ),
             ),

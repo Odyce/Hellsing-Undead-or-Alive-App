@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class NpcSheetPage extends StatelessWidget {
   const NpcSheetPage({super.key});
@@ -107,7 +108,7 @@ class NpcSheetPage extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: () =>
-                    Navigator.pushReplacementNamed(context, '/npcs'),
+                    Navigator.pushReplacementNamed(context, Routes.npcs),
                 child: const Text('Retour'),
               ),
             ),
