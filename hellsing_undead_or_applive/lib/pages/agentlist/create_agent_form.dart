@@ -1,10 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/pages/agentlist/create_agent_inventory_form.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
-import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 
 /////////////////////////////////
@@ -112,95 +111,93 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
   String? _moneyError;
   bool _moneyValid = true;
   bool _canCreate = false;
-  bool _loading = false;
-  String? _error;
 
-  final AgentRepository _repository = AgentRepository();
+  ///////////////////////////////////////////////
+  // Navigation vers le formulaire inventaire //
+  ///////////////////////////////////////////////
+  void _goToInventoryForm() {
+    // Déclenche toutes les validations pour s'assurer que les messages sont à jour
+    _recomputePools();
+    _validatePowerScore();
+    _validateClassBonuses();
+    _validateSkills();
+    _validateMoney();
 
-  ///////////////////////////
-  // Création du chasseur  //
-  ///////////////////////////
-  Future<void> _createAgent() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    final bool allValid = _canCreate &&
+        _powerScoreValid &&
+        _classBonusValid &&
+        _skillsValid &&
+        _moneyValid &&
+        _remainingPc >= 0;
 
-    try {
-      String? imageUrl;
-
-      if (_selectedImage != null) {
-        imageUrl = await _uploadToCloudinary(_selectedImage!);
-      }
-
-      List<Contact> contactsToSend;
-
-      if (_contacts.isEmpty) {
-        contactsToSend = [
-          Contact(
-            id: "-66",
-            name: "Loki",
-            description: "Tu ne vois pas ses yeux",
-            contactPointsValue: 66,
+    if (!allValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Le formulaire contient des erreurs. Vérifie les champs en rouge.',
           ),
-        ];
-      } else {
-        contactsToSend = List.generate(
-          _contacts.length,
-          (index) {
-            final c = _contacts[index];
-            return Contact(
-              id: index.toString(),
-              name: c.nameCtrl.text,
-              description: c.descCtrl.text,
-              contactPointsValue: c.cost,
-            );
-          },
-        );
-      }
-
-      await _repository.createAgent(
-        name: _nameController.text,
-        background: _backgroundController.text,
-        state: _stateController.text,
-        note: _noteController.text,
-        profilPicturePath: imageUrl ?? '',
-        attributes: [
-          _parseInt(_physiqueCtrl),
-          _parseInt(_mentalCtrl),
-          _parseInt(_relationnelCtrl),
-        ],
-        pools: [_pv, _pe, _pm],
-        maxPools: [_pv, _pe, _pm],
-        race: _selectedRace,
-        powerScore: _selectedRace.name == 'Humain' ? 0 : int.tryParse(_powerScoreCtrl.text) ?? 0,
-        agentClass: _selectedClass!,
-        classBonuses: _classBonuses,
-        skills: _selectedSkills.map((s) => s!).toList() + _selectedClass!.freeSkill.map((s) => s).toList(),
-        bagSlots: _initBagSlots(),
-        bankSlots: _initBankSlots(),
-        muniSlots: _initMuniSlots(),
-        weaponSlots: _initWeaponSlots(),
-        money: _parseInt(_moneyCtrl),
-        missions: _initMissions(),
-        level: 1,
-        pc: _pc,
-        contacts: contactsToSend,
+          backgroundColor: Colors.red,
+        ),
       );
-
-      if (!mounted) return;
-        Navigator.pushReplacementNamed(context, Routes.agentList); // retour après création
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-        });
-      }
+      return;
     }
+
+    List<Contact> contactsToSend;
+
+    if (_contacts.isEmpty) {
+      contactsToSend = [
+        Contact(
+          id: "-66",
+          name: "Loki",
+          description: "Tu ne vois pas ses yeux",
+          contactPointsValue: 66,
+        ),
+      ];
+    } else {
+      contactsToSend = List.generate(
+        _contacts.length,
+        (index) {
+          final c = _contacts[index];
+          return Contact(
+            id: index.toString(),
+            name: c.nameCtrl.text,
+            description: c.descCtrl.text,
+            contactPointsValue: c.cost,
+          );
+        },
+      );
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreateAgentInventoryPage(
+          name: _nameController.text,
+          background: _backgroundController.text,
+          state: _stateController.text,
+          note: _noteController.text,
+          selectedImage: _selectedImage,
+          attributes: [
+            _parseInt(_physiqueCtrl),
+            _parseInt(_mentalCtrl),
+            _parseInt(_relationnelCtrl),
+          ],
+          pools: [_pv, _pe, _pm],
+          maxPools: [_pv, _pe, _pm],
+          race: _selectedRace,
+          powerScore: _selectedRace.name == 'Humain'
+              ? 0
+              : int.tryParse(_powerScoreCtrl.text) ?? 0,
+          agentClass: _selectedClass!,
+          classBonuses: _classBonuses,
+          skills: _selectedSkills.map((s) => s!).toList() +
+              _selectedClass!.freeSkill.map((s) => s).toList(),
+          money: _parseInt(_moneyCtrl),
+          pc: _pc,
+          contacts: contactsToSend,
+        ),
+      ),
+    );
   }
 
   //////////////////////
@@ -218,34 +215,6 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
         _selectedImage = File(picked.path);
       });
     }
-  }
-
-  Future<String> _uploadToCloudinary(File image) async {
-    const cloudName = 'hellsingundeadapp';
-    const uploadPreset = 'Agent_profiles-unsigned';
-
-    final uri = Uri.parse(
-      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
-    );
-
-    final request = MultipartRequest('POST', uri)
-      ..fields['upload_preset'] = uploadPreset
-      ..files.add(
-        await MultipartFile.fromPath('file', image.path),
-      );
-
-    final response = await request.send();
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Erreur upload image Cloudinary: ${response.statusCode}',
-      );
-    }
-
-    final body = await response.stream.bytesToString();
-    final data = jsonDecode(body);
-
-    return data['secure_url'];
   }
 
   ///////////////////////
@@ -446,63 +415,6 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
     setState(() {});
   }
 
-  ////////////////////////////////////////
-  // Gestion temporaire de l'inventaire //
-  // A REFAIRE AU PROPRE PLUS TARD !!!! //
-  ////////////////////////////////////////
-  List<BagSlot> _initBagSlots() {
-    return List.generate(
-      10,
-      (index) => BagSlot(
-        id: index,
-        empty: true,
-      ),
-    );
-  }
-
-  List<BankSlot> _initBankSlots() {
-    return List.generate(
-      50,
-      (index) => BankSlot(
-        id: index,
-        empty: true,
-      ),
-    );
-  }
-
-  List<MuniSlot> _initMuniSlots() {
-    if (_selectedClass == null) return [];
-
-    return List.generate(
-      _selectedClass!.muniSlotNumber,
-      (index) => MuniSlot(
-        id: index,
-        empty: true,
-        numberLeft: 0,
-      ),
-    );
-  }
-
-  List<WeaponSlot> _initWeaponSlots() {
-    return [
-      WeaponSlot.empty(0),
-    ];
-  }
-
-  /////////////////////////////
-  // Gestion des compétences //
-  /////////////////////////////
-  List<MissionRecord> _initMissions() {
-    return [
-      MissionRecord(
-        id: -66, 
-        title: "Foundation Training", 
-        description: "Fausse mission d'entraînement pour que la liste ne soit pas vide, ne doit pas être visible.", 
-        completedAt: null,
-      ),
-    ];
-  }
-
   //////////////////////////
   // Gestion des contacts //
   //////////////////////////
@@ -534,8 +446,6 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
         })
         .toList();
   }
-
-  late final bool canCreate = _canCreate && _powerScoreValid && _classBonusValid && _skillsValid && _moneyValid && _remainingPc >= 0;
 
   @override
   void dispose() {
@@ -1028,19 +938,12 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           //Fin du formulaire
           // late final bool canCreate = _canCreate && _powerScoreValid && _classBonusValid && _skillsValid && _moneyValid && _remainingPc >= 0;
           const SizedBox(height: 24),
-          if (_error != null)
-            Text(
-              _error!,
-              style: const TextStyle(color: Colors.red),
-            ),
           const Spacer(),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: (canCreate || _loading) ? null : _createAgent,
-              child: _loading
-                  ? const CircularProgressIndicator()
-                  : const Text('Créer'),
+              onPressed: _goToInventoryForm,
+              child: const Text('Suivant'),
             ),
           ),
           Align(

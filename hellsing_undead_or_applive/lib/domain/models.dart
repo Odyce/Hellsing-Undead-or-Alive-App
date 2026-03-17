@@ -6,6 +6,7 @@ export 'agents/agent.dart';
 export 'agents/agent_repository.dart';
 export 'agents/agent_bonus_data.dart';
 export 'inventory/weapons_data_hall.dart';
+export 'inventory/inventory_data_hall.dart';
 export 'inventory/inventory_slot.dart';
 export 'inventory/inventory_model.dart';
 export 'inventory/weapons_model.dart';
