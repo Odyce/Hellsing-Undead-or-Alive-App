@@ -61,49 +61,73 @@ class AgentSheetPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: CircleAvatar(
-                      radius: 52,
-                      backgroundImage: hasPic ? NetworkImage(pic) : null,
-                      child: hasPic ? null : const Icon(Icons.person, size: 42),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Center(
-                    child: Text(
-                      agent.name,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                  // --- En-tête : infos à gauche, photo à droite ---
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Infos principales
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              agent.name,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text("État : ${agent.state}"),
+                            Text("Note : ${agent.note}"),
+                            Text("Race : ${agent.race.name}"),
+                            if (agent.powerScore != null)
+                              Text("Power Score : ${agent.powerScore}"),
+                            Text("Classe : ${agent.agentClass.name}"),
+                          ],
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
+                      const SizedBox(width: 16),
+                      // Cadre photo de profil
+                      Container(
+                        width: 100,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400, width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: hasPic
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.network(pic, fit: BoxFit.cover),
+                              )
+                            : const Center(
+                                child: Icon(Icons.person, size: 42, color: Colors.grey),
+                              ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 20),
 
-                  const Text(
-                    "Background",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  // --- Attributs ---
+                  Row(
+                    children: [
+                      _attributeCell("Physique", agent.attributes[0]),
+                      _attributeCell("Mental", agent.attributes[1]),
+                      _attributeCell("Social", agent.attributes[2]),
+                    ],
                   ),
-                  const SizedBox(height: 8),
 
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          agent.background,
-                          style: const TextStyle(fontSize: 15),
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 4),
+
+                  // --- Pools ---
+                  Row(
+                    children: [
+                      _poolCell("PV", agent.pools[0], agent.maxPools[0]),
+                      _poolCell("PM", agent.pools[2], agent.maxPools[2]),
+                      _poolCell("PE", agent.pools[1], agent.maxPools[1]),
+                    ],
                   ),
 
                   const SizedBox(height: 12),
@@ -119,6 +143,28 @@ class AgentSheetPage extends StatelessWidget {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _attributeCell(String label, int value) {
+    return Expanded(
+      child: Center(
+        child: Text(
+          "$label : $value",
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
+  Widget _poolCell(String label, int current, int max) {
+    return Expanded(
+      child: Center(
+        child: Text(
+          "$label : $current / $max",
+          style: const TextStyle(fontSize: 13),
         ),
       ),
     );
