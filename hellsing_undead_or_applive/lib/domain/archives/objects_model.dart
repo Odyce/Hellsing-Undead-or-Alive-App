@@ -75,13 +75,13 @@ class Artefacts {
 
   factory Artefacts.fromMap(Map<String, dynamic> map) {
     return Artefacts(
-      id: map["id"],
-      name: map["name"],
-      description: map["description"],
+      id: (map["id"] as num?)?.toInt() ?? 0,
+      name: map["name"] ?? '',
+      description: map["description"] ?? '',
       picturePath: map["picturePath"],
-      effect: map["effect"],
-      limitedUses: map["limitedUses"],
-      usesLeft: map["usesLeft"],
+      effect: map["effect"] ?? '',
+      limitedUses: map["limitedUses"] ?? false,
+      usesLeft: (map["usesLeft"] as num?)?.toInt(),
       owner: map["owner"] != null
           ? (map["owner"] as List).map((a) => Agent.fromMap(a)).toList()
           : null,
@@ -115,13 +115,13 @@ class Artefacts {
 
   factory Artefacts.fromJson(Map<String, dynamic> json) {
     return Artefacts(
-      id: json["id"],
-      name: json["name"],
-      description: json["description"],
+      id: (json["id"] as num?)?.toInt() ?? 0,
+      name: json["name"] ?? '',
+      description: json["description"] ?? '',
       picturePath: json["picturePath"],
-      effect: json["effect"],
-      limitedUses: json["limitedUses"],
-      usesLeft: json["usesLeft"],
+      effect: json["effect"] ?? '',
+      limitedUses: json["limitedUses"] ?? false,
+      usesLeft: (json["usesLeft"] as num?)?.toInt(),
       owner: json["owner"] != null
           ? (json["owner"] as List).map((a) => Agent.fromJson(a)).toList()
           : null,
@@ -275,12 +275,12 @@ class ArtefactWeapon {
 
   factory ArtefactWeapon.fromMap(Map<String, dynamic> map) {
     return ArtefactWeapon(
-      id: map["id"],
-      name: map["name"],
-      description: map["description"],
+      id: (map["id"] as num?)?.toInt() ?? 0,
+      name: map["name"] ?? '',
+      description: map["description"] ?? '',
       picturePath: map["picturePath"],
-      damage: map["damage"],
-      feature: map["feature"],
+      damage: map["damage"] ?? '',
+      feature: map["feature"] ?? '',
       type: Affinities.values.byName(map["type"]),
       subType: SubAffinities.values.byName(map["subType"]),
       effect: (map["effect"] as List).map((e) => Effect.values.byName(e)).toList(),
@@ -343,12 +343,12 @@ class ArtefactWeapon {
 
   factory ArtefactWeapon.fromJson(Map<String, dynamic> json) {
     return ArtefactWeapon(
-      id: json["id"],
-      name: json["name"],
-      description: json["description"],
+      id: (json["id"] as num?)?.toInt() ?? 0,
+      name: json["name"] ?? '',
+      description: json["description"] ?? '',
       picturePath: json["picturePath"],
-      damage: json["damage"],
-      feature: json["feature"],
+      damage: json["damage"] ?? '',
+      feature: json["feature"] ?? '',
       type: Affinities.values.byName(json["type"]),
       subType: SubAffinities.values.byName(json["subType"]),
       effect: (json["effect"] as List).map((e) => Effect.values.byName(e)).toList(),

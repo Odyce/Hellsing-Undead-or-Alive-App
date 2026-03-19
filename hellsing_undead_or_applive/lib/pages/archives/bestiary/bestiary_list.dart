@@ -179,7 +179,13 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
                 ? monster.illustrationPaths!.first
                 : null;
 
-            return DataRow(cells: [
+            return DataRow(
+              onSelectChanged: (_) => Navigator.pushNamed(
+                context,
+                Routes.bestiarySheet,
+                arguments: monster,
+              ),
+              cells: [
               // ── Race ──────────────────────────────────────────────────────
               DataCell(
                 ConstrainedBox(

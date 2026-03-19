@@ -179,11 +179,11 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      setState(() => _error = _friendlySignUpError(e));
+      _safeSetState(() => _error = _friendlySignUpError(e));
     } catch (e) {
-      setState(() => _error = e.toString());
+      _safeSetState(() => _error = e.toString());
     } finally {
-      setState(() => _loading = false);
+      _safeSetState(() => _loading = false);
     }
   }
 

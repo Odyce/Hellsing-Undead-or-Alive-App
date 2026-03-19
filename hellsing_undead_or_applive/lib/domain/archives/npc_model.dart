@@ -180,19 +180,19 @@ class Monster {
 
   factory Monster.fromMap(Map<String, dynamic> map) {
     return Monster(
-      id: map["id"],
-      name: map["name"],
-      type: Entitype.values.byName(map["type"]),
-      race: map["race"],
+      id: (map["id"] as num?)?.toInt() ?? 0,
+      name: map["name"] ?? '',
+      type: Entitype.values.byName(map["type"] ?? 'human'),
+      race: map["race"] ?? '',
       illustrationPaths: map["illustrationPaths"] != null
           ? List<String>.from(map["illustrationPaths"])
           : null,
-      description: map["description"],
-      skills: map["skills"],
-      weakness: map["weakness"],
-      location: map["location"],
-      hp: map["hp"],
-      hpScale: List<int>.from(map["hpScale"]),
+      description: map["description"] ?? '',
+      skills: map["skills"] ?? '',
+      weakness: map["weakness"] ?? '',
+      location: map["location"] ?? '',
+      hp: (map["hp"] as num?)?.toInt() ?? 0,
+      hpScale: map["hpScale"] != null ? List<int>.from(map["hpScale"]) : [],
     );
   }
 
@@ -217,19 +217,19 @@ class Monster {
 
   factory Monster.fromJson(Map<String, dynamic> json) {
     return Monster(
-      id: json["id"],
-      name: json["name"],
-      type: Entitype.values.byName(json["type"]),
-      race: json["race"],
+      id: (json["id"] as num?)?.toInt() ?? 0,
+      name: json["name"] ?? '',
+      type: Entitype.values.byName(json["type"] ?? 'human'),
+      race: json["race"] ?? '',
       illustrationPaths: json["illustrationPaths"] != null
           ? List<String>.from(json["illustrationPaths"])
           : null,
-      description: json["description"],
-      skills: json["skills"],
-      weakness: json["weakness"],
-      location: json["location"],
-      hp: json["hp"],
-      hpScale: List<int>.from(json["hpScale"]),
+      description: json["description"] ?? '',
+      skills: json["skills"] ?? '',
+      weakness: json["weakness"] ?? '',
+      location: json["location"] ?? '',
+      hp: (json["hp"] as num?)?.toInt() ?? 0,
+      hpScale: json["hpScale"] != null ? List<int>.from(json["hpScale"]) : [],
     );
   }
 }

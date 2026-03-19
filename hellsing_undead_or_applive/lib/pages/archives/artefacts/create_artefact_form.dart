@@ -134,7 +134,7 @@ class _CreateArtefactPageState extends State<CreateArtefactPage> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _dateRetrievedAt ?? DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime(1800),
       lastDate: DateTime(2100),
     );
     if (picked != null) setState(() => _dateRetrievedAt = picked);
