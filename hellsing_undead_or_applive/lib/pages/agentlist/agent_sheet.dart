@@ -2,14 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class AgentSheetPage extends StatefulWidget {
   final String agentDocId;
+  final String? ownerUid; // Si null, utilise l'utilisateur courant
 
   const AgentSheetPage({
     super.key,
     required this.agentDocId,
+    this.ownerUid,
   });
 
   @override
@@ -173,9 +176,10 @@ class _AgentSheetPageState extends State<AgentSheetPage>
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final uid = widget.ownerUid ?? user.uid;
     final agentRef = FirebaseFirestore.instance
         .collection('users')
-        .doc(user.uid)
+        .doc(uid)
         .collection('agents')
         .doc(widget.agentDocId);
 
@@ -199,9 +203,10 @@ class _AgentSheetPageState extends State<AgentSheetPage>
       );
     }
 
+    final uid = widget.ownerUid ?? user.uid;
     final agentRef = FirebaseFirestore.instance
         .collection('users')
-        .doc(user.uid)
+        .doc(uid)
         .collection('agents')
         .doc(widget.agentDocId);
 
@@ -305,6 +310,23 @@ class _AgentSheetPageState extends State<AgentSheetPage>
                                       );
                                     },
                                   ),
+                                  if (agent.secondClass != null) ...[
+                                    const SizedBox(height: 8),
+                                    Text("Classe secondaire : ${agent.secondClass!.name}"),
+                                    ...List.generate(
+                                      agent.secondClass!.classBonus.length,
+                                      (i) {
+                                        final val = i < agent.secondClassBonuses.length ? agent.secondClassBonuses[i] : 0;
+                                        return Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text("${agent.secondClass!.classBonus[i]} : $val / 6"),
+                                            _diceButton(context, maxValue: 6, threshold: val),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -436,7 +458,11 @@ class _AgentSheetPageState extends State<AgentSheetPage>
                     onMoveBankToOrigin: _moveBankToOrigin,
                   ),
                   // -- Missions --
-                  _MissionsSection(agent: agent),
+                  _MissionsSection(
+                    agent: agent,
+                    agentDocId: widget.agentDocId,
+                    ownerUid: uid,
+                  ),
                   // -- Lore --
                   _LoreSection(agent: agent),
                 ],
@@ -518,7 +544,7 @@ class _InventorySection extends StatefulWidget {
   final void Function(int) onMoveBagToBank;
   final void Function(int) onMoveBankToOrigin;
 
-  _InventorySection({
+  const _InventorySection({
     required this.agent,
     required this.weaponSlots,
     required this.muniSlots,
@@ -986,8 +1012,14 @@ Widget _diceButton(BuildContext context,
 // ---------------------------------------------------------------------------
 class _MissionsSection extends StatelessWidget {
   final Agent agent;
+  final String agentDocId;
+  final String ownerUid;
 
-  const _MissionsSection({required this.agent});
+  const _MissionsSection({
+    required this.agent,
+    required this.agentDocId,
+    required this.ownerUid,
+  });
 
   // Capacité de chaque sous-section (label, nb de missions max)
   static const List<(String, int)> _sections = [
@@ -1000,44 +1032,115 @@ class _MissionsSection extends StatelessWidget {
     ('Niveau 7', 8),
     ('Niveau 8', 9),
     ('Niveau 9', 10),
-    ('Niveau Légendaire 1', 10),
-    ('Niveau Légendaire 2', 10),
-    ('Niveau Légendaire 3', 10),
-    ('Niveau Légendaire 4', 10),
-    ('Niveau Légendaire 5', 10),
-    ('Niveau Légendaire 6', 10),
-    ('Niveau Légendaire 7', 10),
-    ('Niveau Légendaire 8', 10),
-    ('Niveau Légendaire 9', 10),
-    ('Niveau Légendaire 10', 10),
-    ('Niveau Légendaire 11', 10),
-    ('Niveau Légendaire 12', 10),
-    ('Niveau Légendaire 13', 10),
-    ('Niveau Légendaire 14', 10),
-    ('Niveau Légendaire 15', 10),
-    ('Niveau Légendaire 16', 10),
-    ('Niveau Légendaire 17', 10),
-    ('Niveau Légendaire 18', 10),
-    ('Niveau Légendaire 19', 10),
-    ('Niveau Légendaire 20', 10),
-    ('Niveau Légendaire 21', 10),
-    ('Niveau Légendaire 22', 10),
-    ('Niveau Légendaire 23', 10),
-    ('Niveau Légendaire 24', 10),
-    ('Niveau Légendaire 25', 10),
-    ('Niveau Légendaire 26', 10),
-    ('Niveau Légendaire 27', 10),
-    ('Niveau Légendaire 28', 10),
-    ('Niveau Légendaire 29', 10),
-    ('Niveau Légendaire 30', 10),
-    ('Niveau Légendaire 31', 10),
-    ('Niveau Légendaire 32', 10),
-    ('Niveau Légendaire 33', 10),
+    ('Niveau 10', 11),
+    ('Niveau Légendaire 1', 7),
+    ('Niveau Légendaire 2', 7),
+    ('Niveau Légendaire 3', 7),
+    ('Niveau Légendaire 4', 7),
+    ('Niveau Légendaire 5', 7),
+    ('Niveau Légendaire 6', 7),
+    ('Niveau Légendaire 7', 7),
+    ('Niveau Légendaire 8', 7),
+    ('Niveau Légendaire 9', 7),
+    ('Niveau Légendaire 10', 7),
+    ('Niveau Légendaire 11', 7),
+    ('Niveau Légendaire 12', 7),
+    ('Niveau Légendaire 13', 7),
+    ('Niveau Légendaire 14', 7),
+    ('Niveau Légendaire 15', 7),
+    ('Niveau Légendaire 16', 7),
+    ('Niveau Légendaire 17', 7),
+    ('Niveau Légendaire 18', 7),
+    ('Niveau Légendaire 19', 7),
+    ('Niveau Légendaire 20', 7),
+    ('Niveau Légendaire 21', 7),
+    ('Niveau Légendaire 22', 7),
+    ('Niveau Légendaire 23', 7),
+    ('Niveau Légendaire 24', 7),
+    ('Niveau Légendaire 25', 7),
+    ('Niveau Légendaire 26', 7),
+    ('Niveau Légendaire 27', 7),
+    ('Niveau Légendaire 28', 7),
+    ('Niveau Légendaire 29', 7),
+    ('Niveau Légendaire 30', 7),
+    ('Niveau Légendaire 31', 7),
+    ('Niveau Légendaire 32', 7),
+    ('Niveau Légendaire 33', 7),
   ];
+
+  /// Dialog temporaire pour ajouter une mission depuis les archives.
+  // TODO: Supprimer cette feature temporaire quand le vrai système sera en place
+  Future<void> _showAddMissionDialog(BuildContext context) async {
+    final missionsSnap = await FirebaseFirestore.instance
+        .collection('common')
+        .doc('archives')
+        .collection('missions')
+        .get();
+
+    final archiveMissions = missionsSnap.docs
+        .map((doc) => Mission.fromMap(doc.data()))
+        .toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
+
+    if (!context.mounted) return;
+
+    final selected = await showDialog<Mission>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Ajouter une mission'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: ListView.builder(
+              itemCount: archiveMissions.length,
+              itemBuilder: (_, i) {
+                final m = archiveMissions[i];
+                return ListTile(
+                  title: Text(m.title),
+                  subtitle: Text('ID: ${m.id}'),
+                  onTap: () => Navigator.pop(ctx, m),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selected == null || !context.mounted) return;
+
+    final record = MissionRecord(
+      id: selected.id,
+      title: selected.title,
+      description: selected.descriptionIntro,
+      completedAt: selected.completedAt ?? DateTime.now(),
+    );
+
+    final agentRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(ownerUid)
+        .collection('agents')
+        .doc(agentDocId);
+
+    final newMissions = [
+      ...agent.missions.map((m) => m.toMap()),
+      record.toMap(),
+    ];
+
+    await agentRef.update({'missions': newMissions});
+  }
 
   @override
   Widget build(BuildContext context) {
-    final missions = agent.missions;
+    // Filtrer les MissionRecord avec id -66
+    final missions = agent.missions.where((m) => m.id != -66).toList();
 
     // Construire les sous-sections visibles
     final tiles = <Widget>[];
@@ -1060,17 +1163,65 @@ class _MissionsSection extends StatelessWidget {
       offset += capacity;
     }
 
+    // TODO: Enlever le level up pour non-propriétaire plus tard
+    final levelUps = availableLevelUps(agent);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // --- Niveau de l'agent ---
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Text(
-            "Niveau : ${agent.level}",
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          child: Row(
+            children: [
+              Text(
+                "Niveau : ${agent.level}",
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              // TODO: Supprimer ce bouton temporaire
+              TextButton.icon(
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Ajouter une mission'),
+                onPressed: () => _showAddMissionDialog(context),
+              ),
+            ],
           ),
         ),
+        // --- Boutons de montée de niveau ---
+        if (levelUps.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: levelUps.map((lvl) {
+                return ElevatedButton.icon(
+                  icon: const Icon(Icons.arrow_upward),
+                  label: Text('Passer au niveau $lvl'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: lvl >= 11
+                        ? Colors.deepPurple
+                        : Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LevelUpPage(
+                          agent: agent,
+                          agentDocId: agentDocId,
+                          ownerUid: ownerUid,
+                          targetLevel: lvl,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          ),
         // --- Sous-sections ---
         if (missions.isEmpty)
           const Center(child: Padding(

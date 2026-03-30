@@ -176,6 +176,116 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
     }
   }
 
+  void _showMonthYearPicker(BuildContext context) {
+    int pickedYear = _focusedDay.year;
+    int pickedMonth = _focusedDay.month;
+
+    const months = [
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Text('Aller à…'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Sélecteur d'année
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () =>
+                            setDialogState(() => pickedYear--),
+                      ),
+                      Text(
+                        '$pickedYear',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () =>
+                            setDialogState(() => pickedYear++),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Grille des mois
+                  SizedBox(
+                    width: 280,
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: 2.2,
+                      children: List.generate(12, (i) {
+                        final isSelected = i + 1 == pickedMonth;
+                        return Material(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () =>
+                                setDialogState(() => pickedMonth = i + 1),
+                            child: Center(
+                              child: Text(
+                                months[i],
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isSelected
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Annuler'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    setState(() {
+                      _focusedDay = DateTime.utc(pickedYear, pickedMonth, 1);
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Valider'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedMissions =
@@ -242,6 +352,26 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
               },
 
               calendarBuilders: CalendarBuilders(
+                headerTitleBuilder: (context, day) {
+                  const months = [
+                    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+                  ];
+                  return GestureDetector(
+                    onTap: () => _showMonthYearPicker(context),
+                    child: Center(
+                      child: Text(
+                        '${months[day.month - 1]} ${day.year}',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+
                 defaultBuilder: (context, day, focusedDay) {
                   final transition = _transitionPhaseForDay(day);
                   return _DayCell(

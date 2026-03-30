@@ -22,7 +22,7 @@ void showDiceThrow(
     // 66 : toujours prioritaire
     message = "Dommage :)";
     messageColor = Colors.red;
-  } else if (maxValue == 100 && result < 5) {
+  } else if (maxValue == 100 && result < 6) {
     message = "Réussite Critique";
     messageColor = Colors.green;
   } else if (maxValue == 100 && result > 95) {
@@ -30,7 +30,7 @@ void showDiceThrow(
     messageColor = Colors.red;
   } else if (maxValue == 100 && result >= 5 && result * 2 <= threshold) {
     // result <= moitié du seuil (comparaison entière : result*2 <= threshold)
-    message = "Inesquivalbe";
+    message = "Inesquivable";
     messageColor = Colors.green;
   } else if (result <= threshold) {
     message = "Réussite";

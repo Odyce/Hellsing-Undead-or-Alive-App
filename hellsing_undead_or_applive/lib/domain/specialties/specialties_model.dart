@@ -143,7 +143,29 @@ class Skill {
   }
 }
 
-enum Affinities { firearm, explosive, oneHandBlade, twoHandBlade, bow, throwable, none, choiceNonExplosive}
+enum Affinities {
+  firearm,
+  explosive,
+  oneHandBlade,
+  twoHandBlade,
+  bow,
+  throwable,
+  none,
+  choiceNonExplosive;
+
+  String get label {
+    switch (this) {
+      case Affinities.firearm:            return 'Affinité Armes à Feu';
+      case Affinities.explosive:          return 'Affinité Explosifs';
+      case Affinities.oneHandBlade:       return 'Affinité Arme à Une Main';
+      case Affinities.twoHandBlade:       return 'Affinité Arme à Deux Mains';
+      case Affinities.bow:                return 'Affinité Archerie';
+      case Affinities.throwable:          return 'Affinité Armes de Jets';
+      case Affinities.none:               return 'Aucune Affinité';
+      case Affinities.choiceNonExplosive: return 'Affinité au choix, sauf Explosifs';
+    }
+  }
+}
 
 class AgentClass {
   final int id;

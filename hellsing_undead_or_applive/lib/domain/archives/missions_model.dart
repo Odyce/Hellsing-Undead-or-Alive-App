@@ -3,7 +3,7 @@ import 'package:hellsing_undead_or_applive/domain/models.dart';
 
 enum Difficulty { basse, moyenne, haute, inconnu, tresHaute }
 
-enum CladName { osiris, blackLotus, pennyDreadful }
+enum CladeName { origins, western, beginning, unNeufTroisZero, arthur, osiris, blackOrchid, pennyDreadful }
 
 class Mission {
   final int id;
@@ -13,14 +13,16 @@ class Mission {
   final String? descriptionOutro;
   final String? illustrationPath;
   final Difficulty difficulty;
-  final CladName clad;
+  final CladeName clade;
   final DateTime postedAt;
   final DateTime? playedAt;
   final DateTime? completedAt;
   final List<Agent>? agentInvolved;
   final List<PNJ>? pnjInvolved;
   final List<Monster>? monsterInvolved;
-  final int bounty;
+  final int? bounty;
+  final int bountyMin;
+  final int bountyMax;
   final List<String>? reportPaths;
   final List<Agent>? agentDeceased;
   final bool urgent;
@@ -33,14 +35,16 @@ class Mission {
     this.descriptionOutro,
     this.illustrationPath,
     required this.difficulty,
-    required this.clad,
+    required this.clade,
     required this.postedAt,
     this.playedAt,
     this.completedAt,
     this.agentInvolved,
     this.pnjInvolved,
     this.monsterInvolved,
-    required this.bounty,
+    this.bounty,
+    required this.bountyMin,
+    required this.bountyMax,
     this.reportPaths,
     this.agentDeceased,
     required this.urgent,
@@ -57,7 +61,7 @@ class Mission {
     String? descriptionOutro,
     String? illustrationPath,
     Difficulty? difficulty,
-    CladName? clad,
+    CladeName? clade,
     DateTime? postedAt,
     DateTime? playedAt,
     DateTime? completedAt,
@@ -65,6 +69,8 @@ class Mission {
     List<PNJ>? pnjInvolved,
     List<Monster>? monsterInvolved,
     int? bounty,
+    int? bountyMin,
+    int? bountyMax,
     List<String>? reportPaths,
     List<Agent>? agentDeceased,
     bool? urgent,
@@ -77,7 +83,7 @@ class Mission {
       descriptionOutro: descriptionOutro ?? this.descriptionOutro,
       illustrationPath: illustrationPath ?? this.illustrationPath,
       difficulty: difficulty ?? this.difficulty,
-      clad: clad ?? this.clad,
+      clade: clade ?? this.clade,
       postedAt: postedAt ?? this.postedAt,
       playedAt: playedAt ?? this.playedAt,
       completedAt: completedAt ?? this.completedAt,
@@ -85,6 +91,8 @@ class Mission {
       pnjInvolved: pnjInvolved ?? this.pnjInvolved,
       monsterInvolved: monsterInvolved ?? this.monsterInvolved,
       bounty: bounty ?? this.bounty,
+      bountyMin: bountyMin ?? this.bountyMin,
+      bountyMax: bountyMax ?? this.bountyMax,
       reportPaths: reportPaths ?? this.reportPaths,
       agentDeceased: agentDeceased ?? this.agentDeceased,
       urgent: urgent ?? this.urgent,
@@ -103,7 +111,7 @@ class Mission {
       "descriptionOutro": descriptionOutro,
       "illustrationPath": illustrationPath,
       "difficulty": difficulty.name,
-      "clad": clad.name,
+      "clade": clade.name,
       "postedAt": Timestamp.fromDate(postedAt),
       "playedAt": playedAt != null ? Timestamp.fromDate(playedAt!) : null,
       "completedAt": completedAt != null ? Timestamp.fromDate(completedAt!) : null,
@@ -111,6 +119,8 @@ class Mission {
       "pnjInvolved": pnjInvolved?.map((a) => a.toMap()).toList(),
       "monsterInvolved": monsterInvolved?.map((a) => a.toMap()).toList(),
       "bounty": bounty,
+      "bountyMin": bountyMin,
+      "bountyMax": bountyMax,
       "reportPaths": reportPaths,
       "agentDeceased": agentDeceased?.map((a) => a.toMap()).toList(),
       "urgent": urgent,
@@ -134,7 +144,7 @@ class Mission {
       descriptionOutro: map["descriptionOutro"] as String?,
       illustrationPath: map["illustrationPath"] as String?,
       difficulty: Difficulty.values.byName(map["difficulty"] as String? ?? 'inconnu'),
-      clad: CladName.values.byName(map["clad"] as String? ?? 'osiris'),
+      clade: CladeName.values.byName(map["clade"] as String? ?? 'osiris'),
       postedAt: _parseDate(map["postedAt"]) ?? DateTime.now(),
       playedAt: _parseDate(map["playedAt"]),
       completedAt: _parseDate(map["completedAt"]),
@@ -147,7 +157,9 @@ class Mission {
       monsterInvolved: map["monsterInvolved"] != null
           ? (map["monsterInvolved"] as List).map((a) => Monster.fromMap(a)).toList()
           : null,
-      bounty: (map["bounty"] as num?)?.toInt() ?? 0,
+      bounty: (map["bounty"] as num?)?.toInt(),
+      bountyMin: (map["bountyMin"] as num?)?.toInt() ?? (map["bounty"] as num?)?.toInt() ?? 0,
+      bountyMax: (map["bountyMax"] as num?)?.toInt() ?? (map["bounty"] as num?)?.toInt() ?? 0,
       reportPaths: map["reportPaths"] != null
           ? List<String>.from(map["reportPaths"])
           : null,
@@ -170,7 +182,7 @@ class Mission {
       "descriptionOutro": descriptionOutro,
       "illustrationPath": illustrationPath,
       "difficulty": difficulty.name,
-      "clad": clad.name,
+      "clade": clade.name,
       "postedAt": postedAt.toIso8601String(),
       "playedAt": playedAt?.toIso8601String(),
       "completedAt": completedAt?.toIso8601String(),
@@ -178,6 +190,8 @@ class Mission {
       "pnjInvolved": pnjInvolved?.map((a) => a.toJson()).toList(),
       "monsterInvolved": monsterInvolved?.map((a) => a.toJson()).toList(),
       "bounty": bounty,
+      "bountyMin": bountyMin,
+      "bountyMax": bountyMax,
       "reportPaths": reportPaths,
       "agentDeceased": agentDeceased?.map((a) => a.toJson()).toList(),
       "urgent": urgent,
@@ -193,7 +207,7 @@ class Mission {
       descriptionOutro: json["descriptionOutro"],
       illustrationPath: json["illustrationPath"],
       difficulty: Difficulty.values.byName(json["difficulty"]),
-      clad: CladName.values.byName(json["clad"]),
+      clade: CladeName.values.byName(json["clade"]),
       postedAt: DateTime.parse(json["postedAt"]),
       playedAt: json["playedAt"] != null ? DateTime.parse(json["playedAt"]) : null,
       completedAt: json["completedAt"] != null ? DateTime.parse(json["completedAt"]) : null,
@@ -207,6 +221,8 @@ class Mission {
           ? (json["monsterInvolved"] as List).map((a) => Monster.fromJson(a)).toList()
           : null,
       bounty: json["bounty"],
+      bountyMin: json["bountyMin"] ?? json["bounty"] ?? 0,
+      bountyMax: json["bountyMax"] ?? json["bounty"] ?? 0,
       reportPaths: json["reportPaths"] != null
           ? List<String>.from(json["reportPaths"])
           : null,
@@ -218,14 +234,14 @@ class Mission {
   }
 }
 
-class Clad {
+class Clade {
   final int id;
   final String name;
   final DateTime begunAt;
   final DateTime? endedAt;
   final List<Mission>? missionsWithin;
 
-  const Clad({
+  const Clade({
     required this.id,
     required this.name,
     required this.begunAt,
@@ -236,14 +252,14 @@ class Clad {
   // --------------------
   // copyWith
   // --------------------
-  Clad copyWith({
+  Clade copyWith({
     int? id,
     String? name,
     DateTime? begunAt,
     DateTime? endedAt,
     List<Mission>? missionsWithin,
   }) {
-    return Clad(
+    return Clade(
       id: id ?? this.id,
       name: name ?? this.name,
       begunAt: begunAt ?? this.begunAt,
@@ -265,8 +281,8 @@ class Clad {
     };
   }
 
-  factory Clad.fromMap(Map<String, dynamic> map) {
-    return Clad(
+  factory Clade.fromMap(Map<String, dynamic> map) {
+    return Clade(
       id: map["id"],
       name: map["name"],
       begunAt: DateTime.parse(map["begunAt"]),
@@ -290,8 +306,8 @@ class Clad {
     };
   }
 
-  factory Clad.fromJson(Map<String, dynamic> json) {
-    return Clad(
+  factory Clade.fromJson(Map<String, dynamic> json) {
+    return Clade(
       id: json["id"],
       name: json["name"],
       begunAt: DateTime.parse(json["begunAt"]),

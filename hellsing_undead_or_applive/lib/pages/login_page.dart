@@ -306,6 +306,7 @@ class _LoginPageState extends State<LoginPage> {
                               TextField(
                                 controller: _passwordController,
                                 obscureText: _hidePassword,
+                                obscuringCharacter: '⛤',
                                 autofillHints: const [AutofillHints.password],
                                 decoration: InputDecoration(
                                   labelText: "Code secret :",
@@ -330,6 +331,7 @@ class _LoginPageState extends State<LoginPage> {
                                 TextField(
                                   controller: _confirmPasswordController,
                                   obscureText: _hideConfirmPassword,
+                                  obscuringCharacter: '⛤',
                                   decoration: InputDecoration(
                                     labelText: "Veux-tu bien réécrire ton code secret ?",
                                     border: const OutlineInputBorder(),

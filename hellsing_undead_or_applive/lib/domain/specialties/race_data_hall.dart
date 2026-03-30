@@ -65,6 +65,14 @@ class RaceList {
       ], 
       availableClasses: ClassList().getClassListByIds(0, 6) + ClassList().getClassListByIds(10, 11)
     ),
+
+
+    Race(
+      id: 4,
+      name: "Autre",
+      description: "Une race particulière, dont les caractéristiques seront définies lors de la création de la fiche et validées par un administrateur.",
+      availableClasses: ClassList().getClassListByIds(0, 18)
+    ),
   ];
 
   ////////////////////////////////////

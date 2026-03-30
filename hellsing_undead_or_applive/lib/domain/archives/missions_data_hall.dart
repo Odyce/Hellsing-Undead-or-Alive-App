@@ -23,10 +23,10 @@ Future<Mission?> getMissionByName(String name) async {
   return Mission.fromMap(snapshot.docs.first.data());
 }
 
-Future<List<Mission>> getMissionByClad(CladName clad) async {
+Future<List<Mission>> getMissionByClade(CladeName clade) async {
   final snapshot = await FirebaseFirestore.instance
       .collection(_missionsCollection)
-      .where('clad', isEqualTo: clad.name)
+      .where('clade', isEqualTo: clade.name)
       .get();
 
   return snapshot.docs.map((doc) => Mission.fromMap(doc.data())).toList();

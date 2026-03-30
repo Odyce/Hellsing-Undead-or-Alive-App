@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
 
 class BestiaryListPage extends StatefulWidget {
   const BestiaryListPage({super.key});
@@ -15,6 +16,24 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
   List<Mission> _missions = [];
   bool _loading = true;
   String? _error;
+
+  Map<String, Set<dynamic>> _activeFilters = {};
+
+  static final _filterGroups = [
+    FilterGroup<Entitype>(
+      label: 'Type',
+      options: [
+        for (final t in Entitype.values)
+          FilterOption(label: _typeLabel(t), value: t),
+      ],
+    ),
+  ];
+
+  List<Monster> get _filteredMonsters {
+    final typeFilter = _activeFilters['Type'];
+    if (typeFilter == null || typeFilter.isEmpty) return _monsters;
+    return _monsters.where((m) => typeFilter.contains(m.type)).toList();
+  }
 
   // ─── Chargement ──────────────────────────────────────────────────────────────
   @override
@@ -102,6 +121,14 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
               ),
             ),
 
+            // ── Filtres ───────────────────────────────────────────────────────
+            if (!_loading && _error == null && _monsters.isNotEmpty)
+              FilterBar(
+                groups: _filterGroups,
+                activeFilters: _activeFilters,
+                onChanged: (f) => setState(() => _activeFilters = f),
+              ),
+
             // ── Tableau ───────────────────────────────────────────────────────
             Expanded(
               child: _loading
@@ -113,7 +140,7 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
                             style: const TextStyle(color: Colors.red),
                           ),
                         )
-                      : _monsters.isEmpty
+                      : _filteredMonsters.isEmpty
                           ? const Center(
                               child: Text('Aucune entrée dans le bestiaire.'),
                             )
@@ -173,7 +200,7 @@ class _BestiaryListPageState extends State<BestiaryListPage> {
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
-          rows: _monsters.map((monster) {
+          rows: _filteredMonsters.map((monster) {
             final missionTitles = _missionsFor(monster.id);
             final firstImage = monster.illustrationPaths?.isNotEmpty == true
                 ? monster.illustrationPaths!.first

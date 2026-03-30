@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,11 +16,23 @@ class MissionSheetPage extends StatelessWidget {
         Difficulty.inconnu    => 'Inconnue',
       };
 
-  static String _cladLabel(CladName c) => switch (c) {
-        CladName.osiris         => 'Osiris',
-        CladName.blackLotus     => 'Black Lotus',
-        CladName.pennyDreadful  => 'Penny Dreadful',
+  static String _cladeLabel(CladeName c) => switch (c) {
+        CladeName.osiris            => 'Osiris',
+        CladeName.blackOrchid       => 'Black Orchid',
+        CladeName.pennyDreadful     => 'Penny Dreadful',
+        CladeName.beginning         => 'The Beginning',
+        CladeName.origins           => 'Origins',
+        CladeName.unNeufTroisZero   => '1930',
+        CladeName.western           => 'Western',
+        CladeName.arthur            => 'The Legend of King Arthur',
       };
+
+  Future<bool> _isAdmin() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return false;
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    return doc.data()?['role'] == 'admin';
+  }
 
   // ─── Build ─────────────────────────────────────────────────────────────────
   @override
@@ -91,7 +105,7 @@ class MissionSheetPage extends StatelessWidget {
                                   backgroundColor: Colors.red.shade100,
                                   side: BorderSide(color: Colors.red.shade400),
                                 ),
-                              Chip(label: Text(_cladLabel(mission.clad))),
+                              Chip(label: Text(_cladeLabel(mission.clade))),
                               Chip(
                                 label: Text(
                                   'Difficulté : ${_difficultyLabel(mission.difficulty)}',
@@ -102,12 +116,26 @@ class MissionSheetPage extends StatelessWidget {
                           const SizedBox(height: 8),
 
                           // ── Prime ──────────────────────────────────────────
-                          Text(
-                            'Prime : ${mission.bounty} £',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          if (mission.bounty != null)
+                            Text(
+                              'Prime finale : ${mission.bounty} £',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
+                          FutureBuilder<bool>(
+                            future: _isAdmin(),
+                            builder: (context, snapshot) {
+                              if (snapshot.data != true) return const SizedBox.shrink();
+                              return Text(
+                                'Fourchette : ${mission.bountyMin} – ${mission.bountyMax} £',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              );
+                            },
                           ),
 
                           const Divider(height: 32),

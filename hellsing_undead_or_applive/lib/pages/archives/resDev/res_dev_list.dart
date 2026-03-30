@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
 
 // Wrapper pour transporter docId + projet ensemble
 class _ProjectEntry {
@@ -19,6 +21,7 @@ class ResDevListPage extends StatefulWidget {
 
 class _ResDevListPageState extends State<ResDevListPage> {
   bool _loading = true;
+  bool _isAdmin = false;
 
   // Projets actifs (non complétés) + projets complétés séparés
   List<_ProjectEntry> _activeProjects   = [];
@@ -27,10 +30,47 @@ class _ResDevListPageState extends State<ResDevListPage> {
   // ResDev / ResDevWeapon (Object = l'un ou l'autre)
   List<Object> _resDevItems = [];
 
+  Map<String, Set<dynamic>> _activeFilters = {};
+
+  static const _filterGroups = [
+    FilterGroup<String>(
+      label: 'Type',
+      options: [
+        FilterOption(label: 'Item', value: 'item'),
+        FilterOption(label: 'Arme', value: 'arme'),
+      ],
+    ),
+  ];
+
+  List<Object> get _filteredResDevItems {
+    final typeFilter = _activeFilters['Type'];
+    if (typeFilter == null || typeFilter.isEmpty) return _resDevItems;
+    return _resDevItems.where((item) {
+      final isWeapon = item is ResDevWeapon;
+      if (typeFilter.contains('arme') && isWeapon) return true;
+      if (typeFilter.contains('item') && !isWeapon) return true;
+      return false;
+    }).toList();
+  }
+
   @override
   void initState() {
     super.initState();
+    _checkAdmin();
     _loadData();
+  }
+
+  Future<void> _checkAdmin() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    final role = doc.data()?['role'];
+    if (mounted) {
+      setState(() => _isAdmin = role == 'admin');
+    }
   }
 
   Future<void> _loadData() async {
@@ -120,30 +160,38 @@ class _ResDevListPageState extends State<ResDevListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('R&D')),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'newProject',
-            onPressed: () => Navigator.of(context).pushNamed(Routes.resDevProjectCreate),
-            icon: const Icon(Icons.science_outlined),
-            label: const Text('Nouveau projet'),
-          ),
-          const SizedBox(height: 10),
-          FloatingActionButton.extended(
-            heroTag: 'newResDev',
-            onPressed: () => Navigator.of(context).pushNamed(Routes.resDevCreate),
-            icon: const Icon(Icons.build_outlined),
-            label: const Text('Nouveau R&D'),
-          ),
-        ],
-      ),
+      floatingActionButton: _isAdmin
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton.extended(
+                  heroTag: 'newProject',
+                  onPressed: () => Navigator.of(context).pushNamed(Routes.resDevProjectCreate),
+                  icon: const Icon(Icons.science_outlined),
+                  label: const Text('Nouveau projet R&D'),
+                ),
+                const SizedBox(height: 10),
+                FloatingActionButton.extended(
+                  heroTag: 'newResDev',
+                  onPressed: () => Navigator.of(context).pushNamed(Routes.resDevCreate),
+                  icon: const Icon(Icons.build_outlined),
+                  label: const Text('Nouvelle finalisation R&D'),
+                ),
+              ],
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                if (_resDevItems.isNotEmpty)
+                  FilterBar(
+                    groups: _filterGroups,
+                    activeFilters: _activeFilters,
+                    onChanged: (f) => setState(() => _activeFilters = f),
+                  ),
                 Expanded(child: _buildContent()),
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -165,7 +213,7 @@ class _ResDevListPageState extends State<ResDevListPage> {
   Widget _buildContent() {
     if (_activeProjects.isEmpty &&
         _completedProjects.isEmpty &&
-        _resDevItems.isEmpty) {
+        _filteredResDevItems.isEmpty) {
       return const Center(child: Text('Aucun projet R&D.'));
     }
 
@@ -189,11 +237,11 @@ class _ResDevListPageState extends State<ResDevListPage> {
           ],
 
           // ── Items R&D ────────────────────────────────────────────────────────
-          if (_resDevItems.isNotEmpty) ...[
+          if (_filteredResDevItems.isNotEmpty) ...[
             _SectionHeader(label: 'R&D développés',
-                count: _resDevItems.length),
+                count: _filteredResDevItems.length),
             const SizedBox(height: 8),
-            ..._resDevItems.map((item) => _ResDevCard(
+            ..._filteredResDevItems.map((item) => _ResDevCard(
                   item: item,
                   onTap: () => _openResDevItem(item),
                 )),

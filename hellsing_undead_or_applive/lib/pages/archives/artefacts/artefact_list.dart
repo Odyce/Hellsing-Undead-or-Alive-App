@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
 
 class ArtefactListPage extends StatefulWidget {
   const ArtefactListPage({super.key});
@@ -15,6 +16,29 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
   List<Object> _items = [];
   bool _loading = true;
   String? _error;
+
+  Map<String, Set<dynamic>> _activeFilters = {};
+
+  static const _filterGroups = [
+    FilterGroup<String>(
+      label: 'Type',
+      options: [
+        FilterOption(label: 'Artefact', value: 'artefact'),
+        FilterOption(label: 'Arme', value: 'arme'),
+      ],
+    ),
+  ];
+
+  List<Object> get _filteredItems {
+    final typeFilter = _activeFilters['Type'];
+    if (typeFilter == null || typeFilter.isEmpty) return _items;
+    return _items.where((item) {
+      final isWeapon = item is ArtefactWeapon;
+      if (typeFilter.contains('arme') && isWeapon) return true;
+      if (typeFilter.contains('artefact') && !isWeapon) return true;
+      return false;
+    }).toList();
+  }
 
   // ─── Chargement ──────────────────────────────────────────────────────────────
   @override
@@ -98,6 +122,14 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
               ),
             ),
 
+            // ── Filtres ───────────────────────────────────────────────────────
+            if (!_loading && _error == null && _items.isNotEmpty)
+              FilterBar(
+                groups: _filterGroups,
+                activeFilters: _activeFilters,
+                onChanged: (f) => setState(() => _activeFilters = f),
+              ),
+
             // ── Tableau ───────────────────────────────────────────────────────
             Expanded(
               child: _loading
@@ -109,7 +141,7 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
                             style: const TextStyle(color: Colors.red),
                           ),
                         )
-                      : _items.isEmpty
+                      : _filteredItems.isEmpty
                           ? const Center(
                               child: Text('Aucun artefact enregistré.'),
                             )
@@ -161,7 +193,7 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
-          rows: _items.map((item) {
+          rows: _filteredItems.map((item) {
             final picture = _pictureOf(item);
 
             return DataRow(

@@ -21,11 +21,12 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
   final _notesForDMCtrl       = TextEditingController();
   final _descriptionIntroCtrl = TextEditingController();
   final _descriptionOutroCtrl = TextEditingController();
-  final _bountyCtrl           = TextEditingController();
+  final _bountyMinCtrl         = TextEditingController();
+  final _bountyMaxCtrl         = TextEditingController();
 
   // ─── Champs enum & toggle ────────────────────────────────────────────────────
   Difficulty _difficulty = Difficulty.inconnu;
-  CladName   _clad       = CladName.osiris;
+  CladeName   _clade       = CladeName.osiris;
   bool       _urgent     = false;
 
   // ─── Dates ───────────────────────────────────────────────────────────────────
@@ -38,7 +39,8 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
   final List<File> _reports = [];
 
   // ─── État ────────────────────────────────────────────────────────────────────
-  String? _bountyError;
+  String? _bountyMinError;
+  String? _bountyMaxError;
   String? _reportsError;
   String? _error;
   bool    _loading = false;
@@ -51,20 +53,28 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
   bool get _canCreate =>
       _titleCtrl.text.trim().isNotEmpty &&
       _descriptionIntroCtrl.text.trim().isNotEmpty &&
-      _bountyError == null &&
-      int.tryParse(_bountyCtrl.text) != null &&
+      _bountyMinError == null &&
+      _bountyMaxError == null &&
+      int.tryParse(_bountyMinCtrl.text) != null &&
+      int.tryParse(_bountyMaxCtrl.text) != null &&
       !_loading;
 
   void _validateBounty() {
-    final value = int.tryParse(_bountyCtrl.text);
+    final min = int.tryParse(_bountyMinCtrl.text);
+    final max = int.tryParse(_bountyMaxCtrl.text);
     setState(() {
-      if (value == null) {
-        _bountyError = 'La prime doit être un nombre entier.';
-      } else if (value < 0) {
-        _bountyError = 'La prime ne peut pas être négative.';
-      } else {
-        _bountyError = null;
-      }
+      _bountyMinError = min == null
+          ? 'La prime min doit être un nombre entier.'
+          : min < 0
+              ? 'La prime min ne peut pas être négative.'
+              : null;
+      _bountyMaxError = max == null
+          ? 'La prime max doit être un nombre entier.'
+          : max < 0
+              ? 'La prime max ne peut pas être négative.'
+              : (min != null && max < min)
+                  ? 'La prime max doit être ≥ prime min.'
+                  : null;
     });
   }
 
@@ -204,11 +214,12 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
                               : _descriptionOutroCtrl.text.trim(),
         illustrationPath: illustrationUrl,
         difficulty:       _difficulty,
-        clad:             _clad,
+        clade:             _clade,
         postedAt:         _postedAt,
         playedAt:         _playedAt,
         completedAt:      _completedAt,
-        bounty:           int.parse(_bountyCtrl.text),
+        bountyMin:        int.parse(_bountyMinCtrl.text),
+        bountyMax:        int.parse(_bountyMaxCtrl.text),
         reportPaths:      reportUrls,
         urgent:           _urgent,
       );
@@ -231,10 +242,15 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
     Difficulty.tresHaute => 'Maïca',
   };
 
-  String _cladLabel(CladName c) => switch (c) {
-    CladName.osiris        => 'Osiris',
-    CladName.blackLotus    => 'Black Lotus',
-    CladName.pennyDreadful => 'Penny Dreadful',
+  String _cladeLabel(CladeName c) => switch (c) {
+    CladeName.osiris            => 'Osiris',
+    CladeName.blackOrchid       => 'Black Orchid',
+    CladeName.pennyDreadful     => 'Penny Dreadful',
+    CladeName.beginning         => 'The Beginning',
+    CladeName.origins           => 'Origins',
+    CladeName.unNeufTroisZero   => '1930',
+    CladeName.western           => 'Western',
+    CladeName.arthur            => 'The Legend of King Arthur',
   };
 
   // ─── Dispose ──────────────────────────────────────────────────────────────────
@@ -244,7 +260,8 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
     _notesForDMCtrl.dispose();
     _descriptionIntroCtrl.dispose();
     _descriptionOutroCtrl.dispose();
-    _bountyCtrl.dispose();
+    _bountyMinCtrl.dispose();
+    _bountyMaxCtrl.dispose();
     super.dispose();
   }
 
@@ -282,17 +299,17 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
           const SizedBox(height: 16),
 
           // ── Clan ─────────────────────────────────────────────────────────────
-          DropdownButtonFormField<CladName>(
-            initialValue: _clad,
-            decoration: const InputDecoration(labelText: 'Clad'),
-            items: CladName.values
+          DropdownButtonFormField<CladeName>(
+            initialValue: _clade,
+            decoration: const InputDecoration(labelText: 'Clade'),
+            items: CladeName.values
                 .map((c) => DropdownMenuItem(
                       value: c,
-                      child: Text(_cladLabel(c)),
+                      child: Text(_cladeLabel(c)),
                     ))
                 .toList(),
             onChanged: (v) {
-              if (v != null) setState(() => _clad = v);
+              if (v != null) setState(() => _clade = v);
             },
           ),
           const SizedBox(height: 8),
@@ -306,15 +323,33 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
           ),
           const SizedBox(height: 8),
 
-          // ── Prime ────────────────────────────────────────────────────────────
-          TextField(
-            controller: _bountyCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Prime (en Livres £) (modifiable plus tard) *',
-              errorText: _bountyError,
-            ),
-            onChanged: (_) => _validateBounty(),
+          // ── Fourchette de prime ──────────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _bountyMinCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Prime min (£) *',
+                    errorText: _bountyMinError,
+                  ),
+                  onChanged: (_) => _validateBounty(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _bountyMaxCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Prime max (£) *',
+                    errorText: _bountyMaxError,
+                  ),
+                  onChanged: (_) => _validateBounty(),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
 

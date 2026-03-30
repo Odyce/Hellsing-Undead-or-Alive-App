@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
 
 class DisplayMissionPage extends StatefulWidget {
   const DisplayMissionPage({super.key});
@@ -13,6 +15,52 @@ class DisplayMissionPage extends StatefulWidget {
 class _DisplayMissionPageState extends State<DisplayMissionPage> {
   // Agents de l'utilisateur courant, chargés une seule fois
   List<QueryDocumentSnapshot> _agents = [];
+
+  Map<String, Set<dynamic>> _activeFilters = {};
+
+  static String _difficultyLabel(Difficulty d) => switch (d) {
+        Difficulty.basse     => 'Basse',
+        Difficulty.moyenne   => 'Moyenne',
+        Difficulty.haute     => 'Haute',
+        Difficulty.tresHaute => 'Très haute',
+        Difficulty.inconnu   => 'Inconnue',
+      };
+
+  static final _filterGroups = [
+    FilterGroup<String>(
+      label: 'Difficulté',
+      options: [
+        for (final d in Difficulty.values)
+          FilterOption(label: _difficultyLabel(d), value: d.name),
+      ],
+    ),
+    FilterGroup<bool>(
+      label: 'Urgent',
+      options: const [
+        FilterOption(label: 'Urgent', value: true),
+      ],
+    ),
+  ];
+
+  bool _matchesFilters(Map<String, dynamic> data) {
+    if (_activeFilters.isEmpty) return true;
+    final diffFilter = _activeFilters['Difficulté'];
+    if (diffFilter != null && diffFilter.isNotEmpty) {
+      final diff = data['difficulty'] as String? ?? 'inconnu';
+      if (!diffFilter.contains(diff)) return false;
+    }
+    final cladeFilter = _activeFilters['Clade'];
+    if (cladeFilter != null && cladeFilter.isNotEmpty) {
+      final clade = data['clade'] as String? ?? '';
+      if (!cladeFilter.contains(clade)) return false;
+    }
+    final urgentFilter = _activeFilters['Urgent'];
+    if (urgentFilter != null && urgentFilter.isNotEmpty) {
+      final urgent = data['urgent'] as bool? ?? false;
+      if (!urgent) return false;
+    }
+    return true;
+  }
 
   @override
   void initState() {
@@ -86,6 +134,13 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
               ),
             ),
 
+            // ── Filtres ──────────────────────────────────────────────────────
+            FilterBar(
+              groups: _filterGroups,
+              activeFilters: _activeFilters,
+              onChanged: (f) => setState(() => _activeFilters = f),
+            ),
+
             // ── Liste des missions disponibles ───────────────────────────────
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
@@ -108,7 +163,12 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
                     );
                   }
 
-                  final docs = snapshot.data?.docs ?? [];
+                  final allDocs = snapshot.data?.docs ?? [];
+                  final docs = allDocs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return _matchesFilters(data);
+                  }).toList();
+
                   if (docs.isEmpty) {
                     return const Center(
                       child: Text('Aucune mission disponible en ce moment.'),

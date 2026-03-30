@@ -36,11 +36,12 @@ class MissionRepository {
     String? descriptionOutro,
     String? illustrationPath,
     required Difficulty difficulty,
-    required CladName clad,
+    required CladeName clade,
     required DateTime postedAt,
     DateTime? playedAt,
     DateTime? completedAt,
-    required int bounty,
+    required int bountyMin,
+    required int bountyMax,
     List<String>? reportPaths,
     required bool urgent,
   }) async {
@@ -54,14 +55,15 @@ class MissionRepository {
       descriptionOutro: descriptionOutro,
       illustrationPath: illustrationPath,
       difficulty: difficulty,
-      clad: clad,
+      clade: clade,
       postedAt: postedAt,
       playedAt: playedAt,
       completedAt: completedAt,
       agentInvolved: null,   // TODO: implémenter quand la DB sera prête
       pnjInvolved: null,     // TODO: implémenter quand la DB sera prête
       monsterInvolved: null, // TODO: implémenter quand la DB sera prête
-      bounty: bounty,
+      bountyMin: bountyMin,
+      bountyMax: bountyMax,
       reportPaths: reportPaths,
       agentDeceased: null,   // TODO: implémenter quand la DB sera prête
       urgent: urgent,

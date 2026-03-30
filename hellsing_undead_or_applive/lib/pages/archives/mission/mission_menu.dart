@@ -1,8 +1,36 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
-class MissionMenuPage extends StatelessWidget {
+class MissionMenuPage extends StatefulWidget {
   const MissionMenuPage({super.key});
+
+  @override
+  State<MissionMenuPage> createState() => _MissionMenuPageState();
+}
+
+class _MissionMenuPageState extends State<MissionMenuPage> {
+  bool _isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdmin();
+  }
+
+  Future<void> _checkAdmin() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    final role = doc.data()?['role'];
+    if (mounted) {
+      setState(() => _isAdmin = role == 'admin');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,20 +81,22 @@ class MissionMenuPage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              if (_isAdmin) ...[
+                const SizedBox(height: 16),
 
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, Routes.missionCreate);
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    "Créer une mission",
-                    style: TextStyle(fontSize: 18),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, Routes.missionCreate);
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      "Créer une mission",
+                      style: TextStyle(fontSize: 18),
+                    ),
                   ),
                 ),
-              ),
+              ],
 
               const Spacer(),
 

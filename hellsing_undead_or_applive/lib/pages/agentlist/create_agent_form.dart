@@ -1,6 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/create_agent_inventory_form.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
@@ -85,6 +88,10 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
 
   Race get _selectedRace => _raceList.allRaces[_selectedRaceIndex];
 
+  // Bonus/Malus custom pour la race "Autre"
+  final List<TextEditingController> _customBonusCtrls = [];
+  final List<TextEditingController> _customMalusCtrls = [];
+
   AgentClass? _selectedClass;
   List<int> _classBonuses = [0, 0, 0];
   final List<TextEditingController> _classBonusControllers = List.generate(3, (_) => TextEditingController());
@@ -168,6 +175,40 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
       );
     }
 
+    // Si race "Autre", on crée une copie avec les bonus/malus custom
+    // et on sauvegarde dans Firestore
+    Race raceToSend = _selectedRace;
+    if (_selectedRace.name == 'Autre') {
+      final bonuses = _customBonusCtrls
+          .map((c) => c.text.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
+      final maluses = _customMalusCtrls
+          .map((c) => c.text.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
+      raceToSend = _selectedRace.copyWith(
+        bonuses: bonuses.isEmpty ? null : bonuses,
+        maluses: maluses.isEmpty ? null : maluses,
+      );
+
+      // Sauvegarde dans /users/{uid}/privateResources/
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('privateResources')
+            .add({
+          'type': 'customRace',
+          'agentName': _nameController.text,
+          'bonuses': bonuses,
+          'maluses': maluses,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -184,7 +225,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           ],
           pools: [_pv, _pe, _pm],
           maxPools: [_pv, _pe, _pm],
-          race: _selectedRace,
+          race: raceToSend,
           powerScore: _selectedRace.name == 'Humain'
               ? 0
               : int.tryParse(_powerScoreCtrl.text) ?? 0,
@@ -237,8 +278,10 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
       relationnel,
     ].reduce((a, b) => a > b ? a : b);
 
+    final isVampire = _selectedRace.name.toLowerCase() == 'vampire';
+
     setState(() {
-      _pv = _ceilDiv10(maxAttr) + 2;
+      _pv = isVampire ? 13 : _ceilDiv10(maxAttr) + 2;
       _pe = _ceilDiv10(physique);
       _pm = _ceilDiv10(mental);
       _pc = _ceilDiv10(relationnel);
@@ -447,10 +490,81 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
         .toList();
   }
 
+  // ── Builder pour bonus/malus custom (race "Autre") ─────────────────────
+  Widget _buildCustomBonusMalus() {
+    Widget buildEditableList({
+      required String title,
+      required Color color,
+      required List<TextEditingController> controllers,
+    }) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color,)),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline, size: 20),
+                onPressed: () => setState(() => controllers.add(TextEditingController())),
+              ),
+            ],
+          ),
+          for (int i = 0; i < controllers.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controllers[i],
+                      decoration: InputDecoration(
+                        hintText: '$title ${i + 1}',
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  if (controllers.length > 1)
+                    IconButton(
+                      icon: Icon(Icons.remove_circle_outline, size: 20, color: color),
+                      onPressed: () => setState(() {
+                        controllers[i].dispose();
+                        controllers.removeAt(i);
+                      }),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buildEditableList(
+          title: 'Bonus',
+          color: Colors.green,
+          controllers: _customBonusCtrls,
+        ),
+        const SizedBox(height: 8),
+        buildEditableList(
+          title: 'Malus',
+          color: Colors.red,
+          controllers: _customMalusCtrls,
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _backgroundController.dispose();
+    for (final c in _customBonusCtrls) { c.dispose(); }
+    for (final c in _customMalusCtrls) { c.dispose(); }
     super.dispose();
   }
 
@@ -475,23 +589,27 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
         children: [
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Nom',
+              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
             ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _backgroundController,
-            decoration: const InputDecoration(
+            style: GoogleFonts.cinzelDecorative(),
+            decoration: InputDecoration(
               labelText: 'Background',
+              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
             ),
             minLines: 3,
             maxLines: 10,
           ),
           TextField(
             controller: _stateController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'État',
+              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
               helperText:
                   'Si tu est un robot, empoisonné sur le long termes, ou autre vicissitudes du genre, merci de le mettre ici.',
             ),
@@ -501,8 +619,9 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           const SizedBox(height: 16),
           TextField(
             controller: _noteController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Notes',
+              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
               helperText: 'Les détails sur ton perso pour le fluff.',
             ),
             minLines: 1,
@@ -540,21 +659,33 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           TextField(
             controller: _physiqueCtrl,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Physique'),
+            decoration: InputDecoration(
+              labelText: 'Physique',
+              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
+              helperText: 'Multiples de 5 uniquement, entre 20 et 80',
+            ),
             onChanged: (_) => _recomputePools(),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _mentalCtrl,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Mental'),
+            decoration: InputDecoration(
+              labelText: 'Mental',
+              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
+              helperText: 'Multiples de 5 uniquement, entre 20 et 80',
+            ),
             onChanged: (_) => _recomputePools(),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _relationnelCtrl,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Relationnel'),
+            decoration: InputDecoration(
+              labelText: 'Relationnel',
+              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
+              helperText: 'Multiples de 5 uniquement, entre 20 et 80',
+            ),
             onChanged: (_) => _recomputePools(),
           ),
           const SizedBox(height: 8),
@@ -588,33 +719,87 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
             'Race',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          Slider(
-            value: _selectedRaceIndex.toDouble(),
-            min: 0,
-            max: (_raceList.allRaces.length - 1).toDouble(),
-            divisions: _raceList.allRaces.length - 1,
-            label: _selectedRace.name,
-            onChanged: (value) {
-              setState(() {
-                _selectedRaceIndex = value.round();
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 120,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(_raceList.allRaces.length, (index) {
+                final race = _raceList.allRaces[index];
+                final isSelected = index == _selectedRaceIndex;
+                const raceIcons = [
+                  'assets/icons/race_humain.png',
+                  'assets/icons/race_semi_ange.png',
+                  'assets/icons/race_vampire.png',
+                  'assets/icons/race_demi_vampire.png',
+                  'assets/icons/race_other.png',
+                ];
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedRaceIndex = index;
 
-                final classes = _availableClasses;
-                _selectedClass = classes.isNotEmpty ? classes.first : null;
+                      final classes = _availableClasses;
+                      _selectedClass = classes.isNotEmpty ? classes.first : null;
 
-                _resetClassBonuses();
-                if (_selectedRace.name == 'Humain') {
-                  _powerScoreCtrl.clear();
-                }
-              });
+                      _resetClassBonuses();
+                      if (_selectedRace.name == 'Humain') {
+                        _powerScoreCtrl.clear();
+                      }
 
-              _validatePowerScore();
-              _validateClassBonuses();
-            },
-          ),
-          Center(
-            child: Text(
-              _selectedRace.name,
-              style: Theme.of(context).textTheme.titleLarge,
+                      // Reset custom bonus/malus
+                      for (final c in _customBonusCtrls) { c.dispose(); }
+                      for (final c in _customMalusCtrls) { c.dispose(); }
+                      _customBonusCtrls.clear();
+                      _customMalusCtrls.clear();
+                      if (_selectedRace.name == 'Autre') {
+                        _customBonusCtrls.add(TextEditingController());
+                        _customMalusCtrls.add(TextEditingController());
+                      }
+                    });
+
+                    _recomputePools();
+                    _validatePowerScore();
+                    _validateClassBonuses();
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary.withAlpha(25)
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          raceIcons[index],
+                          width: 52,
+                          height: 52,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          race.name,
+                          style: GoogleFonts.cinzelDecorative(
+                            fontSize: 12,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
           const SizedBox(height: 16),
@@ -632,7 +817,10 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           ),
           const SizedBox(height: 12),
 
-          if (_selectedRace.bonuses != null || _selectedRace.maluses != null)
+          // ── Bonus / Malus ──────────────────────────────────────
+          if (_selectedRace.name == 'Autre')
+            _buildCustomBonusMalus()
+          else if (_selectedRace.bonuses != null || _selectedRace.maluses != null)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -679,6 +867,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: 'Pouvoir',
+                labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
                 helperText:
                     'Fait un jet de dès auprès d\'un MJ pour remplir.',
                 errorText: _powerScoreError,
@@ -713,7 +902,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
               _updateSkillSlots();
               _validateClassBonuses();
             },
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Classe',
             ),
           ),
@@ -722,7 +911,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           ..._selectedClass!.classBonus.map((b) => Text('• $b')),
           const SizedBox(height: 8),
           Text('Affinités :'),
-          ..._selectedClass!.affinities.map((a) => Text('• $a')),
+          ..._selectedClass!.affinities.map((a) => Text('• ${a.label}')),
           const SizedBox(height: 8),
           Text('Emplacements de munitions : ${_selectedClass!.muniSlotNumber}'),
           const SizedBox(height: 16),
@@ -834,6 +1023,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: 'Argent',
+                labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
                 helperText:
                     'Fait un jet de dès auprès d\'un MJ pour remplir.',
                 errorText: _moneyError,
@@ -938,7 +1128,6 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           //Fin du formulaire
           // late final bool canCreate = _canCreate && _powerScoreValid && _classBonusValid && _skillsValid && _moneyValid && _remainingPc >= 0;
           const SizedBox(height: 24),
-          const Spacer(),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(

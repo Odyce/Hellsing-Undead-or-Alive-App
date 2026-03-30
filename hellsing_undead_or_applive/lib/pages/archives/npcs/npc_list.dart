@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
 
 class NpcListPage extends StatefulWidget {
   const NpcListPage({super.key});
@@ -15,6 +16,45 @@ class _NpcListPageState extends State<NpcListPage> {
   List<Mission> _missions = [];
   bool _loading = true;
   String? _error;
+
+  Map<String, Set<dynamic>> _activeFilters = {};
+
+  static final _filterGroups = [
+    FilterGroup<Entitype>(
+      label: 'Type',
+      options: [
+        for (final t in Entitype.values)
+          FilterOption(label: _typeLabel(t), value: t),
+      ],
+    ),
+    FilterGroup<Relationship>(
+      label: 'Relation',
+      options: [
+        for (final r in Relationship.values)
+          FilterOption(label: _relationLabel(r), value: r),
+      ],
+    ),
+    FilterGroup<bool>(
+      label: 'Statut',
+      options: const [
+        FilterOption(label: 'Vivant', value: true),
+        FilterOption(label: 'Mort', value: false),
+      ],
+    ),
+  ];
+
+  List<PNJ> get _filteredNpcs {
+    if (_activeFilters.isEmpty) return _npcs;
+    return _npcs.where((pnj) {
+      final typeFilter = _activeFilters['Type'];
+      if (typeFilter != null && typeFilter.isNotEmpty && !typeFilter.contains(pnj.type)) return false;
+      final relFilter = _activeFilters['Relation'];
+      if (relFilter != null && relFilter.isNotEmpty && !relFilter.contains(pnj.relation)) return false;
+      final statusFilter = _activeFilters['Statut'];
+      if (statusFilter != null && statusFilter.isNotEmpty && !statusFilter.contains(pnj.alive)) return false;
+      return true;
+    }).toList();
+  }
 
   // ─── Chargement ──────────────────────────────────────────────────────────────
   @override
@@ -109,6 +149,14 @@ class _NpcListPageState extends State<NpcListPage> {
               ),
             ),
 
+            // ── Filtres ───────────────────────────────────────────────────────
+            if (!_loading && _error == null && _npcs.isNotEmpty)
+              FilterBar(
+                groups: _filterGroups,
+                activeFilters: _activeFilters,
+                onChanged: (f) => setState(() => _activeFilters = f),
+              ),
+
             // ── Tableau ───────────────────────────────────────────────────────
             Expanded(
               child: _loading
@@ -120,7 +168,7 @@ class _NpcListPageState extends State<NpcListPage> {
                             style: const TextStyle(color: Colors.red),
                           ),
                         )
-                      : _npcs.isEmpty
+                      : _filteredNpcs.isEmpty
                           ? const Center(
                               child: Text('Aucun PNJ enregistré.'),
                             )
@@ -188,7 +236,7 @@ class _NpcListPageState extends State<NpcListPage> {
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
-          rows: _npcs.map((pnj) {
+          rows: _filteredNpcs.map((pnj) {
             final missionTitles = _missionsFor(pnj.id);
 
             return DataRow(

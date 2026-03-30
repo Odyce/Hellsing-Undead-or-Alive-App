@@ -8,7 +8,7 @@ class NpcSheetPage extends StatelessWidget {
 
   static String _typeLabel(Entitype t) => switch (t) {
         Entitype.demon   => 'Démon',
-        Entitype.angel   => 'Ange',
+        Entitype.angel   => 'Semi-Ange',
         Entitype.midian  => 'Midian',
         Entitype.beast   => 'Bête',
         Entitype.human   => 'Humain',
@@ -18,7 +18,7 @@ class NpcSheetPage extends StatelessWidget {
         Relationship.neutral => 'Neutre',
         Relationship.ally    => 'Allié',
         Relationship.enemy   => 'Ennemi',
-        Relationship.trader  => 'Marchand',
+        Relationship.trader  => "Allié tant qu'il y a des bénéfices",
       };
 
   @override

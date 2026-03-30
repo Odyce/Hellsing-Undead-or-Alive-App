@@ -10,8 +10,9 @@ class Routes {
   static const home   = '/home';
 
   // ── Agents ──────────────────────────────────────────────────────────────────
-  static const agentList   = '/agentlist';
-  static const agentCreate = '/agentcreate';
+  static const agentList           = '/agentlist';
+  static const agentCreate         = '/agentcreate';
+  static const agentValidationList = '/agentvalidationlist';
 
   // ── Archives (menu) ─────────────────────────────────────────────────────────
   static const archives = '/archives';

@@ -3,6 +3,7 @@ export 'login_page.dart';
 export 'agentlist/user_agent_list_page.dart';
 export 'agentlist/agent_sheet.dart';
 export 'agentlist/create_agent_form.dart';
+export 'agentlist/level_up_page.dart';
 export 'user_homepage.dart';
 export 'rulebook/templates/book_page_template.dart';
 export 'rulebook/model/book_page_model.dart';

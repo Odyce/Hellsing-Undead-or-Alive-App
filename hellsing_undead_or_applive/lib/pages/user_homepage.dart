@@ -62,11 +62,20 @@ class HomePage extends StatelessWidget {
     final buttons = <({String label, IconData icon, String route})>[
       (label: 'AgentList', icon: Icons.grid_view, route: Routes.agentList),
       (label: 'Livre de règles', icon: Icons.menu_book, route: Routes.rulebook),
+      (label: 'Tableau d\'affichage', icon: Icons.dashboard, route: Routes.missionBoard),
       (label: 'Calendrier', icon: Icons.calendar_month, route: Routes.calendar),
       (label: 'Archives', icon: Icons.archive, route: Routes.archives),
     ];
 
     Widget buildButtons() {
+      Widget buildBtn(({String label, IconData icon, String route}) b) {
+        return _HomeButton(
+          label: b.label,
+          icon: b.icon,
+          onTap: () => Navigator.pushReplacementNamed(context, b.route),
+        );
+      }
+
       if (isWide) {
         return SizedBox(
           height: 140,
@@ -74,46 +83,59 @@ class HomePage extends StatelessWidget {
             children: [
               for (int i = 0; i < buttons.length; i++) ...[
                 if (i > 0) const SizedBox(width: spacing),
-                Expanded(
-                  child: _HomeButton(
-                    label: buttons[i].label,
-                    icon: buttons[i].icon,
-                    onTap: () => Navigator.pushReplacementNamed(
-                        context, buttons[i].route),
-                  ),
-                ),
+                Expanded(child: buildBtn(buttons[i])),
               ],
             ],
           ),
         );
       } else {
         final side = (screenWidth - padding - spacing) / 2;
-        return SizedBox(
-          width: screenWidth - padding,
-          height: side * 2 + spacing,
-          child: GridView.count(
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: spacing,
-            mainAxisSpacing: spacing,
-            childAspectRatio: 1.0,
-            children: [
-              for (final b in buttons)
-                _HomeButton(
-                  label: b.label,
-                  icon: b.icon,
-                  onTap: () =>
-                      Navigator.pushReplacementNamed(context, b.route),
-                ),
-            ],
-          ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Ligne 1 : 2 boutons
+            SizedBox(
+              height: side,
+              child: Row(
+                children: [
+                  Expanded(child: buildBtn(buttons[0])),
+                  const SizedBox(width: spacing),
+                  Expanded(child: buildBtn(buttons[1])),
+                ],
+              ),
+            ),
+            const SizedBox(height: spacing),
+            // Ligne 2 : 1 bouton centré (Tableau d'affichage)
+            SizedBox(
+              height: side,
+              width: side,
+              child: buildBtn(buttons[2]),
+            ),
+            const SizedBox(height: spacing),
+            // Ligne 3 : 2 boutons
+            SizedBox(
+              height: side,
+              child: Row(
+                children: [
+                  Expanded(child: buildBtn(buttons[3])),
+                  const SizedBox(width: spacing),
+                  Expanded(child: buildBtn(buttons[4])),
+                ],
+              ),
+            ),
+          ],
         );
       }
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Accueil'),
+        leading: IconButton(
+          icon: const Icon(Icons.notifications),
+          onPressed: () {
+            // TODO : naviguer vers les notifications
+          },
+        ),
         actions: [
           StreamBuilder<String>(
             stream: _roleStream(),
@@ -145,48 +167,97 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Titre de bienvenue (en haut)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: StreamBuilder<String>(
-                stream: _pseudoStream(),
-                builder: (context, snapshot) {
-                  final pseudo = snapshot.data ?? '...';
-                  return Text(
-                    'Bienvenue à $pseudo',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  );
-                },
-              ),
-            ),
-
-            // Boutons centrés verticalement
-            Expanded(
-              child: Center(child: buildButtons()),
-            ),
-
-            // Déconnexion (en bas)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: InkWell(
-                onTap: () => _logout(context),
-                child: Text(
-                  'Déconnexion',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    decoration: TextDecoration.underline,
+      body: Stack(
+        children: [
+          // ── Contenu principal ───────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Titre de bienvenue (en haut)
+                Align(
+                  alignment: Alignment.center,
+                  child: StreamBuilder<String>(
+                    stream: _pseudoStream(),
+                    builder: (context, snapshot) {
+                      final pseudo = snapshot.data ?? '...';
+                      return Text(
+                        'Bienvenue à $pseudo',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      );
+                    },
                   ),
+                ),
+
+                // Boutons centrés verticalement
+                Expanded(
+                  child: Center(child: buildButtons()),
+                ),
+
+                // TODO : Faire un menu admin et le ranger dedans.
+                StreamBuilder<String>(
+                  stream: _roleStream(),
+                  builder: (context, snap) {
+                    final isAdmin = snap.data == 'admin';
+                    if (!isAdmin) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => Navigator.pushReplacementNamed(
+                              context, Routes.agentValidationList),
+                          icon: const Icon(Icons.verified_user_outlined),
+                          label: const Text('Validation des agents'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // Déconnexion (en bas)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: InkWell(
+                    onTap: () => _logout(context),
+                    child: Text(
+                      'Déconnexion',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+
+          // ── Bouton Statistique (bas droite, rectangulaire arrondi) ─────
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: Material(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  // TODO : naviguer vers les statistiques
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Icon(Icons.bar_chart, size: 22),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -15,7 +15,9 @@ class Agent {
   final Race race;
   final int? powerScore;
   final AgentClass agentClass;
+  final AgentClass? secondClass;
   final List<int> classBonuses;
+  final List<int> secondClassBonuses;
   final List<Skill> skills;
 
   final List<BagSlot> bagSlots;
@@ -30,6 +32,8 @@ class Agent {
   final int pc;
   final List<Contact> contacts;
 
+  final bool validated;
+
   const Agent({
     required this.id,
     required this.name,
@@ -43,7 +47,9 @@ class Agent {
     required this.race,
     this.powerScore,
     required this.agentClass,
+    this.secondClass,
     required this.classBonuses,
+    this.secondClassBonuses = const [],
     required this.skills,
     required this.bagSlots,
     required this.bankSlots,
@@ -54,6 +60,7 @@ class Agent {
     required this.level,
     required this.pc,
     required this.contacts,
+    this.validated = false,
   });
 
   // --------------------
@@ -72,7 +79,9 @@ class Agent {
     Race? race,
     int? powerScore,
     AgentClass? agentClass,
+    AgentClass? secondClass,
     List<int>? classBonuses,
+    List<int>? secondClassBonuses,
     List<Skill>? skills,
     List<BagSlot>? bagSlots,
     List<BankSlot>? bankSlots,
@@ -83,6 +92,7 @@ class Agent {
     int? level,
     int? pc,
     List<Contact>? contacts,
+    bool? validated,
   }) {
     return Agent(
       id: id ?? this.id,
@@ -97,7 +107,9 @@ class Agent {
       race: race ?? this.race,
       powerScore: powerScore ?? this.powerScore,
       agentClass: agentClass ?? this.agentClass,
+      secondClass: secondClass ?? this.secondClass,
       classBonuses: classBonuses ?? this.classBonuses,
+      secondClassBonuses: secondClassBonuses ?? this.secondClassBonuses,
       skills: skills ?? this.skills,
       bagSlots: bagSlots ?? this.bagSlots,
       bankSlots: bankSlots ?? this.bankSlots,
@@ -108,6 +120,7 @@ class Agent {
       level: level ?? this.level,
       pc: pc ?? this.pc,
       contacts: contacts ?? this.contacts,
+      validated: validated ?? this.validated,
     );
   }
 
@@ -130,7 +143,9 @@ class Agent {
       "race": race.toMap(),
       "powerScore": powerScore,
       "agentClass": agentClass.toMap(),
+      "secondClass": secondClass?.toMap(),
       "classBonuses": classBonuses,
+      "secondClassBonuses": secondClassBonuses,
       "skills": skills.map((s) => s.toMap()).toList(),
 
       "bagSlots": bagSlots.map((b) => b.toMap()).toList(),
@@ -144,6 +159,7 @@ class Agent {
 
       "pc": pc,
       "contacts": contacts.map((c) => c.toMap()).toList(),
+      "validated": validated,
     };
   }
 
@@ -163,7 +179,13 @@ class Agent {
       race: Race.fromMap(map["race"]),
       powerScore: map["powerScore"],
       agentClass: AgentClass.fromMap(map["agentClass"]),
+      secondClass: map["secondClass"] != null
+          ? AgentClass.fromMap(map["secondClass"])
+          : null,
       classBonuses: List<int>.from(map["classBonuses"]),
+      secondClassBonuses: map["secondClassBonuses"] != null
+          ? List<int>.from(map["secondClassBonuses"])
+          : const [],
       skills: (map["skills"] as List)
           .map((s) => Skill.fromMap(s))
           .toList(),
@@ -191,6 +213,7 @@ class Agent {
       contacts: (map["contacts"] as List)
           .map((c) => Contact.fromMap(c))
           .toList(),
+      validated: map["validated"] ?? false,
     );
   }
 
@@ -213,7 +236,9 @@ class Agent {
       "race": race.toJson(),
       "powerScore": powerScore,
       "agentClass": agentClass.toJson(),
+      "secondClass": secondClass?.toJson(),
       "classBonuses": classBonuses,
+      "secondClassBonuses": secondClassBonuses,
       "skills": skills.map((s) => s.toJson()).toList(),
 
       "bagSlots": bagSlots.map((b) => b.toJson()).toList(),
@@ -227,6 +252,7 @@ class Agent {
 
       "pc": pc,
       "contacts": contacts.map((c) => c.toJson()).toList(),
+      "validated": validated,
     };
   }
 
@@ -246,7 +272,13 @@ class Agent {
       race: Race.fromJson(json["race"]),
       powerScore: json["powerScore"],
       agentClass: AgentClass.fromJson(json["agentClass"]),
+      secondClass: json["secondClass"] != null
+          ? AgentClass.fromJson(json["secondClass"])
+          : null,
       classBonuses: List<int>.from(json["classBonuses"]),
+      secondClassBonuses: json["secondClassBonuses"] != null
+          ? List<int>.from(json["secondClassBonuses"])
+          : const [],
       skills: (json["skills"] as List)
           .map((s) => Skill.fromJson(s))
           .toList(),
@@ -274,6 +306,7 @@ class Agent {
       contacts: (json["contacts"] as List)
           .map((c) => Contact.fromJson(c))
           .toList(),
+      validated: json["validated"] ?? false,
     );
   }
 }
