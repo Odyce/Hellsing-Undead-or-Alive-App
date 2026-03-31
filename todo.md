@@ -10,16 +10,16 @@
 | 6 | Changer la navigation dans la date du calendrier (sélecteur mois/année cliquable) | ⭐⭐ Moyen-simple — améliorer la navigation dans MoonCalendarPage (saut par mois/année) | Fait |
 | 7 | Revoir les permissions ResDev | ⭐⭐ Moyen — investiguer et corriger la logique de permissions existante | Fait |
 | 8 | Créer une nouvelle race "Autre" (toutes classes, bonus/malus éditables, sauvegarde privateResources) | ⭐⭐⭐ Moyen — nouvelle race + champs remplissables uniquement par admin à la validation | Fait |
-| 9 | Fond d'écran manoir de la fondation sur le menu login | ⭐ Simple — ajouter une image de fond sur LoginPage | En attente (assets) |
-| 10 | Fond d'écran hall du manoir dans le menu principal | ⭐ Simple  — ajouter une image de fond sur HomePage | En attente (assets) |
+| 9 | Fond d'écran manoir de la fondation sur le menu login | ⭐ Simple — ajouter une image de fond sur LoginPage | Fait |
+| 10 | Fond d'écran hall du manoir dans le menu principal | ⭐ Simple  — ajouter une image de fond sur HomePage | Fait |
 | 11 | Terminer la validation des agents (fonctionnelle) — inclure modif admin des bonus/malus race "Autre" | ⭐⭐⭐ Moyen — compléter AgentValidationListPage et le flux de validation | Fait |
 | 12 | Rajout de filtres de tri sur toutes les pages de listes | ⭐⭐⭐ Moyen — répétitif mais touche beaucoup de pages (agents, missions, monstres, PNJ, artefacts, R&D) | Fait |
 | 13 | Vue Admin du module agents (liste tous agents + tri par utilisateur) | ⭐⭐⭐ Moyen  — nouvelle vue admin avec requête cross-users sur Firestore | Fait |
 | 14 | Page de niveau supérieur pour les agents | ⭐⭐⭐ Moyen  — nouveau flux avec logique de level-up | Fait |
-| 15 | Animation d'ouverture des portes du manoir lors de la connexion | ⭐⭐⭐ Moyen-complexe — animation Flutter custom (clip paths ou sprites) | En attente (assets) |
-| 16 | Page de modification des missions, monstres et PNJs | ⭐⭐⭐⭐ Complexe 3 pages d'édition (pré-remplir les formulaires existants + logique d'update) | A faire |
-| 17 | Revoir l'entièreté du tableau d'affichage | ⭐⭐⭐⭐ Complexe  — refonte complète d'un module existant | A faire |
-| 18 | Page et module de notification — nouveau système complet (modèle, stockage, UI, état lu/non-lu) | ⭐⭐⭐⭐ Complexe | A faire |
+| 15 | Animation d'ouverture des portes du manoir lors de la connexion | ⭐⭐⭐ Moyen-complexe — animation Flutter custom (clip paths ou sprites) | Fait |
+| 16 | Page de modification des missions, monstres et PNJs | ⭐⭐⭐⭐ Complexe 3 pages d'édition (pré-remplir les formulaires existants + logique d'update) | Fait |
+| 17 | Revoir l'entièreté du tableau d'affichage | ⭐⭐⭐⭐ Complexe  — refonte complète d'un module existant | Fait |
+| 18 | Page et module de notification — nouveau système complet (modèle, stockage, UI, état lu/non-lu) | ⭐⭐⭐⭐ Complexe | Fait |
 | 19 | Notification hebdomadaire Admin (fiches à valider + level ups) | ⭐⭐⭐⭐ Complexe — dépend du module notification + logique backend schedulée (Cloud Function ou équivalent) | A faire |
 | 20 | Notification immédiate joueurs (publication mission) | ⭐⭐⭐⭐ Complexe — dépend du module notification + push notifications (FCM) | A faire |
 | 21 | Suppression mensuelle automatique des images Cloudinary non-utilisées | ⭐⭐⭐⭐ Complexe — Cloud Function + API Cloudinary + scan de toutes les refs Firestore | A faire |
