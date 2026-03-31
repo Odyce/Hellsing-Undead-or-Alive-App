@@ -209,20 +209,49 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
     final data = missionDoc.data() as Map<String, dynamic>;
 
     final title = data['title'] as String? ?? '';
+    final description = data['descriptionIntro'] as String? ?? '';
     final illustrationPath = data['illustrationPath'] as String?;
+    final urgent = data['urgent'] as bool? ?? false;
     final registrations =
         Map<String, dynamic>.from(data['registrations'] as Map? ?? {});
+
+    final agentNames = registrations.values
+        .map((r) => (r as Map<String, dynamic>)['agentName'] as String? ?? '')
+        .where((n) => n.isNotEmpty)
+        .toList();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── En-tête : illustration + titre ─────────────────────────────
+
+          // ── Agents inscrits (bandeau compact en haut) ──────────────────
+          if (agentNames.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: Text(
+                agentNames.join(', '),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+          // ── Corps : illustration + titre + urgence + bouton fiche ──────
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 4, 0),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (illustrationPath != null) ...[
                   ClipRRect(
@@ -238,12 +267,64 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
                   const SizedBox(width: 12),
                 ],
                 Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (urgent)
+                            Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Urgente !',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (description.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          description,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // ── Bouton fiche mission ─────────────────────────────────
+                IconButton(
+                  icon: const Icon(Icons.description_outlined),
+                  tooltip: 'Voir la fiche',
+                  onPressed: () => Navigator.pushNamed(
+                    context,
+                    Routes.missionSheet,
+                    arguments: Mission.fromMap(data),
                   ),
                 ),
               ],
@@ -293,45 +374,6 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
                 );
               }).toList(),
             ),
-
-          // ── Agents inscrits (tous les utilisateurs) ─────────────────────
-          if (registrations.isNotEmpty) ...[
-            const Divider(height: 1),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Text(
-                'Agents inscrits',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ),
-            ...registrations.values.map((reg) {
-              final regMap = reg as Map<String, dynamic>;
-              final agentName = regMap['agentName'] as String? ?? '';
-              final agentPicture = regMap['agentPicture'] as String?;
-              final hasPic =
-                  agentPicture != null && agentPicture.trim().isNotEmpty;
-
-              return ListTile(
-                dense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                leading: CircleAvatar(
-                  radius: 16,
-                  backgroundImage: hasPic ? NetworkImage(agentPicture) : null,
-                  child: hasPic
-                      ? null
-                      : const Icon(Icons.person, size: 16),
-                ),
-                title: Text(agentName),
-              );
-            }),
-            const SizedBox(height: 8),
-          ],
         ],
       ),
     );

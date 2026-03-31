@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
@@ -38,6 +39,17 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
   File?            _illustration;
   final List<File> _reports = [];
 
+  // ─── Listes d'entités ──────────────────────────────────────────────────────
+  List<Agent> _agentInvolved = [];
+  List<PNJ> _pnjInvolved = [];
+  List<Monster> _monsterInvolved = [];
+  List<Agent> _agentDeceased = [];
+
+  List<Agent> _allAgents = [];
+  List<PNJ> _allPNJs = [];
+  List<Monster> _allMonsters = [];
+  bool _pickersLoaded = false;
+
   // ─── État ────────────────────────────────────────────────────────────────────
   String? _bountyMinError;
   String? _bountyMaxError;
@@ -48,6 +60,109 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
   final MissionRepository _repository = MissionRepository();
 
   static const int _maxReportBytes = 1 * 1024 * 1024; // 1 Mo
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPickerData();
+  }
+
+  Future<void> _loadPickerData() async {
+    final firestore = FirebaseFirestore.instance;
+    final archiveRef = firestore.collection('common').doc('archives');
+    final results = await Future.wait([
+      archiveRef.collection('npcs').get(),
+      archiveRef.collection('bestiary').get(),
+    ]);
+
+    final pnjs = results[0].docs.map((d) => PNJ.fromMap(d.data())).toList();
+    final monsters = results[1].docs.map((d) => Monster.fromMap(d.data())).toList();
+
+    final allAgents = <Agent>[];
+    final usersSnap = await firestore.collection('users').get();
+    for (final userDoc in usersSnap.docs) {
+      final agentsSnap = await firestore
+          .collection('users')
+          .doc(userDoc.id)
+          .collection('agents')
+          .where('validated', isEqualTo: true)
+          .get();
+      for (final agentDoc in agentsSnap.docs) {
+        allAgents.add(Agent.fromMap(agentDoc.data()));
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _allPNJs = pnjs..sort((a, b) => a.name.compareTo(b.name));
+        _allMonsters = monsters..sort((a, b) => a.name.compareTo(b.name));
+        _allAgents = allAgents..sort((a, b) => a.name.compareTo(b.name));
+        _pickersLoaded = true;
+      });
+    }
+  }
+
+  // ─── Picker générique ────────────────────────────────────────────────────────
+  Future<void> _showMultiPicker<T>({
+    required String title,
+    required List<T> allItems,
+    required List<T> selected,
+    required String Function(T) labelOf,
+    required Object Function(T) idOf,
+    required void Function(List<T>) onChanged,
+  }) async {
+    final picked = Set<Object>.from(selected.map(idOf));
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: ListView.builder(
+              itemCount: allItems.length,
+              itemBuilder: (_, i) {
+                final item = allItems[i];
+                final id = idOf(item);
+                final isSelected = picked.contains(id);
+                return CheckboxListTile(
+                  title: Text(labelOf(item)),
+                  value: isSelected,
+                  onChanged: (v) {
+                    setDialogState(() {
+                      if (v == true) {
+                        picked.add(id);
+                      } else {
+                        picked.remove(id);
+                      }
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final result = allItems
+                    .where((item) => picked.contains(idOf(item)))
+                    .toList();
+                onChanged(result);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   // ─── Validation ──────────────────────────────────────────────────────────────
   bool get _canCreate =>
@@ -221,6 +336,10 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
         bountyMin:        int.parse(_bountyMinCtrl.text),
         bountyMax:        int.parse(_bountyMaxCtrl.text),
         reportPaths:      reportUrls,
+        agentInvolved:    _agentInvolved.isNotEmpty ? _agentInvolved : null,
+        pnjInvolved:      _pnjInvolved.isNotEmpty ? _pnjInvolved : null,
+        monsterInvolved:  _monsterInvolved.isNotEmpty ? _monsterInvolved : null,
+        agentDeceased:    _agentDeceased.isNotEmpty ? _agentDeceased : null,
         urgent:           _urgent,
       );
 
@@ -263,6 +382,61 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
     _bountyMinCtrl.dispose();
     _bountyMaxCtrl.dispose();
     super.dispose();
+  }
+
+  // ─── Widget picker tile ────────────────────────────────────────────────────────
+  Widget _buildPickerTile({
+    required String label,
+    required List<String> chips,
+    Color? chipColor,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '$label (${chips.length})',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Icon(
+                  Icons.edit,
+                  size: 18,
+                  color: onTap != null ? null : Colors.grey.shade400,
+                ),
+              ],
+            ),
+            if (chips.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: chips
+                    .map((name) => Chip(
+                          label: Text(name, style: const TextStyle(fontSize: 12)),
+                          backgroundColor: chipColor,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ))
+                    .toList(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   // ─── Build ────────────────────────────────────────────────────────────────────
@@ -460,6 +634,74 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
             minLines: 2,
             maxLines: 8,
           ),
+          const SizedBox(height: 24),
+
+          // ── Entités liées ──────────────────────────────────────────────────────
+          Text('Entités liées', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+
+          if (!_pickersLoaded)
+            const Center(child: CircularProgressIndicator())
+          else ...[
+            _buildPickerTile(
+              label: 'Agents impliqués',
+              chips: _agentInvolved.map((a) => a.name).toList(),
+              onTap: () => _showMultiPicker<Agent>(
+                title: 'Agents impliqués',
+                allItems: _allAgents,
+                selected: _agentInvolved,
+                labelOf: (a) => a.name,
+                idOf: (a) => a.id,
+                onChanged: (list) => setState(() {
+                  _agentInvolved = list;
+                  final involvedIds = list.map((a) => a.id).toSet();
+                  _agentDeceased.removeWhere((a) => !involvedIds.contains(a.id));
+                }),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildPickerTile(
+              label: 'Agents décédés',
+              chips: _agentDeceased.map((a) => a.name).toList(),
+              chipColor: Colors.red.shade50,
+              onTap: _agentInvolved.isEmpty
+                  ? null
+                  : () => _showMultiPicker<Agent>(
+                        title: 'Agents décédés',
+                        allItems: _agentInvolved,
+                        selected: _agentDeceased,
+                        labelOf: (a) => a.name,
+                        idOf: (a) => a.id,
+                        onChanged: (list) => setState(() => _agentDeceased = list),
+                      ),
+            ),
+            const SizedBox(height: 8),
+            _buildPickerTile(
+              label: 'PNJs impliqués',
+              chips: _pnjInvolved.map((p) => p.name).toList(),
+              onTap: () => _showMultiPicker<PNJ>(
+                title: 'PNJs impliqués',
+                allItems: _allPNJs,
+                selected: _pnjInvolved,
+                labelOf: (p) => p.name,
+                idOf: (p) => p.id,
+                onChanged: (list) => setState(() => _pnjInvolved = list),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildPickerTile(
+              label: 'Monstres impliqués',
+              chips: _monsterInvolved.map((m) => m.name).toList(),
+              onTap: () => _showMultiPicker<Monster>(
+                title: 'Monstres impliqués',
+                allItems: _allMonsters,
+                selected: _monsterInvolved,
+                labelOf: (m) => m.name,
+                idOf: (m) => m.id,
+                onChanged: (list) => setState(() => _monsterInvolved = list),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
 
           // ── Illustration ─────────────────────────────────────────────────────

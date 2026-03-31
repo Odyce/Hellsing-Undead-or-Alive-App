@@ -464,7 +464,11 @@ class _AgentSheetPageState extends State<AgentSheetPage>
                     ownerUid: uid,
                   ),
                   // -- Lore --
-                  _LoreSection(agent: agent),
+                  _LoreSection(
+                    agent: agent,
+                    ownerUid: uid,
+                    agentDocId: widget.agentDocId,
+                  ),
                 ],
               ),
             );
@@ -1077,12 +1081,25 @@ class _MissionsSection extends StatelessWidget {
         .collection('missions')
         .get();
 
+    // IDs des missions déjà présentes sur cet agent
+    final existingIds = agent.missions.map((m) => m.id).toSet();
+
     final archiveMissions = missionsSnap.docs
         .map((doc) => Mission.fromMap(doc.data()))
+        .where((m) => !existingIds.contains(m.id))
         .toList()
       ..sort((a, b) => a.id.compareTo(b.id));
 
     if (!context.mounted) return;
+
+    if (archiveMissions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucune nouvelle mission à ajouter.'),
+        ),
+      );
+      return;
+    }
 
     final selected = await showDialog<Mission>(
       context: context,
@@ -1152,7 +1169,7 @@ class _MissionsSection extends StatelessWidget {
         ExpansionTile(
           title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: Text(
-            "${slice.length} / $capacity missions${slice.length > 1 ? 's' : ''}",
+            "${slice.length} / $capacity mission${slice.length > 1 ? 's' : ''}",
             style: const TextStyle(fontSize: 12),
           ),
           children: slice
@@ -1288,11 +1305,91 @@ class _MissionRecordTile extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _LoreSection extends StatelessWidget {
   final Agent agent;
+  final String ownerUid;
+  final String agentDocId;
 
-  const _LoreSection({required this.agent});
+  const _LoreSection({
+    required this.agent,
+    required this.ownerUid,
+    required this.agentDocId,
+  });
+
+  Future<void> _addPaidContact(BuildContext context) async {
+    final result = await _showAddContactDialog(
+      context,
+      agent: agent,
+      isFree: false,
+    );
+    if (result == null) return;
+
+    final newContact = Contact(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: result.name,
+      description: result.description,
+      contactPointsValue: result.cost,
+    );
+
+    final agentRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(ownerUid)
+        .collection('agents')
+        .doc(agentDocId);
+
+    await agentRef.update({
+      'contacts': [
+        ...agent.contacts.map((c) => c.toMap()),
+        newContact.toMap(),
+      ],
+      'pc': agent.pc - result.cost,
+    });
+  }
+
+  Future<void> _addFreeContact(BuildContext context) async {
+    final result = await _showAddContactDialog(
+      context,
+      agent: agent,
+      isFree: true,
+    );
+    if (result == null) return;
+
+    final newContact = Contact(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: result.name,
+      description: result.description,
+      contactPointsValue: 0,
+    );
+
+    final agentRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(ownerUid)
+        .collection('agents')
+        .doc(agentDocId);
+
+    await agentRef.update({
+      'contacts': [
+        ...agent.contacts.map((c) => c.toMap()),
+        newContact.toMap(),
+      ],
+      'validated': false,
+      'pendingFreeContact': true,
+    });
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Contact gratuit ajouté. La fiche est en attente de validation.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isOwner = FirebaseAuth.instance.currentUser?.uid == ownerUid;
+
+    final contacts = agent.contacts.where((c) => c.id != '-66').toList();
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1326,10 +1423,42 @@ class _LoreSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        if (agent.contacts.isEmpty)
+        // --- Boutons d'ajout de contact ---
+        if (isOwner)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                if (agent.pc > 0)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _addPaidContact(context),
+                      icon: const Icon(Icons.person_add, size: 18),
+                      label: const Text('Ajouter un contact'),
+                    ),
+                  ),
+                if (agent.pc > 0 && agent.validated)
+                  const SizedBox(width: 8),
+                if (agent.validated)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _addFreeContact(context),
+                      icon: const Icon(Icons.card_giftcard, size: 18),
+                      label: const Text('Contact gratuit'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.purple,
+                        side: const BorderSide(color: Colors.purple),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+        if (contacts.isEmpty)
           const Text("Aucun contact.", style: TextStyle(fontSize: 13, color: Colors.grey))
         else
-          ...agent.contacts.map((c) => _ContactCard(contact: c)),
+          ...contacts.map((c) => _ContactCard(contact: c)),
 
         // --- Bonus / Malus de race ---
         if (agent.race.bonuses != null && agent.race.bonuses!.isNotEmpty) ...[
@@ -1364,6 +1493,112 @@ class _LoreSection extends StatelessWidget {
       ],
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Dialog d'ajout de contact
+// ---------------------------------------------------------------------------
+class _ContactDialogResult {
+  final String name;
+  final String description;
+  final int cost;
+
+  const _ContactDialogResult({
+    required this.name,
+    required this.description,
+    required this.cost,
+  });
+}
+
+Future<_ContactDialogResult?> _showAddContactDialog(
+  BuildContext context, {
+  required Agent agent,
+  required bool isFree,
+}) {
+  final nameCtrl = TextEditingController();
+  final descCtrl = TextEditingController();
+  int cost = isFree ? 0 : 1;
+  final isVampire = agent.race.name.toLowerCase() == 'vampire';
+  final maxCost = isVampire ? 5 : 4;
+
+  return showDialog<_ContactDialogResult>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final availableCosts = List.generate(maxCost, (i) => i + 1)
+              .where((v) => v <= agent.pc)
+              .toList();
+
+          return AlertDialog(
+            title: Text(isFree ? 'Contact gratuit' : 'Ajouter un contact'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isFree)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Ce contact ne coûte pas de PC, mais la fiche '
+                        'sera remise en attente de validation.',
+                        style: TextStyle(fontSize: 13, color: Colors.orange),
+                      ),
+                    ),
+                  if (!isFree)
+                    DropdownButtonFormField<int>(
+                      value: cost,
+                      items: availableCosts
+                          .map((v) => DropdownMenuItem(
+                                value: v,
+                                child: Text('$v PC'),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => cost = v);
+                      },
+                      decoration: const InputDecoration(labelText: 'Coût'),
+                    ),
+                  if (!isFree) const SizedBox(height: 12),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Nom'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descCtrl,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    maxLines: 3,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final name = nameCtrl.text.trim();
+                  if (name.isEmpty) return;
+                  Navigator.pop(
+                    ctx,
+                    _ContactDialogResult(
+                      name: name,
+                      description: descCtrl.text.trim(),
+                      cost: cost,
+                    ),
+                  );
+                },
+                child: const Text('Ajouter'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------

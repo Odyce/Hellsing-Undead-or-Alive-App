@@ -68,6 +68,62 @@ const int _maxPEPM = 30;
 const int _maxClassBonus = 6;
 
 // ---------------------------------------------------------------------------
+// Registre centralisé des options de level-up
+// ---------------------------------------------------------------------------
+/// Chaque entrée correspond à un case du switch dans _applyLevelUp.
+/// Pour rendre une nouvelle option disponible aux admins lors de la création
+/// de règles pour la race "Autre", il suffit de l'ajouter ici ET dans le switch.
+class LevelUpOptionEntry {
+  final String id;
+  final String label;
+  const LevelUpOptionEntry(this.id, this.label);
+}
+
+const List<LevelUpOptionEntry> allLevelUpOptions = [
+  LevelUpOptionEntry('pm1',             '+1 PM'),
+  LevelUpOptionEntry('pm2',             '+2 PM'),
+  LevelUpOptionEntry('pe1',             '+1 PE'),
+  LevelUpOptionEntry('pe2',             '+2 PE'),
+  LevelUpOptionEntry('pe1pm1',          '+1 PE et +1 PM'),
+  LevelUpOptionEntry('pv1',             '+1 PV'),
+  LevelUpOptionEntry('pc1',             '+1 PC'),
+  LevelUpOptionEntry('power20_pc1',     '+20 au Pouvoir et +1 PC'),
+  LevelUpOptionEntry('power_minus10',   '-10 au Pouvoir'),
+  LevelUpOptionEntry('skill',           '1 nouvelle compétence'),
+  LevelUpOptionEntry('skill_pc1',       '+1 compétence et +1 PC'),
+  LevelUpOptionEntry('classbonus1_pc1', '+1 bonus de classe et +1 PC'),
+  LevelUpOptionEntry('classbonus2',     '+2 bonus de classe'),
+  LevelUpOptionEntry('classbonus2_pc1', '+2 bonus de classe et +1 PC'),
+  LevelUpOptionEntry('attribute5',      '+5 dans une Caractéristique'),
+];
+
+/// Retrouve le label lisible d'une option par son ID.
+String levelUpOptionLabel(String id) =>
+    allLevelUpOptions
+        .where((e) => e.id == id)
+        .map((e) => e.label)
+        .firstOrNull ??
+    id;
+
+/// Vérifie si une option est sélectionnable en respectant les caps actuels.
+bool isOptionAvailableForCaps(String optionId, int pv, int pe, int pm) {
+  switch (optionId) {
+    case 'pm1':
+    case 'pm2':
+      return pm < _maxPEPM;
+    case 'pe1':
+    case 'pe2':
+      return pe < _maxPEPM;
+    case 'pe1pm1':
+      return pe < _maxPEPM && pm < _maxPEPM;
+    case 'pv1':
+      return pv < _maxPV;
+    default:
+      return true;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // LevelUpPage
 // ---------------------------------------------------------------------------
 class LevelUpPage extends StatefulWidget {
@@ -112,12 +168,61 @@ class _LevelUpPageState extends State<LevelUpPage> {
 
   bool _saving = false;
 
+  // ── Règles custom pour la race "Autre" ──
+  List<Map<String, dynamic>>? _customRules;
+  bool _loadingRules = false;
+
   @override
   void initState() {
     super.initState();
     _isLevelFive = widget.targetLevel == 5;
     _isLegendary = widget.targetLevel >= 11;
     _raceName = widget.agent.race.name.toLowerCase();
+
+    if (_raceName == 'autre') {
+      _loadCustomRules();
+    }
+  }
+
+  Future<void> _loadCustomRules() async {
+    setState(() => _loadingRules = true);
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.ownerUid)
+          .collection('agents')
+          .doc(widget.agentDocId)
+          .get();
+      final data = doc.data();
+      if (data != null && data['customLevelUpRules'] != null) {
+        _customRules = List<Map<String, dynamic>>.from(
+          (data['customLevelUpRules'] as List).map((e) => Map<String, dynamic>.from(e)),
+        );
+      } else {
+        _customRules = null;
+      }
+    } catch (_) {
+      _customRules = null;
+    }
+    if (mounted) setState(() => _loadingRules = false);
+  }
+
+  /// Construit des _LevelUpChoice à partir des règles custom Firestore.
+  List<_LevelUpChoice> _buildCustomChoices(int pv, int pe, int pm) {
+    if (_customRules == null) return [];
+    return _customRules!.map((rule) {
+      final optionIds = List<String>.from(rule['optionIds'] ?? []);
+      final isAuto = rule['isAutomatic'] as bool? ?? false;
+      return _LevelUpChoice(
+        id: rule['id'] as String? ?? '',
+        label: rule['label'] as String? ?? '',
+        options: optionIds
+            .where((oid) => isOptionAvailableForCaps(oid, pv, pe, pm))
+            .map((oid) => _Option(oid, levelUpOptionLabel(oid)))
+            .toList(),
+        isAutomatic: isAuto,
+      );
+    }).toList();
   }
 
   // ── Options de level-up par race ──────────────────────────────────────────
@@ -139,8 +244,12 @@ class _LevelUpPageState extends State<LevelUpPage> {
         return _buildDemiVampireChoices(pv, pe, pm);
       case 'semi-ange':
         return _buildSemiAngeChoices(pv, pe, pm);
-      case 'humain':
       case 'autre':
+        if (_customRules != null && _customRules!.isNotEmpty) {
+          return _buildCustomChoices(pv, pe, pm);
+        }
+        return _buildHumainChoices(pv, pe, pm);
+      case 'humain':
       default:
         return _buildHumainChoices(pv, pe, pm);
     }
@@ -556,7 +665,7 @@ class _LevelUpPageState extends State<LevelUpPage> {
       appBar: AppBar(
         title: Text('Niveau ${widget.targetLevel}'),
       ),
-      body: _saving
+      body: _saving || _loadingRules
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),

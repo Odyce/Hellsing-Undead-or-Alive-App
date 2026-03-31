@@ -1,72 +1,205 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class MissionSheetPage extends StatelessWidget {
+class MissionSheetPage extends StatefulWidget {
   const MissionSheetPage({super.key});
+
+  @override
+  State<MissionSheetPage> createState() => _MissionSheetPageState();
+}
+
+class _MissionSheetPageState extends State<MissionSheetPage> {
+  late Mission _mission;
+  bool _isAdmin = false;
+  bool _roleLoaded = false;
+  bool _uploading = false;
+  bool _initialized = false;
+
+  final MissionRepository _repository = MissionRepository();
 
   // ─── Labels ────────────────────────────────────────────────────────────────
   static String _difficultyLabel(Difficulty d) => switch (d) {
-        Difficulty.basse      => 'Basse',
-        Difficulty.moyenne    => 'Moyenne',
-        Difficulty.haute      => 'Haute',
-        Difficulty.tresHaute  => 'Maïca',
-        Difficulty.inconnu    => 'Inconnue',
+        Difficulty.basse     => 'Basse',
+        Difficulty.moyenne   => 'Moyenne',
+        Difficulty.haute     => 'Haute',
+        Difficulty.tresHaute => 'Maïca',
+        Difficulty.inconnu   => 'Inconnue',
       };
 
   static String _cladeLabel(CladeName c) => switch (c) {
-        CladeName.osiris            => 'Osiris',
-        CladeName.blackOrchid       => 'Black Orchid',
-        CladeName.pennyDreadful     => 'Penny Dreadful',
-        CladeName.beginning         => 'The Beginning',
-        CladeName.origins           => 'Origins',
-        CladeName.unNeufTroisZero   => '1930',
-        CladeName.western           => 'Western',
-        CladeName.arthur            => 'The Legend of King Arthur',
+        CladeName.osiris          => 'Osiris',
+        CladeName.blackOrchid     => 'Black Orchid',
+        CladeName.pennyDreadful   => 'Penny Dreadful',
+        CladeName.beginning       => 'The Beginning',
+        CladeName.origins         => 'Origins',
+        CladeName.unNeufTroisZero => '1930',
+        CladeName.western         => 'Western',
+        CladeName.arthur          => 'The Legend of King Arthur',
       };
 
-  Future<bool> _isAdmin() async {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _mission = ModalRoute.of(context)!.settings.arguments as Mission;
+      _initialized = true;
+      _checkRole();
+    }
+  }
+
+  Future<void> _checkRole() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return false;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.data()?['role'] == 'admin';
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    if (mounted) {
+      setState(() {
+        _isAdmin = doc.data()?['role'] == 'admin';
+        _roleLoaded = true;
+      });
+    }
+  }
+
+  // ─── Re-fetch mission depuis Firestore ─────────────────────────────────────
+  Future<void> _refreshMission() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('common')
+        .doc('archives')
+        .collection('missions')
+        .where('id', isEqualTo: _mission.id)
+        .limit(1)
+        .get();
+    if (snap.docs.isNotEmpty && mounted) {
+      setState(() => _mission = Mission.fromMap(snap.docs.first.data()));
+    }
+  }
+
+  // ─── Upload rapport PDF ────────────────────────────────────────────────────
+  static const int _maxReportBytes = 1 * 1024 * 1024;
+
+  Future<void> _uploadReport() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      allowMultiple: false,
+    );
+    if (result == null || result.files.isEmpty || result.files.first.path == null) return;
+
+    final file = File(result.files.first.path!);
+    final size = await file.length();
+    if (size > _maxReportBytes) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Le fichier d\u00e9passe 1 Mo.')),
+        );
+      }
+      return;
+    }
+
+    setState(() => _uploading = true);
+    try {
+      const cloudName = 'hellsingundeadapp';
+      const uploadPreset = 'Mission_reports-unsigned';
+      final uri = Uri.parse(
+        'https://api.cloudinary.com/v1_1/$cloudName/raw/upload',
+      );
+
+      final request = MultipartRequest('POST', uri)
+        ..fields['upload_preset'] = uploadPreset
+        ..files.add(await MultipartFile.fromPath('file', file.path));
+
+      final response = await request.send();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Erreur upload : ${response.statusCode}');
+      }
+      final body = await response.stream.bytesToString();
+      final url = jsonDecode(body)['secure_url'] as String;
+
+      await _repository.appendReport(_mission.id, url);
+      await _refreshMission();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rapport ajout\u00e9 avec succ\u00e8s.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  // ─── Navigation vers edit ──────────────────────────────────────────────────
+  Future<void> _openEditForm() async {
+    final updated = await Navigator.pushNamed(
+      context,
+      Routes.missionEdit,
+      arguments: _mission,
+    );
+    if (updated == true) {
+      await _refreshMission();
+    }
   }
 
   // ─── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final mission = ModalRoute.of(context)!.settings.arguments as Mission;
-
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // ── En-tête (titre uniquement) ────────────────────────────────────
+            // ── En-t\u00eate ──────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Center(
-                child: Text(
-                  'Fiche de mission',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        'Fiche de mission',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  if (_roleLoaded && _isAdmin)
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      tooltip: 'Modifier la mission',
+                      onPressed: _openEditForm,
+                    ),
+                ],
               ),
             ),
 
-            // ── Contenu scrollable ────────────────────────────────────────────
+            // ── Contenu scrollable ───────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Illustration ──────────────────────────────────────────
-                    if (mission.illustrationPath != null)
+                    if (_mission.illustrationPath != null)
                       Image.network(
-                        mission.illustrationPath!,
+                        _mission.illustrationPath!,
                         width: double.infinity,
                         height: 220,
                         fit: BoxFit.contain,
@@ -86,7 +219,7 @@ class MissionSheetPage extends StatelessWidget {
                         children: [
                           // ── Titre ──────────────────────────────────────────
                           Text(
-                            mission.title,
+                            _mission.title,
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -99,16 +232,16 @@ class MissionSheetPage extends StatelessWidget {
                             spacing: 8,
                             runSpacing: 4,
                             children: [
-                              if (mission.urgent)
+                              if (_mission.urgent)
                                 Chip(
                                   label: const Text('URGENT'),
                                   backgroundColor: Colors.red.shade100,
                                   side: BorderSide(color: Colors.red.shade400),
                                 ),
-                              Chip(label: Text(_cladeLabel(mission.clade))),
+                              Chip(label: Text(_cladeLabel(_mission.clade))),
                               Chip(
                                 label: Text(
-                                  'Difficulté : ${_difficultyLabel(mission.difficulty)}',
+                                  'Difficult\u00e9 : ${_difficultyLabel(_mission.difficulty)}',
                                 ),
                               ),
                             ],
@@ -116,56 +249,51 @@ class MissionSheetPage extends StatelessWidget {
                           const SizedBox(height: 8),
 
                           // ── Prime ──────────────────────────────────────────
-                          if (mission.bounty != null)
+                          if (_mission.bounty != null)
                             Text(
-                              'Prime finale : ${mission.bounty} £',
+                              'Prime finale : ${_mission.bounty} \u00a3',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                          FutureBuilder<bool>(
-                            future: _isAdmin(),
-                            builder: (context, snapshot) {
-                              if (snapshot.data != true) return const SizedBox.shrink();
-                              return Text(
-                                'Fourchette : ${mission.bountyMin} – ${mission.bountyMax} £',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              );
-                            },
-                          ),
+                          if (_roleLoaded && _isAdmin)
+                            Text(
+                              'Fourchette : ${_mission.bountyMin} \u2013 ${_mission.bountyMax} \u00a3',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
 
                           const Divider(height: 32),
 
                           // ── Dates ──────────────────────────────────────────
-                          _DateRow(label: 'Affichée le', date: mission.postedAt),
-                          if (mission.playedAt != null)
-                            _DateRow(label: 'Jouée le', date: mission.playedAt!),
-                          if (mission.completedAt != null)
-                            _DateRow(label: 'Terminée le', date: mission.completedAt!),
+                          _DateRow(label: 'Affich\u00e9e le', date: _mission.postedAt),
+                          if (_mission.playedAt != null)
+                            _DateRow(label: 'Jou\u00e9e le', date: _mission.playedAt!),
+                          if (_mission.completedAt != null)
+                            _DateRow(label: 'Termin\u00e9e le', date: _mission.completedAt!),
 
                           const Divider(height: 32),
 
                           // ── Description intro ──────────────────────────────
                           _SectionTitle('Description'),
                           const SizedBox(height: 8),
-                          Text(mission.descriptionIntro,
+                          Text(_mission.descriptionIntro,
                               style: const TextStyle(fontSize: 15)),
 
                           // ── Description outro ──────────────────────────────
-                          if (mission.descriptionOutro != null) ...[
+                          if (_mission.descriptionOutro != null) ...[
                             const SizedBox(height: 24),
-                            _SectionTitle('Épilogue'),
+                            _SectionTitle('\u00c9pilogue'),
                             const SizedBox(height: 8),
-                            Text(mission.descriptionOutro!,
+                            Text(_mission.descriptionOutro!,
                                 style: const TextStyle(fontSize: 15)),
                           ],
 
                           // ── Notes MJ ───────────────────────────────────────
-                          if (mission.notesForDM != null) ...[
+                          if (_mission.notesForDM != null) ...[
                             const SizedBox(height: 24),
                             _SectionTitle('Notes MJ'),
                             const SizedBox(height: 8),
@@ -178,22 +306,86 @@ class MissionSheetPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                mission.notesForDM!,
+                                _mission.notesForDM!,
                                 style: const TextStyle(fontSize: 15),
                               ),
                             ),
                           ],
 
-                          // ── Rapports PDF ───────────────────────────────────
-                          if (mission.reportPaths != null &&
-                              mission.reportPaths!.isNotEmpty) ...[
+                          // ── Agents impliqu\u00e9s ─────────────────────────────
+                          if (_mission.agentInvolved != null &&
+                              _mission.agentInvolved!.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            _SectionTitle('Rapports'),
+                            _SectionTitle('Agents impliqu\u00e9s'),
                             const SizedBox(height: 8),
-                            ...mission.reportPaths!.asMap().entries.map((e) {
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: _mission.agentInvolved!
+                                  .map((a) => Chip(label: Text(a.name)))
+                                  .toList(),
+                            ),
+                          ],
+
+                          // ── PNJs impliqu\u00e9s ───────────────────────────────
+                          if (_mission.pnjInvolved != null &&
+                              _mission.pnjInvolved!.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            _SectionTitle('PNJs impliqu\u00e9s'),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: _mission.pnjInvolved!
+                                  .map((p) => Chip(label: Text(p.name)))
+                                  .toList(),
+                            ),
+                          ],
+
+                          // ── Monstres impliqu\u00e9s ───────────────────────────
+                          if (_mission.monsterInvolved != null &&
+                              _mission.monsterInvolved!.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            _SectionTitle('Monstres impliqu\u00e9s'),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: _mission.monsterInvolved!
+                                  .map((m) => Chip(label: Text(m.name)))
+                                  .toList(),
+                            ),
+                          ],
+
+                          // ── Agents d\u00e9c\u00e9d\u00e9s ─────────────────────────────
+                          if (_mission.agentDeceased != null &&
+                              _mission.agentDeceased!.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            _SectionTitle('Agents d\u00e9c\u00e9d\u00e9s'),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: _mission.agentDeceased!
+                                  .map((a) => Chip(
+                                        label: Text(a.name),
+                                        backgroundColor: Colors.red.shade50,
+                                      ))
+                                  .toList(),
+                            ),
+                          ],
+
+                          // ── Rapports PDF ───────────────────────────────────
+                          const SizedBox(height: 24),
+                          _SectionTitle('Rapports'),
+                          const SizedBox(height: 8),
+
+                          if (_mission.reportPaths != null &&
+                              _mission.reportPaths!.isNotEmpty)
+                            ...(_mission.reportPaths!.asMap().entries.map((e) {
                               final index = e.key + 1;
-                              final url   = e.value;
-                              final name  = Uri.tryParse(url)
+                              final url = e.value;
+                              final name = Uri.tryParse(url)
                                       ?.pathSegments
                                       .lastOrNull ??
                                   'Rapport $index';
@@ -202,8 +394,7 @@ class MissionSheetPage extends StatelessWidget {
                                 leading: const Icon(Icons.picture_as_pdf,
                                     color: Colors.red),
                                 title: Text(name),
-                                trailing: const Icon(Icons.open_in_new,
-                                    size: 18),
+                                trailing: const Icon(Icons.open_in_new, size: 18),
                                 onTap: () async {
                                   final uri = Uri.tryParse(url);
                                   if (uri != null && await canLaunchUrl(uri)) {
@@ -212,8 +403,32 @@ class MissionSheetPage extends StatelessWidget {
                                   }
                                 },
                               );
-                            }),
-                          ],
+                            })),
+
+                          if (_mission.reportPaths == null ||
+                              _mission.reportPaths!.isEmpty)
+                            const Text(
+                              'Aucun rapport pour le moment.',
+                              style: TextStyle(
+                                  fontStyle: FontStyle.italic, color: Colors.grey),
+                            ),
+
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            onPressed: _uploading ? null : _uploadReport,
+                            icon: _uploading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.upload_file),
+                            label: Text(
+                              _uploading
+                                  ? 'Upload en cours\u2026'
+                                  : 'Ajouter un rapport (PDF)',
+                            ),
+                          ),
 
                           const SizedBox(height: 8),
                         ],
@@ -224,7 +439,7 @@ class MissionSheetPage extends StatelessWidget {
               ),
             ),
 
-            // ── Bouton retour en bas ──────────────────────────────────────────
+            // ── Bouton retour en bas ─────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Align(

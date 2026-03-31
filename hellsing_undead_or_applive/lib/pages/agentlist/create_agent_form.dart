@@ -597,7 +597,6 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           const SizedBox(height: 16),
           TextField(
             controller: _backgroundController,
-            style: GoogleFonts.cinzelDecorative(),
             decoration: InputDecoration(
               labelText: 'Background',
               labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),

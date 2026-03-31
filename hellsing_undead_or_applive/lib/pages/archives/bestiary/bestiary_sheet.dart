@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/archives/widgets/field_notes_section.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
@@ -11,23 +17,133 @@ class BestiarySheetPage extends StatefulWidget {
 }
 
 class _BestiarySheetPageState extends State<BestiarySheetPage> {
+  late Monster _monster;
+  bool _initialized = false;
+  bool _uploading = false;
   int _currentImageIndex = 0;
 
+  final MonsterRepository _repository = MonsterRepository();
+
   static String _typeLabel(Entitype t) => switch (t) {
-        Entitype.demon   => 'Démon',
-        Entitype.angel   => 'Ange',
-        Entitype.midian  => 'Midian',
-        Entitype.beast   => 'Bête',
-        Entitype.human   => 'Humain',
+        Entitype.demon  => 'D\u00e9mon',
+        Entitype.angel  => 'Ange',
+        Entitype.midian => 'Midian',
+        Entitype.beast  => 'B\u00eate',
+        Entitype.human  => 'Humain',
       };
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _monster = ModalRoute.of(context)!.settings.arguments as Monster;
+      _initialized = true;
+    }
+  }
+
+  Future<void> _refreshMonster() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('common')
+        .doc('archives')
+        .collection('bestiary')
+        .where('id', isEqualTo: _monster.id)
+        .limit(1)
+        .get();
+    if (snap.docs.isNotEmpty && mounted) {
+      setState(() {
+        _monster = Monster.fromMap(snap.docs.first.data());
+        final images = _monster.illustrationPaths ?? [];
+        if (_currentImageIndex >= images.length) {
+          _currentImageIndex = images.isEmpty ? 0 : images.length - 1;
+        }
+      });
+    }
+  }
+
+  // ─── Ajout illustration ────────────────────────────────────────────────────
+  Future<void> _addIllustration() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploading = true);
+    try {
+      const cloudName = 'hellsingundeadapp';
+      const uploadPreset = 'Monster_illustrations-unsigned';
+      final uri = Uri.parse(
+        'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+      );
+
+      final request = MultipartRequest('POST', uri)
+        ..fields['upload_preset'] = uploadPreset
+        ..files.add(await MultipartFile.fromPath('file', File(picked.path).path));
+
+      final response = await request.send();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Erreur upload : ${response.statusCode}');
+      }
+      final body = await response.stream.bytesToString();
+      final url = jsonDecode(body)['secure_url'] as String;
+
+      await _repository.appendIllustration(_monster.id, url);
+      await _refreshMonster();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Illustration ajout\u00e9e.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _openEditForm() async {
+    final updated = await Navigator.pushNamed(
+      context,
+      Routes.bestiaryEdit,
+      arguments: _monster,
+    );
+    if (updated == true) {
+      await _refreshMonster();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final monster = ModalRoute.of(context)!.settings.arguments as Monster;
-    final images   = monster.illustrationPaths ?? [];
+    final images = _monster.illustrationPaths ?? [];
 
     return Scaffold(
-      appBar: AppBar(title: Text(monster.name)),
+      appBar: AppBar(
+        title: Text(_monster.name),
+        actions: [
+          IconButton(
+            icon: _uploading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.add_photo_alternate),
+            tooltip: 'Ajouter une illustration',
+            onPressed: _uploading ? null : _addIllustration,
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Modifier',
+            onPressed: _openEditForm,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -52,7 +168,6 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
                 ),
               ),
 
-              // Miniatures de navigation si plusieurs images
               if (images.length > 1) ...[
                 const SizedBox(height: 8),
                 SizedBox(
@@ -100,7 +215,7 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
 
             // ── Nom & type ────────────────────────────────────────────────────
             Text(
-              monster.name,
+              _monster.name,
               style: Theme.of(context)
                   .textTheme
                   .headlineSmall
@@ -112,8 +227,8 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
               spacing: 8,
               runSpacing: 4,
               children: [
-                Chip(label: Text(_typeLabel(monster.type))),
-                Chip(label: Text(monster.race)),
+                Chip(label: Text(_typeLabel(_monster.type))),
+                Chip(label: Text(_monster.race)),
               ],
             ),
             const SizedBox(height: 24),
@@ -121,25 +236,25 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
             // ── Description ───────────────────────────────────────────────────
             _SectionTitle('Description'),
             const SizedBox(height: 8),
-            Text(monster.description),
+            Text(_monster.description),
             const SizedBox(height: 24),
 
-            // ── Compétences ───────────────────────────────────────────────────
-            _SectionTitle('Compétences'),
+            // ── Comp\u00e9tences ───────────────────────────────────────────────────
+            _SectionTitle('Comp\u00e9tences'),
             const SizedBox(height: 8),
-            Text(monster.skills),
+            Text(_monster.skills),
             const SizedBox(height: 24),
 
             // ── Faiblesse ─────────────────────────────────────────────────────
             _SectionTitle('Faiblesse'),
             const SizedBox(height: 8),
-            Text(monster.weakness),
+            Text(_monster.weakness),
             const SizedBox(height: 24),
 
             // ── Lieu d'apparition ─────────────────────────────────────────────
             _SectionTitle("Lieu d'apparition"),
             const SizedBox(height: 8),
-            Text(monster.location),
+            Text(_monster.location),
             const SizedBox(height: 24),
 
             // ── Estimation des PV ─────────────────────────────────────────────
@@ -149,23 +264,23 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
               children: [
                 _StatBox(
                   label: 'Minimum',
-                  value: monster.hpScale.isNotEmpty
-                      ? monster.hpScale[0].toString()
-                      : '—',
+                  value: _monster.hpScale.isNotEmpty
+                      ? _monster.hpScale[0].toString()
+                      : '\u2014',
                 ),
                 const SizedBox(width: 16),
                 _StatBox(
                   label: 'Maximum',
-                  value: monster.hpScale.length > 1
-                      ? monster.hpScale[1].toString()
-                      : '—',
+                  value: _monster.hpScale.length > 1
+                      ? _monster.hpScale[1].toString()
+                      : '\u2014',
                 ),
               ],
             ),
             const SizedBox(height: 32),
 
             // ── Notes des agents ──────────────────────────────────────────────
-            FieldNotesSection(targetType: 'monster', targetId: monster.id),
+            FieldNotesSection(targetType: 'monster', targetId: _monster.id),
             const SizedBox(height: 32),
 
             // ── Retour ────────────────────────────────────────────────────────

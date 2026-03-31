@@ -28,6 +28,10 @@ class MissionRepository {
     return maxId + 1;
   }
 
+  /// Référence vers la collection missions
+  CollectionReference<Map<String, dynamic>> get _missionsRef =>
+      _firestore.collection('common').doc('archives').collection('missions');
+
   /// Crée une Mission dans common/archives/missions
   Future<void> createMission({
     required String title,
@@ -40,6 +44,10 @@ class MissionRepository {
     required DateTime postedAt,
     DateTime? playedAt,
     DateTime? completedAt,
+    List<Agent>? agentInvolved,
+    List<PNJ>? pnjInvolved,
+    List<Monster>? monsterInvolved,
+    List<Agent>? agentDeceased,
     required int bountyMin,
     required int bountyMax,
     List<String>? reportPaths,
@@ -59,21 +67,39 @@ class MissionRepository {
       postedAt: postedAt,
       playedAt: playedAt,
       completedAt: completedAt,
-      agentInvolved: null,   // TODO: implémenter quand la DB sera prête
-      pnjInvolved: null,     // TODO: implémenter quand la DB sera prête
-      monsterInvolved: null, // TODO: implémenter quand la DB sera prête
+      agentInvolved: agentInvolved,
+      pnjInvolved: pnjInvolved,
+      monsterInvolved: monsterInvolved,
       bountyMin: bountyMin,
       bountyMax: bountyMax,
       reportPaths: reportPaths,
-      agentDeceased: null,   // TODO: implémenter quand la DB sera prête
+      agentDeceased: agentDeceased,
       urgent: urgent,
     );
 
-    await _firestore
-        .collection('common')
-        .doc('archives')
-        .collection('missions')
-        .add(mission.toMap());
+    await _missionsRef.add(mission.toMap());
+  }
+
+  /// Trouve le docId Firestore d'une mission par son id métier
+  Future<String?> _findMissionDocId(int missionId) async {
+    final snap = await _missionsRef.where('id', isEqualTo: missionId).limit(1).get();
+    return snap.docs.isEmpty ? null : snap.docs.first.id;
+  }
+
+  /// Met à jour les champs d'une mission existante
+  Future<void> updateMission(int missionId, Map<String, dynamic> fields) async {
+    final docId = await _findMissionDocId(missionId);
+    if (docId == null) return;
+    await _missionsRef.doc(docId).update(fields);
+  }
+
+  /// Ajoute un rapport PDF à une mission existante
+  Future<void> appendReport(int missionId, String reportUrl) async {
+    final docId = await _findMissionDocId(missionId);
+    if (docId == null) return;
+    await _missionsRef.doc(docId).update({
+      'reportPaths': FieldValue.arrayUnion([reportUrl]),
+    });
   }
 }
 
@@ -104,6 +130,23 @@ class PNJRepository {
     return maxId + 1;
   }
 
+  /// Référence vers la collection npcs
+  CollectionReference<Map<String, dynamic>> get _npcsRef =>
+      _firestore.collection('common').doc('archives').collection('npcs');
+
+  /// Trouve le docId Firestore d'un PNJ par son id métier
+  Future<String?> _findPNJDocId(int pnjId) async {
+    final snap = await _npcsRef.where('id', isEqualTo: pnjId).limit(1).get();
+    return snap.docs.isEmpty ? null : snap.docs.first.id;
+  }
+
+  /// Met à jour les champs d'un PNJ existant
+  Future<void> updatePNJ(int pnjId, Map<String, dynamic> fields) async {
+    final docId = await _findPNJDocId(pnjId);
+    if (docId == null) return;
+    await _npcsRef.doc(docId).update(fields);
+  }
+
   /// Crée un PNJ dans common/archives/npcs
   Future<void> createPNJ({
     required String name,
@@ -125,11 +168,7 @@ class PNJRepository {
       alive: alive,
     );
 
-    await _firestore
-        .collection('common')
-        .doc('archives')
-        .collection('npcs')
-        .add(pnj.toMap());
+    await _npcsRef.add(pnj.toMap());
   }
 }
 
@@ -160,6 +199,32 @@ class MonsterRepository {
     return maxId + 1;
   }
 
+  /// Référence vers la collection bestiary
+  CollectionReference<Map<String, dynamic>> get _bestiaryRef =>
+      _firestore.collection('common').doc('archives').collection('bestiary');
+
+  /// Trouve le docId Firestore d'un monstre par son id métier
+  Future<String?> _findMonsterDocId(int monsterId) async {
+    final snap = await _bestiaryRef.where('id', isEqualTo: monsterId).limit(1).get();
+    return snap.docs.isEmpty ? null : snap.docs.first.id;
+  }
+
+  /// Met à jour les champs d'un monstre existant
+  Future<void> updateMonster(int monsterId, Map<String, dynamic> fields) async {
+    final docId = await _findMonsterDocId(monsterId);
+    if (docId == null) return;
+    await _bestiaryRef.doc(docId).update(fields);
+  }
+
+  /// Ajoute une illustration à un monstre existant
+  Future<void> appendIllustration(int monsterId, String imageUrl) async {
+    final docId = await _findMonsterDocId(monsterId);
+    if (docId == null) return;
+    await _bestiaryRef.doc(docId).update({
+      'illustrationPaths': FieldValue.arrayUnion([imageUrl]),
+    });
+  }
+
   /// Crée un Monster dans common/archives/bestiary
   Future<void> createMonster({
     required String name,
@@ -188,11 +253,7 @@ class MonsterRepository {
       hpScale: hpScale,
     );
 
-    await _firestore
-        .collection('common')
-        .doc('archives')
-        .collection('bestiary')
-        .add(monster.toMap());
+    await _bestiaryRef.add(monster.toMap());
   }
 }
 

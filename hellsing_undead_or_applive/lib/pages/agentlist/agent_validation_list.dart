@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/agent_sheet.dart';
+import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 /// Données d'un agent non validé, enrichies avec les infos de son propriétaire.
@@ -13,6 +14,7 @@ class _PendingAgent {
   final String raceName;
   final List<String> bonuses;
   final List<String> maluses;
+  final bool pendingFreeContact;
 
   const _PendingAgent({
     required this.ownerUid,
@@ -23,9 +25,23 @@ class _PendingAgent {
     required this.raceName,
     this.bonuses = const [],
     this.maluses = const [],
+    this.pendingFreeContact = false,
   });
 
   bool get isRaceAutre => raceName == 'Autre';
+}
+
+/// Règle custom de montée de niveau, construite par l'admin dans le dialog.
+class _CustomLevelUpRule {
+  String label;
+  List<String> optionIds;
+  bool isAutomatic;
+
+  _CustomLevelUpRule({
+    required this.label,
+    required this.optionIds,
+    required this.isAutomatic,
+  });
 }
 
 class AgentValidationListPage extends StatefulWidget {
@@ -90,6 +106,7 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
             raceName: raceName,
             bonuses: bonuses,
             maluses: maluses,
+            pendingFreeContact: data['pendingFreeContact'] as bool? ?? false,
           ));
         }
       }
@@ -143,7 +160,7 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
     await _doValidate(agent);
   }
 
-  // ─── Validation : race "Autre" (édition bonus/malus) ─────────────────────
+  // ─── Validation : race "Autre" (édition bonus/malus + règles level-up) ────
   Future<void> _showAutreValidationDialog(_PendingAgent agent) async {
     final bonusCtrls = agent.bonuses
         .map((b) => TextEditingController(text: b))
@@ -156,12 +173,18 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
     if (bonusCtrls.isEmpty) bonusCtrls.add(TextEditingController());
     if (malusCtrls.isEmpty) malusCtrls.add(TextEditingController());
 
+    // Règles de montée de niveau custom
+    final levelUpRules = <_CustomLevelUpRule>[
+      _CustomLevelUpRule(label: 'Choix 1', optionIds: [], isAutomatic: false),
+    ];
+
     final validated = await showDialog<bool>(
       context: context,
       builder: (ctx) => _AutreValidationDialog(
         agent: agent,
         bonusControllers: bonusCtrls,
         malusControllers: malusCtrls,
+        levelUpRules: levelUpRules,
       ),
     );
 
@@ -184,7 +207,21 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
     for (final c in bonusCtrls) { c.dispose(); }
     for (final c in malusCtrls) { c.dispose(); }
 
-    await _doValidateAutre(agent, newBonuses, newMaluses);
+    // Convertir les règles en maps pour Firestore
+    final rulesForFirestore = levelUpRules
+        .where((r) => r.optionIds.isNotEmpty)
+        .toList()
+        .asMap()
+        .entries
+        .map((e) => {
+              'id': 'custom_${e.key}',
+              'label': e.value.label,
+              'optionIds': e.value.optionIds,
+              'isAutomatic': e.value.isAutomatic,
+            })
+        .toList();
+
+    await _doValidateAutre(agent, newBonuses, newMaluses, rulesForFirestore);
   }
 
   // ─── Écriture Firestore : validation simple ─────────────────────────────
@@ -195,7 +232,10 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
           .doc(agent.ownerUid)
           .collection('agents')
           .doc(agent.agentDocId)
-          .update({'validated': true});
+          .update({
+            'validated': true,
+            'pendingFreeContact': false,
+          });
 
       // Retirer l'agent de la liste locale
       if (mounted) {
@@ -228,6 +268,7 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
     _PendingAgent agent,
     List<String> newBonuses,
     List<String> newMaluses,
+    List<Map<String, dynamic>> customLevelUpRules,
   ) async {
     try {
       final agentRef = FirebaseFirestore.instance
@@ -236,12 +277,17 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
           .collection('agents')
           .doc(agent.agentDocId);
 
-      // 1. Mettre à jour les bonus/malus de la race + validated
-      await agentRef.update({
+      // 1. Mettre à jour les bonus/malus de la race + validated + rules
+      final updateData = <String, dynamic>{
         'validated': true,
+        'pendingFreeContact': false,
         'race.bonuses': newBonuses.isEmpty ? null : newBonuses,
         'race.maluses': newMaluses.isEmpty ? null : newMaluses,
-      });
+      };
+      if (customLevelUpRules.isNotEmpty) {
+        updateData['customLevelUpRules'] = customLevelUpRules;
+      }
+      await agentRef.update(updateData);
 
       // 2. Mettre à jour le doc privateResources correspondant
       final privateSnap = await FirebaseFirestore.instance
@@ -376,6 +422,26 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
                                               : FontWeight.normal,
                                         ),
                                       ),
+                                      if (agent.pendingFreeContact)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 4),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.purple,
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'Contact Gratuit à vérifier',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -422,11 +488,13 @@ class _AutreValidationDialog extends StatefulWidget {
   final _PendingAgent agent;
   final List<TextEditingController> bonusControllers;
   final List<TextEditingController> malusControllers;
+  final List<_CustomLevelUpRule> levelUpRules;
 
   const _AutreValidationDialog({
     required this.agent,
     required this.bonusControllers,
     required this.malusControllers,
+    required this.levelUpRules,
   });
 
   @override
@@ -438,48 +506,56 @@ class _AutreValidationDialogState extends State<_AutreValidationDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text('Valider "${widget.agent.agentName}"'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Race : ${widget.agent.raceName}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Race : ${widget.agent.raceName}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
               ),
-            ),
-            Text(
-              'Joueur : ${widget.agent.ownerPseudo}',
-              style: TextStyle(
-                fontSize: 13,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Text(
+                'Joueur : ${widget.agent.ownerPseudo}',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Vous pouvez modifier les bonus et malus de la race '
-              'avant de valider l\'agent.',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+              const Text(
+                'Vous pouvez modifier les bonus et malus de la race '
+                'avant de valider l\'agent.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
 
-            // ── Bonus ──
-            _buildEditableList(
-              title: 'Bonus',
-              color: Colors.green,
-              controllers: widget.bonusControllers,
-            ),
-            const SizedBox(height: 12),
+              // ── Bonus ──
+              _buildEditableList(
+                title: 'Bonus',
+                color: Colors.green,
+                controllers: widget.bonusControllers,
+              ),
+              const SizedBox(height: 12),
 
-            // ── Malus ──
-            _buildEditableList(
-              title: 'Malus',
-              color: Colors.red,
-              controllers: widget.malusControllers,
-            ),
-          ],
+              // ── Malus ──
+              _buildEditableList(
+                title: 'Malus',
+                color: Colors.red,
+                controllers: widget.malusControllers,
+              ),
+
+              const Divider(height: 32),
+
+              // ── Règles de montée de niveau ──
+              _buildLevelUpRulesSection(),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -498,6 +574,8 @@ class _AutreValidationDialogState extends State<_AutreValidationDialog> {
       ],
     );
   }
+
+  // ── Liste éditable de bonus/malus ─────────────────────────────────────────
 
   Widget _buildEditableList({
     required String title,
@@ -549,6 +627,158 @@ class _AutreValidationDialogState extends State<_AutreValidationDialog> {
             ),
           ),
       ],
+    );
+  }
+
+  // ── Section règles de montée de niveau ────────────────────────────────────
+
+  Widget _buildLevelUpRulesSection() {
+    final rules = widget.levelUpRules;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Règles de montée de niveau',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline, size: 20),
+              tooltip: 'Ajouter une règle',
+              onPressed: () => setState(() {
+                rules.add(_CustomLevelUpRule(
+                  label: 'Choix ${rules.length + 1}',
+                  optionIds: [],
+                  isAutomatic: false,
+                ));
+              }),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Chaque règle est un choix présenté à l\'utilisateur lors '
+          'de la montée de niveau. Une règle automatique (1 seule option) '
+          's\'applique sans choix.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 12),
+
+        for (int i = 0; i < rules.length; i++)
+          _buildRuleCard(i, rules[i]),
+      ],
+    );
+  }
+
+  Widget _buildRuleCard(int index, _CustomLevelUpRule rule) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── En-tête : label + supprimer ──
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: TextEditingController(text: rule.label),
+                    decoration: const InputDecoration(
+                      labelText: 'Nom de la règle',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (v) => rule.label = v,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (widget.levelUpRules.length > 1)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline,
+                        size: 20, color: Colors.red),
+                    tooltip: 'Supprimer cette règle',
+                    onPressed: () => setState(() {
+                      widget.levelUpRules.removeAt(index);
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // ── Toggle automatique ──
+            Row(
+              children: [
+                const Text('Automatique', style: TextStyle(fontSize: 13)),
+                const SizedBox(width: 8),
+                Switch(
+                  value: rule.isAutomatic,
+                  onChanged: (v) => setState(() => rule.isAutomatic = v),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // ── Options sélectionnées ──
+            const Text('Options :', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (final oid in rule.optionIds)
+                  Chip(
+                    label: Text(
+                      levelUpOptionLabel(oid),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    deleteIcon: const Icon(Icons.close, size: 16),
+                    onDeleted: () => setState(() {
+                      rule.optionIds.remove(oid);
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // ── Bouton ajouter une option ──
+            PopupMenuButton<String>(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, size: 16),
+                    SizedBox(width: 4),
+                    Text('Ajouter une option', style: TextStyle(fontSize: 13)),
+                  ],
+                ),
+              ),
+              itemBuilder: (_) => allLevelUpOptions
+                  .where((opt) => !rule.optionIds.contains(opt.id))
+                  .map((opt) => PopupMenuItem(
+                        value: opt.id,
+                        child: Text(opt.label),
+                      ))
+                  .toList(),
+              onSelected: (optId) => setState(() {
+                rule.optionIds.add(optId);
+              }),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

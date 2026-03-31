@@ -1,44 +1,159 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/archives/widgets/field_notes_section.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
-class NpcSheetPage extends StatelessWidget {
+class NpcSheetPage extends StatefulWidget {
   const NpcSheetPage({super.key});
 
+  @override
+  State<NpcSheetPage> createState() => _NpcSheetPageState();
+}
+
+class _NpcSheetPageState extends State<NpcSheetPage> {
+  late PNJ _pnj;
+  bool _initialized = false;
+
+  final PNJRepository _repository = PNJRepository();
+
   static String _typeLabel(Entitype t) => switch (t) {
-        Entitype.demon   => 'Démon',
-        Entitype.angel   => 'Semi-Ange',
-        Entitype.midian  => 'Midian',
-        Entitype.beast   => 'Bête',
-        Entitype.human   => 'Humain',
+        Entitype.demon  => 'D\u00e9mon',
+        Entitype.angel  => 'Semi-Ange',
+        Entitype.midian => 'Midian',
+        Entitype.beast  => 'B\u00eate',
+        Entitype.human  => 'Humain',
       };
 
   static String _relationLabel(Relationship r) => switch (r) {
         Relationship.neutral => 'Neutre',
-        Relationship.ally    => 'Allié',
+        Relationship.ally    => 'Alli\u00e9',
         Relationship.enemy   => 'Ennemi',
-        Relationship.trader  => "Allié tant qu'il y a des bénéfices",
+        Relationship.trader  => "Alli\u00e9 tant qu'il y a des b\u00e9n\u00e9fices",
       };
 
   @override
-  Widget build(BuildContext context) {
-    final pnj = ModalRoute.of(context)!.settings.arguments as PNJ;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _pnj = ModalRoute.of(context)!.settings.arguments as PNJ;
+      _initialized = true;
+    }
+  }
 
+  Future<void> _refreshPNJ() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('common')
+        .doc('archives')
+        .collection('npcs')
+        .where('id', isEqualTo: _pnj.id)
+        .limit(1)
+        .get();
+    if (snap.docs.isNotEmpty && mounted) {
+      setState(() => _pnj = PNJ.fromMap(snap.docs.first.data()));
+    }
+  }
+
+  // ─── Dialog : modifier la relation ─────────────────────────────────────────
+  Future<void> _editRelation() async {
+    Relationship? picked = _pnj.relation;
+
+    final result = await showDialog<Relationship>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Modifier la relation'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: Relationship.values.map((r) {
+              return RadioListTile<Relationship>(
+                title: Text(_relationLabel(r)),
+                value: r,
+                groupValue: picked,
+                onChanged: (v) => setDialogState(() => picked = v),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, picked),
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && result != _pnj.relation) {
+      await _repository.updatePNJ(_pnj.id, {'relation': result.name});
+      await _refreshPNJ();
+    }
+  }
+
+  // ─── Dialog : modifier alive ───────────────────────────────────────────────
+  Future<void> _editAlive() async {
+    bool? alive = _pnj.alive;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Modifier le statut'),
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(alive! ? 'Vivant' : 'D\u00e9c\u00e9d\u00e9',
+                  style: TextStyle(
+                    color: alive! ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.w600,
+                  )),
+              const SizedBox(width: 12),
+              Switch(
+                value: alive!,
+                onChanged: (v) => setDialogState(() => alive = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, alive),
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && result != _pnj.alive) {
+      await _repository.updatePNJ(_pnj.id, {'alive': result});
+      await _refreshPNJ();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(pnj.name)),
+      appBar: AppBar(title: Text(_pnj.name)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
 
             // ── Illustration ──────────────────────────────────────────────────
-            if (pnj.picturePath != null)
+            if (_pnj.picturePath != null)
               Center(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    pnj.picturePath!,
+                    _pnj.picturePath!,
                     height: 220,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Icon(
@@ -50,7 +165,7 @@ class NpcSheetPage extends StatelessWidget {
                 ),
               ),
 
-            if (pnj.picturePath != null) const SizedBox(height: 24),
+            if (_pnj.picturePath != null) const SizedBox(height: 24),
 
             // ── Nom & statut ──────────────────────────────────────────────────
             Row(
@@ -58,7 +173,7 @@ class NpcSheetPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    pnj.name,
+                    _pnj.name,
                     style: Theme.of(context)
                         .textTheme
                         .headlineSmall
@@ -66,28 +181,37 @@ class NpcSheetPage extends StatelessWidget {
                   ),
                 ),
                 Icon(
-                  pnj.alive ? Icons.favorite : Icons.close,
-                  color: pnj.alive ? Colors.green : Colors.red,
+                  _pnj.alive ? Icons.favorite : Icons.close,
+                  color: _pnj.alive ? Colors.green : Colors.red,
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  pnj.alive ? 'Vivant' : 'Décédé',
+                  _pnj.alive ? 'Vivant' : 'D\u00e9c\u00e9d\u00e9',
                   style: TextStyle(
-                    color: pnj.alive ? Colors.green : Colors.red,
+                    color: _pnj.alive ? Colors.green : Colors.red,
                     fontWeight: FontWeight.w600,
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18),
+                  tooltip: 'Modifier le statut',
+                  onPressed: _editAlive,
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
             // ── Badges type + relation ────────────────────────────────────────
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
+            Row(
               children: [
-                Chip(label: Text(_typeLabel(pnj.type))),
-                Chip(label: Text(_relationLabel(pnj.relation))),
+                Chip(label: Text(_typeLabel(_pnj.type))),
+                const SizedBox(width: 8),
+                Chip(label: Text(_relationLabel(_pnj.relation))),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18),
+                  tooltip: 'Modifier la relation',
+                  onPressed: _editRelation,
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -101,11 +225,11 @@ class NpcSheetPage extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(pnj.description),
+            Text(_pnj.description),
             const SizedBox(height: 32),
 
             // ── Notes des agents ──────────────────────────────────────────────
-            FieldNotesSection(targetType: 'npc', targetId: pnj.id),
+            FieldNotesSection(targetType: 'npc', targetId: _pnj.id),
             const SizedBox(height: 32),
 
             // ── Retour ────────────────────────────────────────────────────────

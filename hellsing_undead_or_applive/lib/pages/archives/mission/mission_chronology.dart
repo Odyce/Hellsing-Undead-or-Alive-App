@@ -14,12 +14,25 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
   // Espacement entre items en fraction de la hauteur totale (7 items visibles)
   static const double _itemSpacingFraction = 0.145;
 
-  // PageController sans viewportFraction custom — utilisé uniquement pour le snap
-  late final PageController _pageController = PageController();
+  // L'ajout du viewportFraction synchronise la physique du scroll avec le visuel
+  late PageController _pageController;
 
-  List<Mission> _missions = [];
+  // Variables pour la recherche
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  List<Mission> _allMissions = [];
   bool _loading = true;
   String? _error;
+
+  // Getter dynamique pour filtrer les missions en temps réel
+  List<Mission> get _filteredMissions {
+    if (_searchQuery.trim().isEmpty) {
+      return _allMissions;
+    }
+    final query = _searchQuery.trim().toLowerCase();
+    return _allMissions.where((m) => m.title.toLowerCase().contains(query)).toList();
+  }
 
   // ─── Chargement ──────────────────────────────────────────────────────────────
   @override
@@ -50,8 +63,14 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
         return a.completedAt!.compareTo(b.completedAt!);
       });
 
+      // On initialise le controller ICI, en lui donnant la dernière page comme point de départ
+      _pageController = PageController(
+        viewportFraction: _itemSpacingFraction,
+        initialPage: missions.isNotEmpty ? missions.length - 1 : 0,
+      );
+
       setState(() {
-        _missions = missions;
+        _allMissions = missions;
         _loading = false;
       });
     } catch (e) {
@@ -65,6 +84,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
   @override
   void dispose() {
     _pageController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -76,16 +96,57 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
         child: Column(
           children: [
             // ── En-tête ──────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Center(
-                child: const Text(
+                child: Text(
                   'Chronologie',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+              ),
+            ),
+
+            // ── Barre de recherche ────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Rechercher une mission...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                              if (_pageController.hasClients && _filteredMissions.isNotEmpty) {
+                                _pageController.jumpToPage(_filteredMissions.length - 1);
+                              }
+                            });
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    // On ramène l'utilisateur à la première page pour éviter un crash si la liste rétrécit
+                    if (_pageController.hasClients && _filteredMissions.isNotEmpty) {
+                      _pageController.jumpToPage(_filteredMissions.length - 1);
+                    }
+                  });
+                },
               ),
             ),
 
@@ -100,9 +161,9 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                             style: const TextStyle(color: Colors.red),
                           ),
                         )
-                      : _missions.isEmpty
+                      : _filteredMissions.isEmpty
                           ? const Center(
-                              child: Text('Aucune mission enregistrée.'),
+                              child: Text('Aucune mission correspondante.'),
                             )
                           : _buildCarousel(),
             ),
@@ -159,7 +220,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
               child: Stack(
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
-                children: List.generate(_missions.length, (i) {
+                children: List.generate(_filteredMissions.length, (i) {
                   final offset   = i - page;
                   final distance = offset.abs();
                   if (distance > 3.5) return const SizedBox.shrink();
@@ -169,8 +230,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                   final opacity = (1.0 - distance * 0.25).clamp(0.0, 1.0);
                   final isCurrent = page.round() == i;
 
-                  final year =
-                      _missions[i].completedAt?.year.toString() ?? '?';
+                  final year = _filteredMissions[i].completedAt?.year.toString() ?? '?';
 
                   return Transform.translate(
                     offset: Offset(0, dy),
@@ -220,58 +280,61 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
             PageView.builder(
               controller: _pageController,
               scrollDirection: Axis.vertical,
-              itemCount: _missions.length,
+              physics: const SlowPageScrollPhysics(),
+              itemCount: _filteredMissions.length,
               // Items vides — uniquement pour la mécanique de défilement
               itemBuilder: (_, __) => const SizedBox.expand(),
             ),
 
             // ── Couche 2 : rendu visuel des cartes ───────────────────────────
-            AnimatedBuilder(
-              animation: _pageController,
-              builder: (context, _) {
-                final page = _pageController.hasClients
-                    ? (_pageController.page ?? 0.0)
-                    : 0.0;
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _pageController,
+                builder: (context, _) {
+                  final page = _pageController.hasClients
+                      ? (_pageController.page ?? 0.0)
+                      : 0.0;
 
-                // Trier les indices : les plus éloignés du centre en premier,
-                // le central en dernier → peint par-dessus ses voisins (z-order).
-                final indices = List.generate(_missions.length, (i) => i)
-                  ..sort((a, b) {
-                    final da = (a - page).abs();
-                    final db = (b - page).abs();
-                    return db.compareTo(da);
-                  });
+                  // Trier les indices : les plus éloignés du centre en premier,
+                  // le central en dernier → peint par-dessus ses voisins (z-order).
+                  final indices = List.generate(_filteredMissions.length, (i) => i)
+                    ..sort((a, b) {
+                      final da = (a - page).abs();
+                      final db = (b - page).abs();
+                      return db.compareTo(da);
+                    });
 
-                return Stack(
-                  alignment: Alignment.center,
-                  children: indices.map((i) {
-                    final dist = (i - page).abs();
-                    // N'afficher que les 3 de chaque côté + le central
-                    if (dist > 3.5) return const SizedBox.shrink();
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: indices.map((i) {
+                      final dist = (i - page).abs();
+                      // N'afficher que les 3 de chaque côté + le central
+                      if (dist > 3.5) return const SizedBox.shrink();
 
-                    final dy       = (i - page) * _itemSpacingFraction * totalHeight;
-                    final scale    = (1.0 - dist * 0.18).clamp(0.46, 1.0);
-                    final opacity  = (1.0 - dist * 0.25).clamp(0.15, 1.0);
-                    final isCurrent = page.round() == i;
+                      final dy       = (i - page) * _itemSpacingFraction * totalHeight;
+                      final scale    = (1.0 - dist * 0.18).clamp(0.46, 1.0);
+                      final opacity  = (1.0 - dist * 0.25).clamp(0.15, 1.0);
+                      final isCurrent = page.round() == i;
 
-                    return Transform.translate(
-                      offset: Offset(0, dy),
-                      child: IgnorePointer(
-                        // Seule la carte centrale reçoit les taps ;
-                        // les autres laissent passer les événements au PageView.
-                        ignoring: !isCurrent,
-                        child: Transform.scale(
-                          scale: scale,
-                          child: Opacity(
-                            opacity: opacity,
-                            child: _buildMissionCard(i, isCurrent),
+                      return Transform.translate(
+                        offset: Offset(0, dy),
+                        child: IgnorePointer(
+                          // Seule la carte centrale reçoit les taps ;
+                          // les autres laissent passer les événements au PageView.
+                          ignoring: !isCurrent,
+                          child: Transform.scale(
+                            scale: scale,
+                            child: Opacity(
+                              opacity: opacity,
+                              child: _buildMissionCard(i, isCurrent),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
             ),
           ],
         );
@@ -281,7 +344,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
 
   // ─── Carte individuelle d'une mission ────────────────────────────────────────
   Widget _buildMissionCard(int index, bool isCurrent) {
-    final mission = _missions[index];
+    final mission = _filteredMissions[index];
 
     return GestureDetector(
       onTap: isCurrent
@@ -336,10 +399,38 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+
+              Expanded(
+                child: Text(
+                  "${mission.completedAt!.year}/${mission.completedAt!.month}/${mission.completedAt!.day}",
+                  textAlign: TextAlign.start,
+                  style: TextStyle(
+                    fontSize: isCurrent ? 18 : 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+class SlowPageScrollPhysics extends PageScrollPhysics {
+  const SlowPageScrollPhysics({super.parent});
+  @override
+  SlowPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return SlowPageScrollPhysics(parent: buildParent(ancestor));
+  }
+  @override
+  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
+    // Le multiplicateur détermine la vitesse.
+    // 0.5 signifie que ça défilera 2x moins vite par rapport au mouvement du doigt.
+    // Vous pouvez l'ajuster (ex: 0.3 pour très lent, 0.7 pour un poil plus lent)
+    return super.applyPhysicsToUserOffset(position, offset) * 0.66;
   }
 }
