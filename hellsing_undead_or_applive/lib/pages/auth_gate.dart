@@ -3,8 +3,17 @@ import 'package:flutter/material.dart';
 
 import 'models.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  /// true tant que la transition de porte n'a pas encore été affichée
+  /// pour cette session d'authentification.
+  bool _needsTransition = true;
 
   @override
   Widget build(BuildContext context) {
@@ -18,10 +27,20 @@ class AuthGate extends StatelessWidget {
         }
 
         final user = snapshot.data;
-        if (user == null) return const LoginPage();
 
-        // Connecté => zone app
-        return const HomePage(); // ou UserHomePage si ta classe s’appelle comme ça
+        if (user == null) {
+          // Déconnecté → on réarme la transition pour la prochaine connexion.
+          _needsTransition = true;
+          return const LoginPage();
+        }
+
+        // Connecté (login, signup, ou reconnexion automatique)
+        if (_needsTransition) {
+          _needsTransition = false;
+          return const DoorTransitionPage();
+        }
+
+        return const HomePage();
       },
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -216,210 +218,230 @@ class _LoginPageState extends State<LoginPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/backgrounds/Manor.png',
+              // Cover : remplit tout l'écran sans déformer, quitte à recadrer les bords
+              fit: BoxFit.cover, 
+              // Center : garde le milieu de l'image toujours visible
+              alignment: Alignment.center, 
+            ),
+          ),
 
-            //Breakpoint simple
-            final isDesktop = width >= 900;
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // Intensité du flou
+              child: Container(color: Colors.white.withValues(alpha: 0.4)),
+            ),
+          ),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
 
-            final contentMaxWidth = isDesktop ? 520.0 : double.infinity;
+                //Breakpoint simple
+                final isDesktop = width >= 900;
 
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                  child: Card(
-                    elevation: isDesktop ? 6 : 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: AnimatedSize(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              "Service secrets de Sa Majesté",
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16,),
+                final contentMaxWidth = isDesktop ? 520.0 : double.infinity;
 
-                            if (!_showLogingForm) ...[
-                              ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _showLogingForm = true;
-                                    _isRegisterMode = false;
-                                    _confirmPasswordController.clear();
-                                    _passwordController.clear();
-                                    _emailController.clear();
-                                  });
-                                },
-                                child: const Text("Se Connecter"),
-                              ),
-                              const SizedBox(height: 12,),
-                              OutlinedButton(
-                                onPressed:() {
-                                  setState(() {
-                                    _showLogingForm = true;
-                                    _isRegisterMode = true;
-                                    _confirmPasswordController.clear();
-                                    _passwordController.clear();
-                                    _emailController.clear();
-                                  });
-                                }, 
-                                child: const Text("Créer un Compte"),
-                              ),
-                            ] else...[
-                              // Formulaire
-                              if (_isRegisterMode) ...[
-                                TextField(
-                                  controller: _pseudoController,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Pseudo :',
-                                    border: OutlineInputBorder(),
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                      child: Card(
+                        elevation: isDesktop ? 6 : 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: AnimatedSize(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  "Service secrets de Sa Majesté",
+                                  style: theme.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
                                   ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: 12),
-                              ],
+                                const SizedBox(height: 16,),
 
-                              TextField(
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                autofillHints: const [AutofillHints.email],
-                                decoration: const InputDecoration(
-                                  labelText: "Accréditation (mail) :",
-                                  hintText: "ex: abel@hellsing.uk",
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              const SizedBox(height: 12,),
-
-                              TextField(
-                                controller: _passwordController,
-                                obscureText: _hidePassword,
-                                obscuringCharacter: '⛤',
-                                autofillHints: const [AutofillHints.password],
-                                decoration: InputDecoration(
-                                  labelText: "Code secret :",
-                                  border: const OutlineInputBorder(),
-                                  suffixIcon: IconButton(
-                                    tooltip: _hidePassword ? 'Afficher' : 'Masquer',
+                                if (!_showLogingForm) ...[
+                                  ElevatedButton(
                                     onPressed: () {
                                       setState(() {
-                                        _hidePassword = !_hidePassword;
+                                        _showLogingForm = true;
+                                        _isRegisterMode = false;
+                                        _confirmPasswordController.clear();
+                                        _passwordController.clear();
+                                        _emailController.clear();
+                                      });
+                                    },
+                                    child: const Text("Se Connecter"),
+                                  ),
+                                  const SizedBox(height: 12,),
+                                  OutlinedButton(
+                                    onPressed:() {
+                                      setState(() {
+                                        _showLogingForm = true;
+                                        _isRegisterMode = true;
+                                        _confirmPasswordController.clear();
+                                        _passwordController.clear();
+                                        _emailController.clear();
                                       });
                                     }, 
-                                    icon: Icon(
-                                      _hidePassword ? Icons.visibility : Icons.visibility_off,
+                                    child: const Text("Créer un Compte"),
+                                  ),
+                                ] else...[
+                                  // Formulaire
+                                  if (_isRegisterMode) ...[
+                                    TextField(
+                                      controller: _pseudoController,
+                                      textInputAction: TextInputAction.next,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Pseudo :',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+
+                                  TextField(
+                                    controller: _emailController,
+                                    keyboardType: TextInputType.emailAddress,
+                                    autofillHints: const [AutofillHints.email],
+                                    decoration: const InputDecoration(
+                                      labelText: "Accréditation (mail) :",
+                                      hintText: "ex: abel@hellsing.uk",
+                                      border: OutlineInputBorder(),
                                     ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(height: 12,),
+                                  const SizedBox(height: 12,),
 
-                              if (_isRegisterMode) ...[
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: _confirmPasswordController,
-                                  obscureText: _hideConfirmPassword,
-                                  obscuringCharacter: '⛤',
-                                  decoration: InputDecoration(
-                                    labelText: "Veux-tu bien réécrire ton code secret ?",
-                                    border: const OutlineInputBorder(),
-                                    suffixIcon: IconButton(
-                                      tooltip: _hideConfirmPassword ? 'Afficher' : 'Masquer',
-                                      onPressed: () {
-                                        setState(() => _hideConfirmPassword = !_hideConfirmPassword);
-                                      },
-                                      icon: Icon(
-                                        _hideConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                                  TextField(
+                                    controller: _passwordController,
+                                    obscureText: _hidePassword,
+                                    obscuringCharacter: '⛤',
+                                    autofillHints: const [AutofillHints.password],
+                                    decoration: InputDecoration(
+                                      labelText: "Code secret :",
+                                      border: const OutlineInputBorder(),
+                                      suffixIcon: IconButton(
+                                        tooltip: _hidePassword ? 'Afficher' : 'Masquer',
+                                        onPressed: () {
+                                          setState(() {
+                                            _hidePassword = !_hidePassword;
+                                          });
+                                        }, 
+                                        icon: Icon(
+                                          _hidePassword ? Icons.visibility : Icons.visibility_off,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 12,),
 
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: _rememberMe, 
-                                    onChanged: (v) {
-                                      setState(() => _rememberMe = v ?? false);
+                                  if (_isRegisterMode) ...[
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: _confirmPasswordController,
+                                      obscureText: _hideConfirmPassword,
+                                      obscuringCharacter: '⛤',
+                                      decoration: InputDecoration(
+                                        labelText: "Veux-tu bien réécrire ton code secret ?",
+                                        border: const OutlineInputBorder(),
+                                        suffixIcon: IconButton(
+                                          tooltip: _hideConfirmPassword ? 'Afficher' : 'Masquer',
+                                          onPressed: () {
+                                            setState(() => _hideConfirmPassword = !_hideConfirmPassword);
+                                          },
+                                          icon: Icon(
+                                            _hideConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+
+                                  Row(
+                                    children: [
+                                      Checkbox(
+                                        value: _rememberMe, 
+                                        onChanged: (v) {
+                                          setState(() => _rememberMe = v ?? false);
+                                        },
+                                      ),
+                                      const Expanded(
+                                        child: Text("T'as pas intérêt à m'oublier..."),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8,),
+
+                                  if (_error != null) ...[
+                                    Text(
+                                      _error!,
+                                      style: const TextStyle(color: Colors.red),
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+
+                                  ElevatedButton(
+                                    onPressed: _loading ? null : () {
+                                      _isRegisterMode ?
+                                      _signUp() :
+                                      _signIn();
                                     },
+                                    child: _loading
+                                      ? const SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ) 
+                                      : Text(_isRegisterMode ? "Embauchez-moi." : "Laisse-moi entrer."),
                                   ),
-                                  const Expanded(
-                                    child: Text("T'as pas intérêt à m'oublier..."),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8,),
+                                  const SizedBox(height: 12,),
 
-                              if (_error != null) ...[
-                                Text(
-                                  _error!,
-                                  style: const TextStyle(color: Colors.red),
-                                ),
-                                const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() { 
+                                        _isRegisterMode = !_isRegisterMode;
+                                        _confirmPasswordController.clear();
+                                        _passwordController.clear();
+                                        _emailController.clear();
+                                      },);
+                                    },
+                                    child: Text(
+                                      _isRegisterMode
+                                          ? "Je suis déjà embauché"
+                                          : "Je dois me faire embaucher",
+                                    ),
+                                  ),
+
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() => _showLogingForm = false);
+                                    }, 
+                                    child: const Text("Une autre fois"),
+                                  ),
+                                ]
                               ],
-
-                              ElevatedButton(
-                                onPressed: _loading ? null : () {
-                                  _isRegisterMode ?
-                                  _signUp() :
-                                  _signIn();
-                                },
-                                child: _loading
-                                  ? const SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ) 
-                                  : Text(_isRegisterMode ? "Embauchez-moi." : "Laisse-moi entrer."),
-                              ),
-                              const SizedBox(height: 12,),
-
-                              TextButton(
-                                onPressed: () {
-                                  setState(() { 
-                                    _isRegisterMode = !_isRegisterMode;
-                                    _confirmPasswordController.clear();
-                                    _passwordController.clear();
-                                    _emailController.clear();
-                                  },);
-                                },
-                                child: Text(
-                                  _isRegisterMode
-                                      ? "Je suis déjà embauché"
-                                      : "Je dois me faire embaucher",
-                                ),
-                              ),
-
-                              TextButton(
-                                onPressed: () {
-                                  setState(() => _showLogingForm = false);
-                                }, 
-                                child: const Text("Une autre fois"),
-                              ),
-                            ]
-                          ],
+                            ),
+                          ),
                         ),
-                      ),
+                      )
                     ),
-                  )
-                ),
-              ),
-            );
-          }
-        ),
+                  ),
+                );
+              }
+            ),
+          ),
+        ]
       ),
     );
   }

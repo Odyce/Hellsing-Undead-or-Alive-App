@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -52,39 +54,60 @@ class _AgentsListPageState extends State<AgentsListPage> {
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Center(
-                child: Text(
-                  "Liste d'agents",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: _isAdmin
-                    ? _AdminAgentView(currentUid: user.uid)
-                    : _UserAgentView(currentUid: user.uid),
-              ),
-              Align(
-                alignment: Alignment.bottomLeft,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, Routes.home);
-                  },
-                  child: const Text("Retour"),
-                ),
-              ),
-            ],
+      body: Stack (
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/backgrounds/Agent.webp',
+              // Cover : remplit tout l'écran sans déformer, quitte à recadrer les bords
+              fit: BoxFit.cover, 
+              // Center : garde le milieu de l'image toujours visible
+              alignment: Alignment.center, 
+            ),
           ),
-        ),
+
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // Intensité du flou
+              child: Container(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+          ),
+          
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(
+                    child: Text(
+                      "Liste d'agents",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: _isAdmin
+                        ? _AdminAgentView(currentUid: user.uid)
+                        : _UserAgentView(currentUid: user.uid),
+                  ),
+                  Align(
+                    alignment: Alignment.bottomLeft,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, Routes.home);
+                      },
+                      child: const Text("Retour"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ]
       ),
     );
   }
@@ -243,68 +266,92 @@ class _AdminAgentViewState extends State<_AdminAgentView> {
       return const Center(child: Text('Aucun agent trouvé.'));
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadAllUsers,
-      child: ListView.builder(
-        itemCount: _userGroups.length,
-        itemBuilder: (context, index) {
-          final group = _userGroups[index];
-          final isCurrentUser = group.uid == widget.currentUid;
+    return Column(
+      children: [
+        // ── Bouton "Validation des agents" (admin uniquement) ──────────
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pushReplacementNamed(
+                  context, Routes.agentValidationList),
+              icon: const Icon(Icons.verified_user_outlined),
+              label: const Text('Validation des agents'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ),
 
-          return ExpansionTile(
-            title: Text(
-              group.pseudo,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isCurrentUser ? Colors.orange : null,
-              ),
-            ),
-            subtitle: Text(
-              '${group.agents.length} agent${group.agents.length > 1 ? 's' : ''}',
-              style: TextStyle(
-                fontSize: 13,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            initiallyExpanded: isCurrentUser,
-            children: [
-              ...group.agents.map((agentDoc) {
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: _AgentTile(
-                    agentDoc: agentDoc,
-                    ownerUid: group.uid,
-                    onDelete: () => _confirmDeleteAndRefresh(
-                      context,
-                      group.uid,
-                      agentDoc.id,
-                      agentDoc['name'] ?? '',
+        // ── Liste des agents ──────────────────────────────────────────
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadAllUsers,
+            child: ListView.builder(
+              itemCount: _userGroups.length,
+              itemBuilder: (context, index) {
+                final group = _userGroups[index];
+                final isCurrentUser = group.uid == widget.currentUid;
+
+                return ExpansionTile(
+                  title: Text(
+                    group.pseudo,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isCurrentUser ? Colors.orange : Colors.green,
                     ),
                   ),
-                );
-              }),
-
-              // Bouton "Créer un nouvel agent" uniquement sous le pseudo de l'admin
-              if (isCurrentUser)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => CreateAgentPage()),
-                      );
-                    },
-                    child: const Text("Créer un nouvel agent"),
+                  subtitle: Text(
+                    '${group.agents.length} agent${group.agents.length > 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-            ],
-          );
-        },
-      ),
+                  initiallyExpanded: isCurrentUser,
+                  children: [
+                    ...group.agents.map((agentDoc) {
+                      return Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        child: _AgentTile(
+                          agentDoc: agentDoc,
+                          ownerUid: group.uid,
+                          onDelete: () => _confirmDeleteAndRefresh(
+                            context,
+                            group.uid,
+                            agentDoc.id,
+                            agentDoc['name'] ?? '',
+                          ),
+                        ),
+                      );
+                    }),
+
+                    // Bouton "Créer un nouvel agent" uniquement sous le pseudo de l'admin
+                    if (isCurrentUser)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => CreateAgentPage()),
+                            );
+                          },
+                          child: const Text("Créer un nouvel agent"),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 

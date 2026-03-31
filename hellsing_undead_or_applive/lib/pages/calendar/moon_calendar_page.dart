@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:apsl_sun_calc/apsl_sun_calc.dart';
@@ -295,158 +297,180 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
       appBar: AppBar(
         title: const Text("Calendrier"),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
       ),
-      body: Column(
+      
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: TableCalendar(
-              firstDay: _firstDay,
-              lastDay: _lastDay,
-              focusedDay: _focusedDay,
-              calendarFormat: _format,
-              availableCalendarFormats: const {CalendarFormat.month: "Mois"},
-              startingDayOfWeek: StartingDayOfWeek.monday,
+          Positioned.fill(
+            child: Image.asset(
+              'assets/backgrounds/Calendar.png',
+              // Cover : remplit tout l'écran sans déformer, quitte à recadrer les bords
+              fit: BoxFit.cover, 
+              // Center : garde le milieu de l'image toujours visible
+              alignment: Alignment.center, 
+            ),
+          ),
 
-              rowHeight: 64,
-              daysOfWeekHeight: 24,
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // Intensité du flou
+              child: Container(color: Colors.white.withValues(alpha: 0.4)),
+            ),
+          ),
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: TableCalendar(
+                  firstDay: _firstDay,
+                  lastDay: _lastDay,
+                  focusedDay: _focusedDay,
+                  calendarFormat: _format,
+                  availableCalendarFormats: const {CalendarFormat.month: "Mois"},
+                  startingDayOfWeek: StartingDayOfWeek.monday,
 
-              headerStyle: const HeaderStyle(
-                titleCentered: true,
-                formatButtonVisible: false,
-                leftChevronVisible: true,
-                rightChevronVisible: true,
-              ),
+                  rowHeight: 64,
+                  daysOfWeekHeight: 24,
 
-              calendarStyle: const CalendarStyle(
-                outsideDaysVisible: true,
-                isTodayHighlighted: true,
-                cellMargin: EdgeInsets.zero,
-                cellPadding: EdgeInsets.zero,
-              ),
-
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-
-              onDaySelected: (selected, focused) {
-                setState(() {
-                  _selectedDay = selected;
-                  _focusedDay = focused;
-                });
-
-                final info = _moonPhaseForDay(selected);
-
-                final messenger = ScaffoldMessenger.of(context);
-                messenger.hideCurrentSnackBar();
-                messenger.showSnackBar(
-                  SnackBar(
-                    duration: const Duration(milliseconds: 900),
-                    content: Text(
-                      "${selected.day}/${selected.month}/${selected.year} — ${info.emoji} ${info.label}",
-                    ),
+                  headerStyle: const HeaderStyle(
+                    titleCentered: true,
+                    formatButtonVisible: false,
+                    leftChevronVisible: true,
+                    rightChevronVisible: true,
                   ),
-                );
-              },
 
-              onPageChanged: (focused) {
-                setState(() => _focusedDay = focused);
-              },
+                  calendarStyle: const CalendarStyle(
+                    outsideDaysVisible: true,
+                    isTodayHighlighted: true,
+                    cellMargin: EdgeInsets.zero,
+                    cellPadding: EdgeInsets.zero,
+                  ),
 
-              calendarBuilders: CalendarBuilders(
-                headerTitleBuilder: (context, day) {
-                  const months = [
-                    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
-                  ];
-                  return GestureDetector(
-                    onTap: () => _showMonthYearPicker(context),
-                    child: Center(
-                      child: Text(
-                        '${months[day.month - 1]} ${day.year}',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.underline,
+                  selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+
+                  onDaySelected: (selected, focused) {
+                    setState(() {
+                      _selectedDay = selected;
+                      _focusedDay = focused;
+                    });
+
+                    final info = _moonPhaseForDay(selected);
+
+                    final messenger = ScaffoldMessenger.of(context);
+                    messenger.hideCurrentSnackBar();
+                    messenger.showSnackBar(
+                      SnackBar(
+                        duration: const Duration(milliseconds: 900),
+                        content: Text(
+                          "${selected.day}/${selected.month}/${selected.year} — ${info.emoji} ${info.label}",
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
 
-                defaultBuilder: (context, day, focusedDay) {
-                  final transition = _transitionPhaseForDay(day);
-                  return _DayCell(
-                    day: day,
-                    focusedDay: _focusedDay,
-                    selected: isSameDay(_selectedDay, day),
-                    emoji: transition?.emoji,
-                    missionTitles: _missionsForDay(day)
-                        .map((m) => m.title)
-                        .toList(),
-                  );
-                },
+                  onPageChanged: (focused) {
+                    setState(() => _focusedDay = focused);
+                  },
 
-                todayBuilder: (context, day, focusedDay) {
-                  final transition = _transitionPhaseForDay(day);
-                  return _DayCell(
-                    day: day,
-                    focusedDay: _focusedDay,
-                    selected: isSameDay(_selectedDay, day),
-                    emoji: transition?.emoji,
-                    isToday: true,
-                    missionTitles: _missionsForDay(day)
-                        .map((m) => m.title)
-                        .toList(),
-                  );
-                },
+                  calendarBuilders: CalendarBuilders(
+                    headerTitleBuilder: (context, day) {
+                      const months = [
+                        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+                      ];
+                      return GestureDetector(
+                        onTap: () => _showMonthYearPicker(context),
+                        child: Center(
+                          child: Text(
+                            '${months[day.month - 1]} ${day.year}',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
 
-                selectedBuilder: (context, day, focusedDay) {
-                  final transition = _transitionPhaseForDay(day);
-                  return _DayCell(
-                    day: day,
-                    focusedDay: _focusedDay,
-                    selected: true,
-                    emoji: transition?.emoji,
-                    missionTitles: _missionsForDay(day)
-                        .map((m) => m.title)
-                        .toList(),
-                  );
-                },
+                    defaultBuilder: (context, day, focusedDay) {
+                      final transition = _transitionPhaseForDay(day);
+                      return _DayCell(
+                        day: day,
+                        focusedDay: _focusedDay,
+                        selected: isSameDay(_selectedDay, day),
+                        emoji: transition?.emoji,
+                        missionTitles: _missionsForDay(day)
+                            .map((m) => m.title)
+                            .toList(),
+                      );
+                    },
+
+                    todayBuilder: (context, day, focusedDay) {
+                      final transition = _transitionPhaseForDay(day);
+                      return _DayCell(
+                        day: day,
+                        focusedDay: _focusedDay,
+                        selected: isSameDay(_selectedDay, day),
+                        emoji: transition?.emoji,
+                        isToday: true,
+                        missionTitles: _missionsForDay(day)
+                            .map((m) => m.title)
+                            .toList(),
+                      );
+                    },
+
+                    selectedBuilder: (context, day, focusedDay) {
+                      final transition = _transitionPhaseForDay(day);
+                      return _DayCell(
+                        day: day,
+                        focusedDay: _focusedDay,
+                        selected: true,
+                        emoji: transition?.emoji,
+                        missionTitles: _missionsForDay(day)
+                            .map((m) => m.title)
+                            .toList(),
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-          ),
 
-          // ── Missions du jour sélectionné ──────────────────────────────────────
-          if (selectedMissions.isNotEmpty) ...[
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                itemCount: selectedMissions.length,
-                itemBuilder: (context, index) {
-                  final mission = selectedMissions[index];
-                  return _MissionButton(
-                    mission: mission,
-                    onTap: () => Navigator.pushNamed(
-                      context,
-                      Routes.missionSheet,
-                      arguments: mission,
-                    ),
-                  );
-                },
+              // ── Missions du jour sélectionné ──────────────────────────────────────
+              if (selectedMissions.isNotEmpty) ...[
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    itemCount: selectedMissions.length,
+                    itemBuilder: (context, index) {
+                      final mission = selectedMissions[index];
+                      return _MissionButton(
+                        mission: mission,
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          Routes.missionSheet,
+                          arguments: mission,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ] else
+                const Spacer(),
+
+              Align(
+                alignment: Alignment.bottomLeft,
+                child: TextButton(
+                  onPressed: () => Navigator.pushReplacementNamed(context, Routes.home),
+                  child: const Text("Retour"),
+                ),
               ),
-            ),
-          ] else
-            const Spacer(),
-
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: TextButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, Routes.home),
-              child: const Text("Retour"),
-            ),
+            ],
           ),
-        ],
+        ]
       ),
     );
   }

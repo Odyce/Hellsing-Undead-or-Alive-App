@@ -1,0 +1,25 @@
+Important : pour que les notifs reçues en 
+background soient aussi sauvegardées, il faut 
+un handler background ou (plus simple) les 
+sauvegarder côté serveur au moment de l'envoi 
+via une Cloud Function ou l'API OneSignal. 
+Une solution simple : au moment où un admin 
+envoie une notif via ton app, tu écris 
+directement dans Firestore les 
+users/{uid}/notifications des destinataires 
+avant d'appeler l'API OneSignal
+
+Envoyer une notification depuis l'app (admin)
+Tu appelleras l'API REST OneSignal depuis une future page admin :
+
+
+POST https://onesignal.com/api/v1/notifications
+{
+  "app_id": "TON_APP_ID",
+  "filters": [{"field": "tag", "key": "role", "relation": "=", "value": "user"}],
+  "headings": {"en": "Titre"},
+  "contents": {"en": "Corps du message"},
+  "send_after": "2026-04-01 20:00:00 UTC"   // pour envoi différé
+}
+
+Le send_after gère nativement l'envoi différé — pas besoin de Cloud Functions.

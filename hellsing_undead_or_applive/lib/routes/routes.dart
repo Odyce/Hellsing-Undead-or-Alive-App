@@ -23,11 +23,13 @@ class Routes {
   static const missionChrono  = '/chrono';
   static const missionSheet   = '/missionsheet';
   static const missionCreate  = '/missioncreate';
+  static const missionEdit    = '/edit-mission';
 
   // ── Bestiaire ────────────────────────────────────────────────────────────────
   static const bestiary       = '/bestiary';
   static const bestiarySheet  = '/bestiarySheet';
   static const bestiaryCreate = '/bestiaryCreate';
+  static const bestiaryEdit   = '/bestiaryEdit';
 
   // ── PNJs ────────────────────────────────────────────────────────────────────
   static const npcs      = '/npcs';
@@ -48,6 +50,7 @@ class Routes {
   static const resDevProjectCreate = '/resDevProjectCreate';
 
   // ── Divers ───────────────────────────────────────────────────────────────────
-  static const rulebook = '/rulebook';
-  static const calendar = '/calendar';
+  static const rulebook       = '/rulebook';
+  static const calendar       = '/calendar';
+  static const notifications  = '/notifications';
 }

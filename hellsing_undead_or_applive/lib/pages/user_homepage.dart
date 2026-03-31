@@ -1,7 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hellsing_undead_or_applive/domain/notifications/onesignal_guard.dart';
 
 import 'models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
@@ -47,6 +51,12 @@ class HomePage extends StatelessWidget {
       final data = doc.data();
       if (data == null) return 'user';
       final role = data['role'];
+
+      if (isOneSignalSupported) {
+        OneSignal.login(uid);
+        OneSignal.User.addTagWithKey('role', role);
+      }
+
       if (role is String && role.trim().isNotEmpty) return role;
       return 'user';
     });
@@ -60,7 +70,7 @@ class HomePage extends StatelessWidget {
     const padding = 32.0;
 
     final buttons = <({String label, IconData icon, String route})>[
-      (label: 'AgentList', icon: Icons.grid_view, route: Routes.agentList),
+      (label: 'Agents', icon: Icons.grid_view, route: Routes.agentList),
       (label: 'Livre de règles', icon: Icons.menu_book, route: Routes.rulebook),
       (label: 'Tableau d\'affichage', icon: Icons.dashboard, route: Routes.missionBoard),
       (label: 'Calendrier', icon: Icons.calendar_month, route: Routes.calendar),
@@ -132,9 +142,8 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.notifications),
-          onPressed: () {
-            // TODO : naviguer vers les notifications
-          },
+          onPressed: () =>
+              Navigator.pushReplacementNamed(context, Routes.notifications),
         ),
         actions: [
           StreamBuilder<String>(
@@ -169,6 +178,22 @@ class HomePage extends StatelessWidget {
       ),
       body: Stack(
         children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/backgrounds/Menu.png',
+              // Cover : remplit tout l'écran sans déformer, quitte à recadrer les bords
+              fit: BoxFit.cover, 
+              // Center : garde le milieu de l'image toujours visible
+              alignment: Alignment.center, 
+            ),
+          ),
+
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // Intensité du flou
+              child: Container(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+          ),
           // ── Contenu principal ───────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -193,27 +218,6 @@ class HomePage extends StatelessWidget {
                 // Boutons centrés verticalement
                 Expanded(
                   child: Center(child: buildButtons()),
-                ),
-
-                // TODO : Faire un menu admin et le ranger dedans.
-                StreamBuilder<String>(
-                  stream: _roleStream(),
-                  builder: (context, snap) {
-                    final isAdmin = snap.data == 'admin';
-                    if (!isAdmin) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () => Navigator.pushReplacementNamed(
-                              context, Routes.agentValidationList),
-                          icon: const Icon(Icons.verified_user_outlined),
-                          label: const Text('Validation des agents'),
-                        ),
-                      ),
-                    );
-                  },
                 ),
 
                 // Déconnexion (en bas)
