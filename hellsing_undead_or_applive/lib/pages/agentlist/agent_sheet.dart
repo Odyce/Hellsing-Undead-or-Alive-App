@@ -1374,6 +1374,13 @@ class _LoreSection extends StatelessWidget {
       'pendingFreeContact': true,
     });
 
+    // Notifier les admins du contact gratuit à valider
+    await NotificationRepository().notifyAdmins(
+      title: 'Contact gratuit à valider',
+      body: 'Contact gratuit ${result.name} de l\'agent ${agent.name} à valider',
+      data: {'type': 'agent_validation', 'agentName': agent.name},
+    );
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

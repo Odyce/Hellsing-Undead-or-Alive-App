@@ -2,8 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:hellsing_undead_or_applive/domain/notifications/onesignal_guard.dart';
 
 class NotificationMenuPage extends StatefulWidget {
   const NotificationMenuPage({super.key});
@@ -27,14 +25,6 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
     if (_uid == null) return;
     final next = !current;
     await _repository.setNotificationsEnabled(_uid!, next);
-
-    if (isOneSignalSupported) {
-      if (next) {
-        OneSignal.User.pushSubscription.optIn();
-      } else {
-        OneSignal.User.pushSubscription.optOut();
-      }
-    }
   }
 
   static String _formatDate(DateTime dt) {

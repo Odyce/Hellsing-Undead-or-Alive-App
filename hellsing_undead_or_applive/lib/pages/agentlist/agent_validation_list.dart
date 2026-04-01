@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hellsing_undead_or_applive/domain/notifications/notification_repository.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/agent_sheet.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
@@ -237,6 +238,9 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
             'pendingFreeContact': false,
           });
 
+      // Marquer les notifs admin liées à cet agent comme lues
+      await NotificationRepository().markAgentNotifAsRead(agent.agentName);
+
       // Retirer l'agent de la liste locale
       if (mounted) {
         setState(() {
@@ -288,6 +292,9 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
         updateData['customLevelUpRules'] = customLevelUpRules;
       }
       await agentRef.update(updateData);
+
+      // Marquer les notifs admin liées à cet agent comme lues
+      await NotificationRepository().markAgentNotifAsRead(agent.agentName);
 
       // 2. Mettre à jour le doc privateResources correspondant
       final privateSnap = await FirebaseFirestore.instance

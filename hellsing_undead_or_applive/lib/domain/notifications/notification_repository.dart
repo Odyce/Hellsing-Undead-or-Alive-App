@@ -85,7 +85,7 @@ class NotificationRepository {
     );
   }
 
-  // ─── Appelé par OneSignal quand une notification est reçue ───────────────────
+  // ─── Sauvegarde d'une notification dans Firestore ───────────────────────────
   Future<void> saveNotification(
     String uid, {
     required String title,
@@ -100,5 +100,85 @@ class NotificationRepository {
     };
     if (data != null) payload['data'] = data;
     await _notifRef(uid).add(payload);
+  }
+
+  // ─── Notifier tous les non-admins (ex: nouvelle mission publiée) ───────────
+  Future<void> notifyNonAdmins({
+    required String title,
+    required String body,
+  }) async {
+    final usersSnap = await _firestore.collection('users').get();
+
+    final batch = _firestore.batch();
+    for (final userDoc in usersSnap.docs) {
+      final data = userDoc.data();
+      final role = data['role'] as String? ?? 'user';
+      if (role == 'admin') continue;
+
+      final enabled = data['notificationsEnabled'] as bool? ?? true;
+      if (!enabled) continue;
+
+      final notifRef = _notifRef(userDoc.id).doc();
+      batch.set(notifRef, {
+        'title': title,
+        'body': body,
+        'createdAt': FieldValue.serverTimestamp(),
+        'readAt': null,
+      });
+    }
+    await batch.commit();
+  }
+
+  // ─── Notifier tous les admins ───────────────────────────────────────────────
+  Future<void> notifyAdmins({
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    final usersSnap = await _firestore.collection('users').get();
+
+    final batch = _firestore.batch();
+    for (final userDoc in usersSnap.docs) {
+      final userData = userDoc.data();
+      final role = userData['role'] as String? ?? 'user';
+      if (role != 'admin') continue;
+
+      final enabled = userData['notificationsEnabled'] as bool? ?? true;
+      if (!enabled) continue;
+
+      final notifRef = _notifRef(userDoc.id).doc();
+      final payload = <String, dynamic>{
+        'title': title,
+        'body': body,
+        'createdAt': FieldValue.serverTimestamp(),
+        'readAt': null,
+      };
+      if (data != null) payload['data'] = data;
+      batch.set(notifRef, payload);
+    }
+    await batch.commit();
+  }
+
+  // ─── Marquer comme lues les notifs admin liées à un agent ──────────────────
+  Future<void> markAgentNotifAsRead(String agentName) async {
+    final usersSnap = await _firestore.collection('users').get();
+
+    for (final userDoc in usersSnap.docs) {
+      final role = userDoc.data()['role'] as String? ?? 'user';
+      if (role != 'admin') continue;
+
+      final notifsSnap = await _notifRef(userDoc.id)
+          .where('readAt', isNull: true)
+          .where('data.agentName', isEqualTo: agentName)
+          .get();
+
+      if (notifsSnap.docs.isEmpty) continue;
+      final batch = _firestore.batch();
+      final now = Timestamp.now();
+      for (final doc in notifsSnap.docs) {
+        batch.update(doc.reference, {'readAt': now});
+      }
+      await batch.commit();
+    }
   }
 }

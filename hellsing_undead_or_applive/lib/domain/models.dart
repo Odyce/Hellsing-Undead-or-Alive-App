@@ -17,3 +17,4 @@ export 'archives/objects_model.dart';
 export 'archives/field_note_model.dart';
 export 'ui_tools/dice_throw.dart';
 export 'notifications/notification_repository.dart';
+export 'notifications/notification_service.dart';

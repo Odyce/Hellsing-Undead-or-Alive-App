@@ -837,6 +837,13 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
         pc:                widget.pc,
         contacts:          widget.contacts,
       );
+      // Notifier les admins qu'un agent est à valider
+      await NotificationRepository().notifyAdmins(
+        title: 'Agent à valider',
+        body: 'Agent ${widget.name} à valider',
+        data: {'type': 'agent_validation', 'agentName': widget.name},
+      );
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, Routes.agentList);
     } catch (e) {

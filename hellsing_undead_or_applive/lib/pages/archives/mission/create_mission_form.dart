@@ -343,6 +343,12 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
         urgent:           _urgent,
       );
 
+      // Notifier tous les joueurs non-admin
+      await NotificationRepository().notifyNonAdmins(
+        title: 'Nouvelle mission disponible',
+        body: 'Une nouvelle mission a été publiée sur le tableau d\'affichage.',
+      );
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, Routes.missions);
     } catch (e) {

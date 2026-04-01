@@ -3,9 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hellsing_undead_or_applive/domain/notifications/onesignal_guard.dart';
 
 import 'models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
@@ -51,12 +49,6 @@ class HomePage extends StatelessWidget {
       final data = doc.data();
       if (data == null) return 'user';
       final role = data['role'];
-
-      if (isOneSignalSupported) {
-        OneSignal.login(uid);
-        OneSignal.User.addTagWithKey('role', role);
-      }
-
       if (role is String && role.trim().isNotEmpty) return role;
       return 'user';
     });

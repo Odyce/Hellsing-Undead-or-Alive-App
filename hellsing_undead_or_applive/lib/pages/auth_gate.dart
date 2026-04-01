@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:hellsing_undead_or_applive/domain/notifications/notification_service.dart';
 
 import 'models.dart';
 
@@ -29,10 +30,14 @@ class _AuthGateState extends State<AuthGate> {
         final user = snapshot.data;
 
         if (user == null) {
-          // Déconnecté → on réarme la transition pour la prochaine connexion.
+          // Déconnecté → on réarme la transition et on coupe le listener.
           _needsTransition = true;
+          NotificationService.instance.stopListening();
           return const LoginPage();
         }
+
+        // Connecté → démarrer l'écoute des notifications
+        NotificationService.instance.startListening(user.uid);
 
         // Connecté (login, signup, ou reconnexion automatique)
         if (_needsTransition) {
