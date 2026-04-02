@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class MissionMenuPage extends StatefulWidget {
@@ -41,10 +42,10 @@ class _MissionMenuPageState extends State<MissionMenuPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Center(
+              Center(
                 child: Text(
                   "Menu des missions",
-                  style: TextStyle(
+                  style: GoogleFonts.cinzelDecorative(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -57,11 +58,11 @@ class _MissionMenuPageState extends State<MissionMenuPage> {
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, Routes.missionBoard);
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
                     "Tableau d'affichage",
-                    style: TextStyle(fontSize: 18),
+                    style: GoogleFonts.cinzelDecorative(fontSize: 18),
                   ),
                 ),
               ),
@@ -72,11 +73,11 @@ class _MissionMenuPageState extends State<MissionMenuPage> {
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, Routes.missionChrono);
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
                     "Chronologie des missions",
-                    style: TextStyle(fontSize: 18),
+                    style: GoogleFonts.cinzelDecorative(fontSize: 18),
                   ),
                 ),
               ),
@@ -88,11 +89,11 @@ class _MissionMenuPageState extends State<MissionMenuPage> {
                   onPressed: () {
                     Navigator.pushReplacementNamed(context, Routes.missionCreate);
                   },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       "Créer une mission",
-                      style: TextStyle(fontSize: 18),
+                      style: GoogleFonts.cinzelDecorative(fontSize: 18),
                     ),
                   ),
                 ),

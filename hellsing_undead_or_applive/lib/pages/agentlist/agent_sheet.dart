@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
@@ -235,7 +236,10 @@ class _AgentSheetPageState extends State<AgentSheetPage>
           },
           child: Scaffold(
           appBar: AppBar(
-            title: Text(agentName != null ? "Fiche de $agentName" : "Fiche de l'agent"),
+            title: Text(
+              agentName != null ? "Fiche de $agentName" : "Fiche de l'agent",
+              style: GoogleFonts.cinzelDecorative(),
+            ),
           ),
           body: SafeArea(
             child: Builder(builder: (context) {

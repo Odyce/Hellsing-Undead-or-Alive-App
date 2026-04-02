@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class ResDevMenuPage extends StatelessWidget {
@@ -13,10 +14,10 @@ class ResDevMenuPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Center(
+              Center(
                 child: Text(
                   'Menu R&D',
-                  style: TextStyle(
+                  style: GoogleFonts.cinzelDecorative(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -29,11 +30,11 @@ class ResDevMenuPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, Routes.resDev);
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
                     'Liste R&D',
-                    style: TextStyle(fontSize: 18),
+                    style: GoogleFonts.cinzelDecorative(fontSize: 18),
                   ),
                 ),
               ),
@@ -44,11 +45,11 @@ class ResDevMenuPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, Routes.resDevProjectCreate);
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
                     'Créer un projet R&D',
-                    style: TextStyle(fontSize: 18),
+                    style: GoogleFonts.cinzelDecorative(fontSize: 18),
                   ),
                 ),
               ),
@@ -59,11 +60,11 @@ class ResDevMenuPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, Routes.resDevCreate);
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
                     'Créer un R&D développé',
-                    style: TextStyle(fontSize: 18),
+                    style: GoogleFonts.cinzelDecorative(fontSize: 18),
                   ),
                 ),
               ),

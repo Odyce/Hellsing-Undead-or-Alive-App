@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -201,7 +202,9 @@ class HomePage extends StatelessWidget {
                       final pseudo = snapshot.data ?? '...';
                       return Text(
                         'Bienvenue à $pseudo',
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: GoogleFonts.cinzelDecorative(
+                          textStyle: Theme.of(context).textTheme.headlineSmall,
+                        ),
                       );
                     },
                   ),
@@ -244,7 +247,12 @@ class HomePage extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
-                  // TODO : naviguer vers les statistiques
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const StatsMenuPage(),
+                    ),
+                  );
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -283,7 +291,7 @@ class _HomeButton extends StatelessWidget {
             children: [
               Icon(icon, size: 34),
               const SizedBox(height: 10),
-              Text(label, textAlign: TextAlign.center),
+              Text(label, textAlign: TextAlign.center, style: GoogleFonts.cinzelDecorative()),
             ],
           ),
         ),

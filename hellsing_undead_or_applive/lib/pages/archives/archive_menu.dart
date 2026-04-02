@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class ArchiveMenuPage extends StatelessWidget {
@@ -33,10 +34,10 @@ class ArchiveMenuPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Center(
+                  Center(
                     child: Text(
                       "Archives",
-                      style: TextStyle(
+                      style: GoogleFonts.cinzelDecorative(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -49,11 +50,11 @@ class ArchiveMenuPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushReplacementNamed(context, Routes.missions);
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
                         "Missions",
-                        style: TextStyle(fontSize: 18),
+                        style: GoogleFonts.cinzelDecorative(fontSize: 18),
                       ),
                     ),
                   ),
@@ -64,11 +65,11 @@ class ArchiveMenuPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushReplacementNamed(context, Routes.bestiary);
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
                         "Bestiaire",
-                        style: TextStyle(fontSize: 18),
+                        style: GoogleFonts.cinzelDecorative(fontSize: 18),
                       ),
                     ),
                   ),
@@ -79,11 +80,11 @@ class ArchiveMenuPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushReplacementNamed(context, Routes.artefacts);
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
                         "Artéfacts",
-                        style: TextStyle(fontSize: 18),
+                        style: GoogleFonts.cinzelDecorative(fontSize: 18),
                       ),
                     ),
                   ),
@@ -94,11 +95,11 @@ class ArchiveMenuPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushReplacementNamed(context, Routes.npcs);
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
                         "PNJs",
-                        style: TextStyle(fontSize: 18),
+                        style: GoogleFonts.cinzelDecorative(fontSize: 18),
                       ),
                     ),
                   ),
@@ -109,11 +110,11 @@ class ArchiveMenuPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushReplacementNamed(context, Routes.resDev);
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
                         "R&D",
-                        style: TextStyle(fontSize: 18),
+                        style: GoogleFonts.cinzelDecorative(fontSize: 18),
                       ),
                     ),
                   ),

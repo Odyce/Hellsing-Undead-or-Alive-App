@@ -22,4 +22,4 @@
 | 18 | Page et module de notification — nouveau système complet (modèle, stockage, UI, état lu/non-lu) | ⭐⭐⭐⭐ Complexe | Fait |
 | 19 | Notification hebdomadaire Admin (fiches à valider + level ups) | ⭐⭐⭐⭐ Complexe — dépend du module notification + logique backend schedulée (Cloud Function ou équivalent) | Fait |
 | 20 | Notification immédiate joueurs (publication mission) | ⭐⭐⭐⭐ Complexe — dépend du module notification + push notifications (FCM) | Fait |
-| 21 | Module statistique (10+ stats, constamment mis à jour) | ⭐⭐⭐⭐⭐ Très complexe — gros module avec agrégation de données cross-collections, UI riche, mises à jour en temps réel | A faire |
+| 21 | Module statistique (10+ stats, constamment mis à jour) | ⭐⭐⭐⭐⭐ Très complexe — gros module avec agrégation de données cross-collections, UI riche, mises à jour en temps réel | Fait, améliorable |

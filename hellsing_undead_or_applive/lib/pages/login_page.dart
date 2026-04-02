@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -264,7 +265,8 @@ class _LoginPageState extends State<LoginPage> {
                               children: [
                                 Text(
                                   "Service secrets de Sa Majesté",
-                                  style: theme.textTheme.headlineSmall?.copyWith(
+                                  style: GoogleFonts.cinzelDecorative(
+                                    textStyle: theme.textTheme.headlineSmall,
                                     fontWeight: FontWeight.w700,
                                   ),
                                   textAlign: TextAlign.center,
@@ -376,8 +378,11 @@ class _LoginPageState extends State<LoginPage> {
                                           setState(() => _rememberMe = v ?? false);
                                         },
                                       ),
-                                      const Expanded(
-                                        child: Text("T'as pas intérêt à m'oublier..."),
+                                      Expanded(
+                                        child: Text(
+                                          "T'as pas intérêt à m'oublier...",
+                                          style: GoogleFonts.cinzelDecorative(),
+                                        ),
                                       ),
                                     ],
                                   ),

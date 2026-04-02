@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
@@ -44,7 +45,7 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text('Notifications', style: GoogleFonts.cinzelDecorative()),
         automaticallyImplyLeading: false,
         actions: [
           StreamBuilder<bool>(

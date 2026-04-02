@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hellsing_undead_or_applive/pages/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
@@ -79,10 +80,10 @@ class _AgentsListPageState extends State<AgentsListPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Center(
+                  Center(
                     child: Text(
                       "Liste d'agents",
-                      style: TextStyle(
+                      style: GoogleFonts.cinzelDecorative(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),

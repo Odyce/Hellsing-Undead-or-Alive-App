@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'models.dart';
+import '../models.dart';
 
 /// Page de transition : joue le GIF "OpenDoorAlpha.gif" une seule fois
 /// par-dessus la [HomePage], puis laisse la HomePage visible.
