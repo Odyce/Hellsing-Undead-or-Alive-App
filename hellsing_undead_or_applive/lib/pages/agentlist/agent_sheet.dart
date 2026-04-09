@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
@@ -191,6 +192,7 @@ class _AgentSheetPageState extends State<AgentSheetPage>
       'bankSlots': _bankSlots!.map((s) => s.toMap()).toList(),
     });
 
+    StatsRepository.scheduleRebuild();
     _inventoryDirty = false;
   }
 
@@ -1156,6 +1158,7 @@ class _MissionsSection extends StatelessWidget {
     ];
 
     await agentRef.update({'missions': newMissions});
+    StatsRepository.scheduleRebuild();
   }
 
   @override
@@ -1346,6 +1349,7 @@ class _LoreSection extends StatelessWidget {
       ],
       'pc': agent.pc - result.cost,
     });
+    StatsRepository.scheduleRebuild();
   }
 
   Future<void> _addFreeContact(BuildContext context) async {
@@ -1377,6 +1381,7 @@ class _LoreSection extends StatelessWidget {
       'validated': false,
       'pendingFreeContact': true,
     });
+    StatsRepository.scheduleRebuild();
 
     // Notifier les admins du contact gratuit à valider
     await NotificationRepository().notifyAdmins(

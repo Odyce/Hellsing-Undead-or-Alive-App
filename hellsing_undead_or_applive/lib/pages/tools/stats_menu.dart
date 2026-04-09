@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
@@ -14,239 +16,263 @@ class _StatsMenuPageState extends State<StatsMenuPage> {
   final _repo = StatsRepository();
   late Future<_StatsData> _future;
 
+  bool _isAdmin = false;
+  bool _isRebuilding = false;
+
   @override
   void initState() {
     super.initState();
-    _future = _loadAll();
+    _future = _loadFromSummary();
+    _checkRole();
   }
 
-  Future<_StatsData> _loadAll() async {
-    _repo.clearCache();
+  Future<void> _checkRole() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (mounted) {
+      setState(() => _isAdmin = doc.data()?['role'] == 'admin');
+    }
+  }
 
-    // Paralléliser les requêtes indépendantes
-    final agentFutures = Future.wait([
-      _repo.totalAgents(),           // 0
-      _repo.agentsByRace(),          // 1
-      _repo.agentsByClass(),         // 2
-      _repo.averageLevel(),          // 3
-      _repo.richestAgent(),          // 4
-      _repo.agentsBySecondClass(),   // 5
-      _repo.classComboFrequency(),   // 6
-      _repo.agentsByClassType(),     // 7
-    ]);
-    final skillFutures = Future.wait([
-      _repo.totalDistinctSkills(),    // 0
-      _repo.averageSkillsPerAgent(),  // 1
-      _repo.topSkills(),              // 2
-      _repo.leastPopularSkills(),     // 3
-      _repo.skillsByCostType(),       // 4
-      _repo.agentWithMostSkills(),    // 5
-      _repo.skillsPerClass(),         // 6
-      _repo.skillsAccessiblePerRace(),// 7
-    ]);
-    final missionFutures = Future.wait([
-      _repo.totalMissions(),         // 0
-      _repo.missionsByDifficulty(),  // 1
-      _repo.missionsByClade(),       // 2
-      _repo.totalAgentsDeceased(),   // 3
-    ]);
-    final otherFutures = Future.wait([
-      _repo.totalMonsters(),         // 0
-      _repo.pnjsByRelation(),        // 1
-      _repo.totalArtefacts(),        // 2
-      _repo.resDevProgress(),        // 3
-      _repo.weaponsByType(),         // 4
-      _repo.averageBagItems(),       // 5
-      _repo.topWeapons(),            // 6
-      _repo.leastPopularWeapons(),   // 7
-      _repo.muniByCalibr(),          // 8
-      _repo.topSupportItems(),       // 9
-      _repo.leastPopularSupportItems(), // 10
-      _repo.averageEquipmentCost(),  // 11
-    ]);
+  /// Lit le document pré-calculé. Si absent (premier lancement), déclenche un
+  /// rebuild complet puis recharge.
+  Future<_StatsData> _loadFromSummary() async {
+    var raw = await _repo.loadSummary();
+    if (raw == null) {
+      await _repo.rebuildSummary();
+      raw = await _repo.loadSummary();
+    }
+    return _StatsData.fromMap(raw!);
+  }
 
-    final results = await Future.wait([
-      agentFutures,  // 0
-      skillFutures,  // 1
-      missionFutures,// 2
-      otherFutures,  // 3
-    ]);
-
-    final a = results[0] as List;
-    final s = results[1] as List;
-    final m = results[2] as List;
-    final o = results[3] as List;
-
-    return _StatsData(
-      // Agents
-      totalAgents: a[0] as int,
-      agentsByRace: a[1] as Map<String, int>,
-      agentsByClass: a[2] as Map<String, int>,
-      averageLevel: a[3] as double,
-      richestAgent: a[4] as (String, int),
-      agentsBySecondClass: a[5] as Map<String, int>,
-      classComboFrequency: a[6] as Map<String, int>,
-      agentsByClassType: a[7] as Map<String, int>,
-      // Compétences
-      totalDistinctSkills: s[0] as int,
-      averageSkillsPerAgent: s[1] as double,
-      topSkills: s[2] as List<MapEntry<String, int>>,
-      leastPopularSkills: s[3] as List<MapEntry<String, int>>,
-      skillsByCostType: s[4] as Map<String, int>,
-      agentWithMostSkills: s[5] as (String, int),
-      skillsPerClass: s[6] as Map<String, int>,
-      skillsAccessiblePerRace: s[7] as Map<String, int>,
-      // Missions
-      totalMissions: m[0] as int,
-      missionsByDifficulty: m[1] as Map<String, int>,
-      missionsByClade: m[2] as Map<String, int>,
-      totalDeceased: m[3] as int,
-      // Bestiaire & PNJ
-      totalMonsters: o[0] as int,
-      pnjsByRelation: o[1] as Map<String, int>,
-      // Inventaire, Artefacts & R&D
-      totalArtefacts: o[2] as int,
-      resDevProgress: o[3] as (int, int),
-      weaponsByType: o[4] as Map<String, int>,
-      averageBagItems: o[5] as double,
-      topWeapons: o[6] as List<MapEntry<String, int>>,
-      leastPopularWeapons: o[7] as List<MapEntry<String, int>>,
-      muniByCalibre: o[8] as Map<String, int>,
-      topSupportItems: o[9] as List<MapEntry<String, int>>,
-      leastPopularSupportItems: o[10] as List<MapEntry<String, int>>,
-      averageEquipmentCost: o[11] as double,
-    );
+  /// Rebuild manuel (admin) : attend la fin et affiche un SnackBar.
+  Future<void> _adminRebuild() async {
+    setState(() => _isRebuilding = true);
+    try {
+      await _repo.rebuildSummary();
+      if (!mounted) return;
+      setState(() {
+        _isRebuilding = false;
+        _future = _repo.loadSummary().then((raw) => _StatsData.fromMap(raw!));
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Statistiques mises à jour avec succès.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isRebuilding = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du recalcul : $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Statistiques', style: GoogleFonts.cinzelDecorative())),
-      body: FutureBuilder<_StatsData>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snap.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text('Erreur : ${snap.error}',
-                    textAlign: TextAlign.center),
-              ),
-            );
-          }
-          final d = snap.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // ── Agents ──────────────────────────────────────────────
-              _buildCategory(
-                context,
-                title: 'Agents',
-                icon: Icons.people,
-                tiles: [
-                  _SimpleStat('Nombre total d\'agents', '${d.totalAgents}'),
-                  _MapStat('Répartition par race', d.agentsByRace),
-                  _MapStat('Répartition par classe', d.agentsByClass),
-                  _MapStat('Répartition par classe secondaire',
-                      d.agentsBySecondClass),
-                  _MapStat('Combinaisons classe + secondaire',
-                      d.classComboFrequency),
-                  _MapStat('Répartition par type de classe',
-                      d.agentsByClassType),
-                  _SimpleStat(
-                      'Niveau moyen', d.averageLevel.toStringAsFixed(1)),
-                  _SimpleStat('Agent le plus riche',
-                      '${d.richestAgent.$1}  —  ${d.richestAgent.$2} \$'),
-                ],
-              ),
-              const SizedBox(height: 12),
+      appBar: AppBar(
+        title: Text('Statistiques', style: GoogleFonts.cinzelDecorative()),
+        actions: [
+          if (_isAdmin)
+            _isRebuilding
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Recalculer les statistiques',
+                    onPressed: _adminRebuild,
+                  ),
+        ],
+      ),
+      body: _isRebuilding
+          ? _buildRebuildingOverlay()
+          : FutureBuilder<_StatsData>(
+              future: _future,
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snap.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text('Erreur : ${snap.error}',
+                          textAlign: TextAlign.center),
+                    ),
+                  );
+                }
+                final d = snap.data!;
+                return _buildStatsList(context, d);
+              },
+            ),
+    );
+  }
 
-              // ── Compétences ─────────────────────────────────────────
-              _buildCategory(
-                context,
-                title: 'Compétences',
-                icon: Icons.auto_fix_high,
-                tiles: [
-                  _SimpleStat(
-                      'Skills distincts totaux', '${d.totalDistinctSkills}'),
-                  _SimpleStat('Nombre moyen par agent',
-                      d.averageSkillsPerAgent.toStringAsFixed(1)),
-                  _SimpleStat('Agent le plus polyvalent',
-                      '${d.agentWithMostSkills.$1}  —  ${d.agentWithMostSkills.$2} skills'),
-                  _RankStat('Top 5 skills populaires', d.topSkills),
-                  _RankStat(
-                      'Top 5 skills moins populaires', d.leastPopularSkills),
-                  _MapStat('Skills par type de coût', d.skillsByCostType),
-                  _MapStat('Skills par classe', d.skillsPerClass),
-                  _MapStat(
-                      'Skills accessibles par race', d.skillsAccessiblePerRace),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // ── Missions ────────────────────────────────────────────
-              _buildCategory(
-                context,
-                title: 'Missions',
-                icon: Icons.map,
-                tiles: [
-                  _SimpleStat(
-                      'Nombre total de missions', '${d.totalMissions}'),
-                  _MapStat(
-                      'Répartition par difficulté', d.missionsByDifficulty),
-                  _MapStat('Répartition par clade', d.missionsByClade),
-                  _SimpleStat(
-                      'Agents tombés au combat', '${d.totalDeceased}'),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // ── Bestiaire & PNJ ─────────────────────────────────────
-              _buildCategory(
-                context,
-                title: 'Bestiaire & PNJ',
-                icon: Icons.pets,
-                tiles: [
-                  _SimpleStat(
-                      'Monstres répertoriés', '${d.totalMonsters}'),
-                  _MapStat('PNJ par relation', d.pnjsByRelation),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // ── Inventaire, Artefacts & R&D ─────────────────────────
-              _buildCategory(
-                context,
-                title: 'Inventaire, Artefacts & R&D',
-                icon: Icons.inventory_2,
-                tiles: [
-                  _SimpleStat(
-                      'Artefacts découverts', '${d.totalArtefacts}'),
-                  _SimpleStat('Projets R&D',
-                      '${d.resDevProgress.$1} complétés / ${d.resDevProgress.$2} en cours'),
-                  _MapStat('Armes par type (affinité)', d.weaponsByType),
-                  _SimpleStat('Objets moyens en sac par agent',
-                      d.averageBagItems.toStringAsFixed(1)),
-                  _RankStat('Top 5 armes populaires', d.topWeapons),
-                  _RankStat(
-                      'Top 5 armes moins populaires', d.leastPopularWeapons),
-                  _RankStat('Top 5 supports populaires', d.topSupportItems),
-                  _RankStat('Top 5 supports moins populaires',
-                      d.leastPopularSupportItems),
-                  _MapStat('Munitions par type', d.muniByCalibre),
-                  _SimpleStat('Coût moyen d\'équipement par agent',
-                      '${d.averageEquipmentCost.toStringAsFixed(0)} \$'),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
-          );
-        },
+  Widget _buildRebuildingOverlay() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 20),
+          Text(
+            'Recalcul des statistiques en cours…',
+            style: GoogleFonts.cinzelDecorative(fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          const SizedBox(
+            width: 240,
+            child: LinearProgressIndicator(),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildStatsList(BuildContext context, _StatsData d) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Légende de fraîcheur
+        if (d.lastUpdated != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Statistiques calculées le ${_formatDate(d.lastUpdated!)}',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+
+        // ── Agents ──────────────────────────────────────────────
+        _buildCategory(
+          context,
+          title: 'Agents',
+          icon: Icons.people,
+          tiles: [
+            _SimpleStat('Nombre total d\'agents', '${d.totalAgents}'),
+            _MapStat('Répartition par race', d.agentsByRace),
+            _MapStat('Répartition par classe', d.agentsByClass),
+            _MapStat('Répartition par classe secondaire',
+                d.agentsBySecondClass),
+            _MapStat('Combinaisons classe + secondaire',
+                d.classComboFrequency),
+            _MapStat('Répartition par type de classe',
+                d.agentsByClassType),
+            _SimpleStat(
+                'Niveau moyen', d.averageLevel.toStringAsFixed(1)),
+            _SimpleStat('Agent le plus riche',
+                '${d.richestAgent.$1}  —  ${d.richestAgent.$2} \$'),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ── Compétences ─────────────────────────────────────────
+        _buildCategory(
+          context,
+          title: 'Compétences',
+          icon: Icons.auto_fix_high,
+          tiles: [
+            _SimpleStat(
+                'Skills distincts totaux', '${d.totalDistinctSkills}'),
+            _SimpleStat('Nombre moyen par agent',
+                d.averageSkillsPerAgent.toStringAsFixed(1)),
+            _SimpleStat('Agent le plus polyvalent',
+                '${d.agentWithMostSkills.$1}  —  ${d.agentWithMostSkills.$2} skills'),
+            _RankStat('Top 5 skills populaires', d.topSkills),
+            _RankStat(
+                'Top 5 skills moins populaires', d.leastPopularSkills),
+            _MapStat('Skills par type de coût', d.skillsByCostType),
+            _MapStat('Skills par classe', d.skillsPerClass),
+            _MapStat(
+                'Skills accessibles par race', d.skillsAccessiblePerRace),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ── Missions ────────────────────────────────────────────
+        _buildCategory(
+          context,
+          title: 'Missions',
+          icon: Icons.map,
+          tiles: [
+            _SimpleStat(
+                'Nombre total de missions', '${d.totalMissions}'),
+            _MapStat(
+                'Répartition par difficulté', d.missionsByDifficulty),
+            _MapStat('Répartition par clade', d.missionsByClade),
+            _SimpleStat(
+                'Agents tombés au combat', '${d.totalDeceased}'),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ── Bestiaire & PNJ ─────────────────────────────────────
+        _buildCategory(
+          context,
+          title: 'Bestiaire & PNJ',
+          icon: Icons.pets,
+          tiles: [
+            _SimpleStat(
+                'Monstres répertoriés', '${d.totalMonsters}'),
+            _MapStat('PNJ par relation', d.pnjsByRelation),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ── Inventaire, Artefacts & R&D ─────────────────────────
+        _buildCategory(
+          context,
+          title: 'Inventaire, Artefacts & R&D',
+          icon: Icons.inventory_2,
+          tiles: [
+            _SimpleStat(
+                'Artefacts découverts', '${d.totalArtefacts}'),
+            _SimpleStat('Projets R&D',
+                '${d.resDevProgress.$1} complétés / ${d.resDevProgress.$2} en cours'),
+            _MapStat('Armes par type (affinité)', d.weaponsByType),
+            _SimpleStat('Objets moyens en sac par agent',
+                d.averageBagItems.toStringAsFixed(1)),
+            _RankStat('Top 5 armes populaires', d.topWeapons),
+            _RankStat(
+                'Top 5 armes moins populaires', d.leastPopularWeapons),
+            _RankStat('Top 5 supports populaires', d.topSupportItems),
+            _RankStat('Top 5 supports moins populaires',
+                d.leastPopularSupportItems),
+            _MapStat('Munitions par type', d.muniByCalibre),
+            _SimpleStat('Coût moyen d\'équipement par agent',
+                '${d.averageEquipmentCost.toStringAsFixed(0)} \$'),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    final d = dt.toLocal();
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} '
+        'à ${d.hour.toString().padLeft(2, '0')}h${d.minute.toString().padLeft(2, '0')}';
   }
 
   Widget _buildCategory(
@@ -321,6 +347,8 @@ class _StatsData {
   final List<MapEntry<String, int>> topSupportItems;
   final List<MapEntry<String, int>> leastPopularSupportItems;
   final double averageEquipmentCost;
+  // Méta
+  final DateTime? lastUpdated;
 
   const _StatsData({
     required this.totalAgents,
@@ -355,7 +383,80 @@ class _StatsData {
     required this.topSupportItems,
     required this.leastPopularSupportItems,
     required this.averageEquipmentCost,
+    this.lastUpdated,
   });
+
+  factory _StatsData.fromMap(Map<String, dynamic> d) {
+    Map<String, int> toIntMap(dynamic v) {
+      if (v is! Map) return {};
+      return Map.fromEntries(
+        v.entries.map((e) => MapEntry(e.key as String, (e.value as num).toInt())),
+      );
+    }
+
+    List<MapEntry<String, int>> toEntries(dynamic v) {
+      if (v is! List) return [];
+      return v
+          .whereType<Map>()
+          .map((m) => MapEntry(m['key'] as String, (m['value'] as num).toInt()))
+          .toList();
+    }
+
+    final richest = d['richestAgent'] as Map? ?? {};
+    final bestSkill = d['agentWithMostSkills'] as Map? ?? {};
+    final resDev = d['resDevProgress'] as Map? ?? {};
+
+    final ts = d['lastUpdated'];
+    final DateTime? lastUpdated =
+        ts is Timestamp ? ts.toDate() : null;
+
+    return _StatsData(
+      totalAgents: (d['totalAgents'] as num?)?.toInt() ?? 0,
+      agentsByRace: toIntMap(d['agentsByRace']),
+      agentsByClass: toIntMap(d['agentsByClass']),
+      averageLevel: (d['averageLevel'] as num?)?.toDouble() ?? 0,
+      richestAgent: (
+        (richest['name'] as String?) ?? 'Aucun',
+        ((richest['count'] as num?)?.toInt()) ?? 0,
+      ),
+      agentsBySecondClass: toIntMap(d['agentsBySecondClass']),
+      classComboFrequency: toIntMap(d['classComboFrequency']),
+      agentsByClassType: toIntMap(d['agentsByClassType']),
+      totalDistinctSkills: (d['totalDistinctSkills'] as num?)?.toInt() ?? 0,
+      averageSkillsPerAgent:
+          (d['averageSkillsPerAgent'] as num?)?.toDouble() ?? 0,
+      topSkills: toEntries(d['topSkills']),
+      leastPopularSkills: toEntries(d['leastPopularSkills']),
+      skillsByCostType: toIntMap(d['skillsByCostType']),
+      agentWithMostSkills: (
+        (bestSkill['name'] as String?) ?? 'Aucun',
+        ((bestSkill['count'] as num?)?.toInt()) ?? 0,
+      ),
+      skillsPerClass: toIntMap(d['skillsPerClass']),
+      skillsAccessiblePerRace: toIntMap(d['skillsAccessiblePerRace']),
+      totalMissions: (d['totalMissions'] as num?)?.toInt() ?? 0,
+      missionsByDifficulty: toIntMap(d['missionsByDifficulty']),
+      missionsByClade: toIntMap(d['missionsByClade']),
+      totalDeceased: (d['totalDeceased'] as num?)?.toInt() ?? 0,
+      totalMonsters: (d['totalMonsters'] as num?)?.toInt() ?? 0,
+      pnjsByRelation: toIntMap(d['pnjsByRelation']),
+      totalArtefacts: (d['totalArtefacts'] as num?)?.toInt() ?? 0,
+      resDevProgress: (
+        ((resDev['completed'] as num?)?.toInt()) ?? 0,
+        ((resDev['inProgress'] as num?)?.toInt()) ?? 0,
+      ),
+      weaponsByType: toIntMap(d['weaponsByType']),
+      averageBagItems: (d['averageBagItems'] as num?)?.toDouble() ?? 0,
+      topWeapons: toEntries(d['topWeapons']),
+      leastPopularWeapons: toEntries(d['leastPopularWeapons']),
+      muniByCalibre: toIntMap(d['muniByCalibre']),
+      topSupportItems: toEntries(d['topSupportItems']),
+      leastPopularSupportItems: toEntries(d['leastPopularSupportItems']),
+      averageEquipmentCost:
+          (d['averageEquipmentCost'] as num?)?.toDouble() ?? 0,
+      lastUpdated: lastUpdated,
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

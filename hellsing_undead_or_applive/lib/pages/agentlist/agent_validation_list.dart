@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/notifications/notification_repository.dart';
+import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/agent_sheet.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
@@ -237,6 +238,7 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
             'validated': true,
             'pendingFreeContact': false,
           });
+      StatsRepository.scheduleRebuild();
 
       // Marquer les notifs admin liées à cet agent comme lues
       await NotificationRepository().markAgentNotifAsRead(agent.agentName);
@@ -292,6 +294,7 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
         updateData['customLevelUpRules'] = customLevelUpRules;
       }
       await agentRef.update(updateData);
+      StatsRepository.scheduleRebuild();
 
       // Marquer les notifs admin liées à cet agent comme lues
       await NotificationRepository().markAgentNotifAsRead(agent.agentName);

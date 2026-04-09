@@ -81,6 +81,7 @@ flutter:
     - assets/icons/
     - assets/backgrounds/
     - assets/dice_throw/
+    - assets/book/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

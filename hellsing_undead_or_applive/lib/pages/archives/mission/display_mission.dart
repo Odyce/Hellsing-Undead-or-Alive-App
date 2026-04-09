@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
 
@@ -114,6 +115,7 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
         },
       });
     }
+    StatsRepository.scheduleRebuild();
   }
 
   // ─── Build ────────────────────────────────────────────────────────────────────

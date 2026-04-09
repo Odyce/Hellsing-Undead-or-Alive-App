@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 
 class AgentRepository {
   final FirebaseFirestore _firestore;
@@ -103,5 +104,7 @@ class AgentRepository {
         .doc(uid)
         .collection('agents')
         .add(agent.toMap());
+
+    StatsRepository.scheduleRebuild();
   }
 }

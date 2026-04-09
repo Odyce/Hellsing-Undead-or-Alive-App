@@ -4,27 +4,30 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class StatsRepository {
   final _fs = FirebaseFirestore.instance;
 
-  /// Cache des agents pour éviter de refetch N fois dans le même chargement.
-  List<Map<String, dynamic>>? _agentsCache;
+  /// Cache des agents : un seul Future partagé pour éviter les requêtes en
+  /// double lorsque plusieurs méthodes sont appelées simultanément via Future.wait.
+  Future<List<Map<String, dynamic>>>? _agentsFuture;
 
-  /// Vide le cache (à appeler en début de chargement complet).
-  void clearCache() => _agentsCache = null;
+  /// Vide le cache (appelé en début de recalcul complet).
+  void clearCache() => _agentsFuture = null;
 
   // ═══════════════════════════════════════════════════════════════════════════
   //  HELPERS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  Future<List<Map<String, dynamic>>> _allAgents() async {
-    if (_agentsCache != null) return _agentsCache!;
+  Future<List<Map<String, dynamic>>> _allAgents() =>
+      _agentsFuture ??= _fetchAllAgents();
+
+  Future<List<Map<String, dynamic>>> _fetchAllAgents() async {
     final usersSnap = await _fs.collection('users').get();
     final agents = <Map<String, dynamic>>[];
     for (final userDoc in usersSnap.docs) {
       final agentsSnap = await userDoc.reference.collection('agents').get();
       for (final doc in agentsSnap.docs) {
+        if (doc.id == '_meta_') continue;
         agents.add(doc.data());
       }
     }
-    _agentsCache = agents;
     return agents;
   }
 
@@ -82,7 +85,6 @@ class StatsRepository {
     );
   }
 
-  /// Répartition par classe secondaire
   Future<Map<String, int>> agentsBySecondClass() async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -96,7 +98,6 @@ class StatsRepository {
     return map;
   }
 
-  /// Combinaisons classe principale + secondaire
   Future<Map<String, int>> classComboFrequency() async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -114,7 +115,6 @@ class StatsRepository {
     return map;
   }
 
-  /// Répartition par type de classe (classType: pe/pm)
   Future<Map<String, int>> agentsByClassType() async {
     final agents = await _allAgents();
     final labels = {'pe': 'Physique (PE)', 'pm': 'Mentale (PM)'};
@@ -139,7 +139,6 @@ class StatsRepository {
     return skills.whereType<Map<String, dynamic>>().toList();
   }
 
-  /// Nombre total de skills distincts (union par nom)
   Future<int> totalDistinctSkills() async {
     final agents = await _allAgents();
     final names = <String>{};
@@ -152,7 +151,6 @@ class StatsRepository {
     return names.length;
   }
 
-  /// Nombre moyen de skills par agent
   Future<double> averageSkillsPerAgent() async {
     final agents = await _allAgents();
     if (agents.isEmpty) return 0;
@@ -160,7 +158,6 @@ class StatsRepository {
     return total / agents.length;
   }
 
-  /// Top 5 skills les plus populaires { name: count }
   Future<List<MapEntry<String, int>>> topSkills({int limit = 5}) async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -175,7 +172,6 @@ class StatsRepository {
     return sorted.take(limit).toList();
   }
 
-  /// Top 5 skills les moins populaires
   Future<List<MapEntry<String, int>>> leastPopularSkills({int limit = 5}) async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -190,7 +186,6 @@ class StatsRepository {
     return sorted.take(limit).toList();
   }
 
-  /// Répartition des skills par type de coût (PE/PM/PV)
   Future<Map<String, int>> skillsByCostType() async {
     final agents = await _allAgents();
     final labels = {'pe': 'PE', 'pm': 'PM', 'pv': 'PV'};
@@ -205,7 +200,6 @@ class StatsRepository {
     return map;
   }
 
-  /// Agent avec le plus de compétences (name, count)
   Future<(String, int)> agentWithMostSkills() async {
     final agents = await _allAgents();
     if (agents.isEmpty) return ('Aucun', 0);
@@ -221,7 +215,6 @@ class StatsRepository {
     return (bestName, bestCount);
   }
 
-  /// Nombre de skills par classe (via allSkills de agentClass)
   Future<Map<String, int>> skillsPerClass() async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -239,8 +232,6 @@ class StatsRepository {
     return map;
   }
 
-  /// Nombre de skills accessibles par race (union des allSkills de toutes les
-  /// classes disponibles de la race)
   Future<Map<String, int>> skillsAccessiblePerRace() async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -377,7 +368,6 @@ class StatsRepository {
     return (completed, inProgress);
   }
 
-  /// Répartition des armes par type (affinité)
   Future<Map<String, int>> weaponsByType() async {
     final agents = await _allAgents();
     final labels = {
@@ -407,7 +397,6 @@ class StatsRepository {
     return map;
   }
 
-  /// Nombre moyen d'objets en sac (bagSlots non vides)
   Future<double> averageBagItems() async {
     final agents = await _allAgents();
     if (agents.isEmpty) return 0;
@@ -423,7 +412,6 @@ class StatsRepository {
     return total / agents.length;
   }
 
-  /// Top N armes les plus populaires { name: count }
   Future<List<MapEntry<String, int>>> topWeapons({int limit = 5}) async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -443,7 +431,6 @@ class StatsRepository {
     return sorted.take(limit).toList();
   }
 
-  /// Top N armes les moins populaires
   Future<List<MapEntry<String, int>>> leastPopularWeapons({int limit = 5}) async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -463,7 +450,6 @@ class StatsRepository {
     return sorted.take(limit).toList();
   }
 
-  /// Répartition des munitions par calibre
   Future<Map<String, int>> muniByCalibr() async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -482,12 +468,10 @@ class StatsRepository {
     return map;
   }
 
-  /// Top 5 équipements de support les plus populaires
   Future<List<MapEntry<String, int>>> topSupportItems({int limit = 5}) async {
     final agents = await _allAgents();
     final map = <String, int>{};
     for (final a in agents) {
-      // Support dans les bagSlots
       final bags = a['bagSlots'];
       if (bags is List) {
         for (final slot in bags) {
@@ -498,7 +482,6 @@ class StatsRepository {
           map[name] = (map[name] ?? 0) + 1;
         }
       }
-      // Support dans les muniSlots (champ supp)
       final munis = a['muniSlots'];
       if (munis is List) {
         for (final slot in munis) {
@@ -509,7 +492,6 @@ class StatsRepository {
           map[name] = (map[name] ?? 0) + 1;
         }
       }
-      // Kit dans les weaponSlots
       final weapons = a['weaponSlots'];
       if (weapons is List) {
         for (final slot in weapons) {
@@ -526,7 +508,6 @@ class StatsRepository {
     return sorted.take(limit).toList();
   }
 
-  /// Top 5 équipements de support les moins populaires
   Future<List<MapEntry<String, int>>> leastPopularSupportItems({int limit = 5}) async {
     final agents = await _allAgents();
     final map = <String, int>{};
@@ -567,13 +548,11 @@ class StatsRepository {
     return sorted.take(limit).toList();
   }
 
-  /// Coût moyen du total des équipements par agent
   Future<double> averageEquipmentCost() async {
     final agents = await _allAgents();
     if (agents.isEmpty) return 0;
     var totalCost = 0;
     for (final a in agents) {
-      // Armes
       final weapons = a['weaponSlots'];
       if (weapons is List) {
         for (final slot in weapons) {
@@ -584,7 +563,6 @@ class StatsRepository {
           if (kit is Map) totalCost += (kit['price'] as int?) ?? 0;
         }
       }
-      // Sac
       final bags = a['bagSlots'];
       if (bags is List) {
         for (final slot in bags) {
@@ -593,7 +571,6 @@ class StatsRepository {
           if (supp is Map) totalCost += (supp['price'] as int?) ?? 0;
         }
       }
-      // Munitions
       final munis = a['muniSlots'];
       if (munis is List) {
         for (final slot in munis) {
@@ -611,4 +588,142 @@ class StatsRepository {
     }
     return totalCost / agents.length;
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  STATS SUMMARY — document pré-calculé /common/stats
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  static const _summaryCollection = 'common';
+  static const _summaryDocId = 'stats';
+
+  /// Recalcule toutes les statistiques et les persiste dans /common/stats.
+  Future<void> rebuildSummary() async {
+    clearCache();
+
+    final agentFutures = Future.wait([
+      totalAgents(),           // 0
+      agentsByRace(),          // 1
+      agentsByClass(),         // 2
+      averageLevel(),          // 3
+      richestAgent(),          // 4
+      agentsBySecondClass(),   // 5
+      classComboFrequency(),   // 6
+      agentsByClassType(),     // 7
+    ]);
+    final skillFutures = Future.wait([
+      totalDistinctSkills(),    // 0
+      averageSkillsPerAgent(),  // 1
+      topSkills(),              // 2
+      leastPopularSkills(),     // 3
+      skillsByCostType(),       // 4
+      agentWithMostSkills(),    // 5
+      skillsPerClass(),         // 6
+      skillsAccessiblePerRace(),// 7
+    ]);
+    final missionFutures = Future.wait([
+      totalMissions(),          // 0
+      missionsByDifficulty(),   // 1
+      missionsByClade(),        // 2
+      totalAgentsDeceased(),    // 3
+    ]);
+    final otherFutures = Future.wait([
+      totalMonsters(),          // 0
+      pnjsByRelation(),         // 1
+      totalArtefacts(),         // 2
+      resDevProgress(),         // 3
+      weaponsByType(),          // 4
+      averageBagItems(),        // 5
+      topWeapons(),             // 6
+      leastPopularWeapons(),    // 7
+      muniByCalibr(),           // 8
+      topSupportItems(),        // 9
+      leastPopularSupportItems(), // 10
+      averageEquipmentCost(),   // 11
+    ]);
+
+    final results = await Future.wait([
+      agentFutures,
+      skillFutures,
+      missionFutures,
+      otherFutures,
+    ]);
+
+    final a = results[0] as List;
+    final s = results[1] as List;
+    final m = results[2] as List;
+    final o = results[3] as List;
+
+    final (richName, richMoney) = a[4] as (String, int);
+    final (bestSkillAgent, bestSkillCount) = s[5] as (String, int);
+    final (rdCompleted, rdInProgress) = o[3] as (int, int);
+
+    final summary = <String, dynamic>{
+      // Agents
+      'totalAgents': a[0] as int,
+      'agentsByRace': a[1] as Map<String, int>,
+      'agentsByClass': a[2] as Map<String, int>,
+      'averageLevel': a[3] as double,
+      'richestAgent': {'name': richName, 'count': richMoney},
+      'agentsBySecondClass': a[5] as Map<String, int>,
+      'classComboFrequency': a[6] as Map<String, int>,
+      'agentsByClassType': a[7] as Map<String, int>,
+      // Compétences
+      'totalDistinctSkills': s[0] as int,
+      'averageSkillsPerAgent': s[1] as double,
+      'topSkills': _encodeEntries(s[2] as List<MapEntry<String, int>>),
+      'leastPopularSkills': _encodeEntries(s[3] as List<MapEntry<String, int>>),
+      'skillsByCostType': s[4] as Map<String, int>,
+      'agentWithMostSkills': {'name': bestSkillAgent, 'count': bestSkillCount},
+      'skillsPerClass': s[6] as Map<String, int>,
+      'skillsAccessiblePerRace': s[7] as Map<String, int>,
+      // Missions
+      'totalMissions': m[0] as int,
+      'missionsByDifficulty': m[1] as Map<String, int>,
+      'missionsByClade': m[2] as Map<String, int>,
+      'totalDeceased': m[3] as int,
+      // Bestiaire & PNJ
+      'totalMonsters': o[0] as int,
+      'pnjsByRelation': o[1] as Map<String, int>,
+      // Inventaire, Artefacts & R&D
+      'totalArtefacts': o[2] as int,
+      'resDevProgress': {'completed': rdCompleted, 'inProgress': rdInProgress},
+      'weaponsByType': o[4] as Map<String, int>,
+      'averageBagItems': o[5] as double,
+      'topWeapons': _encodeEntries(o[6] as List<MapEntry<String, int>>),
+      'leastPopularWeapons': _encodeEntries(o[7] as List<MapEntry<String, int>>),
+      'muniByCalibre': o[8] as Map<String, int>,
+      'topSupportItems': _encodeEntries(o[9] as List<MapEntry<String, int>>),
+      'leastPopularSupportItems': _encodeEntries(o[10] as List<MapEntry<String, int>>),
+      'averageEquipmentCost': o[11] as double,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    };
+
+    await _fs
+        .collection(_summaryCollection)
+        .doc(_summaryDocId)
+        .set(summary);
+  }
+
+  /// Charge les statistiques depuis le document pré-calculé.
+  /// Retourne null si le document n'existe pas encore (premier lancement).
+  Future<Map<String, dynamic>?> loadSummary() async {
+    final doc = await _fs
+        .collection(_summaryCollection)
+        .doc(_summaryDocId)
+        .get();
+    if (!doc.exists) return null;
+    return doc.data();
+  }
+
+  /// Fire-and-forget : déclenche un recalcul en arrière-plan sans bloquer l'UI.
+  /// À appeler après toute mutation de données impactant les statistiques.
+  static void scheduleRebuild() {
+    StatsRepository().rebuildSummary().catchError((_) {});
+  }
+
+  // ─── Helpers de sérialisation ────────────────────────────────────────────
+
+  static List<Map<String, dynamic>> _encodeEntries(
+          List<MapEntry<String, int>> entries) =>
+      entries.map((e) => {'key': e.key, 'value': e.value}).toList();
 }

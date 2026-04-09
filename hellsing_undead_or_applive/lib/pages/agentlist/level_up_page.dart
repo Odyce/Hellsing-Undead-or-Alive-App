@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Missions cumulées requises pour chaque niveau
@@ -633,6 +634,7 @@ class _LevelUpPageState extends State<LevelUpPage> {
       }
 
       await agentRef.update(updateData);
+      StatsRepository.scheduleRebuild();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

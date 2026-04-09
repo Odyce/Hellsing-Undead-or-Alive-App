@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/pages/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
@@ -501,6 +502,7 @@ Future<bool> _confirmDelete(
         .collection('agents')
         .doc(docId)
         .delete();
+    StatsRepository.scheduleRebuild();
     return true;
   }
   return false;

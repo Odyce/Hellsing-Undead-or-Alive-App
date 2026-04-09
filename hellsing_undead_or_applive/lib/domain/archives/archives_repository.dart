@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 
 // ─── MissionRepository ────────────────────────────────────────────────────────
 
@@ -78,6 +79,7 @@ class MissionRepository {
     );
 
     await _missionsRef.add(mission.toMap());
+    StatsRepository.scheduleRebuild();
   }
 
   /// Trouve le docId Firestore d'une mission par son id métier
@@ -91,6 +93,7 @@ class MissionRepository {
     final docId = await _findMissionDocId(missionId);
     if (docId == null) return;
     await _missionsRef.doc(docId).update(fields);
+    StatsRepository.scheduleRebuild();
   }
 
   /// Ajoute un rapport PDF à une mission existante
@@ -145,6 +148,7 @@ class PNJRepository {
     final docId = await _findPNJDocId(pnjId);
     if (docId == null) return;
     await _npcsRef.doc(docId).update(fields);
+    StatsRepository.scheduleRebuild();
   }
 
   /// Crée un PNJ dans common/archives/npcs
@@ -169,6 +173,7 @@ class PNJRepository {
     );
 
     await _npcsRef.add(pnj.toMap());
+    StatsRepository.scheduleRebuild();
   }
 }
 
@@ -254,6 +259,7 @@ class MonsterRepository {
     );
 
     await _bestiaryRef.add(monster.toMap());
+    StatsRepository.scheduleRebuild();
   }
 }
 
@@ -315,6 +321,7 @@ class ArtefactRepository {
         .doc('archives')
         .collection('artefacts')
         .add(artefact.toMap());
+    StatsRepository.scheduleRebuild();
   }
 
   /// Crée un ArtefactWeapon dans common/archives/artefacts
@@ -373,6 +380,7 @@ class ArtefactRepository {
         .doc('archives')
         .collection('artefacts')
         .add(weapon.toMap());
+    StatsRepository.scheduleRebuild();
   }
 }
 
@@ -432,6 +440,7 @@ class ResDevProjectRepository {
         .doc('archives')
         .collection('resdevproject')
         .add(project.toMap());
+    StatsRepository.scheduleRebuild();
   }
 
   /// Sauvegarde les réclamations de prérequis depuis la fiche projet
@@ -461,6 +470,7 @@ class ResDevProjectRepository {
         .collection('resdevproject')
         .doc(docId)
         .update({'completed': true});
+    StatsRepository.scheduleRebuild();
   }
 }
 
