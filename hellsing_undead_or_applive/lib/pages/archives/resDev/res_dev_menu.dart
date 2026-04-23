@@ -28,7 +28,7 @@ class ResDevMenuPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, Routes.resDev);
+                  Navigator.pushReplacementNamed(context, Routes.resDevList);
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),

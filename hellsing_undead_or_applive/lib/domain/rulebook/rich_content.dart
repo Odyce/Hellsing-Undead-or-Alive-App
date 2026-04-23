@@ -2,6 +2,7 @@
 ///
 /// Utilisé dans les pages du livre pour afficher du texte formaté
 /// contenant des liens internes (vers d'autres pages ou des fiches annexes).
+library;
 
 /// Indice de style pour un fragment de texte.
 enum TextStyleHint {

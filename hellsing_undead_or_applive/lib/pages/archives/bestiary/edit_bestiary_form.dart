@@ -70,7 +70,7 @@ class _EditBestiaryPageState extends State<EditBestiaryPage> {
       if (min == null || max == null) {
         _hpError = 'Les deux valeurs doivent \u00eatre des entiers.';
       } else if (min < 0 || max < 0) {
-        _hpError = 'Les PV ne peuvent pas \u00eatre n\u00e9gatifs.';
+        _hpError = 'Les PV ne peuvent pas \u00eatre négatifs.';
       } else if (max < min) {
         _hpError = 'Le max doit \u00eatre \u2265 au min.';
       } else {
@@ -80,7 +80,7 @@ class _EditBestiaryPageState extends State<EditBestiaryPage> {
   }
 
   static String _typeLabel(Entitype t) => switch (t) {
-        Entitype.demon  => 'D\u00e9mon',
+        Entitype.demon  => 'Démon',
         Entitype.angel  => 'Ange',
         Entitype.midian => 'Midian',
         Entitype.beast  => 'B\u00eate',
@@ -134,7 +134,7 @@ class _EditBestiaryPageState extends State<EditBestiaryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Modifier la cr\u00e9ature')),
+      appBar: AppBar(title: const Text('Modifier la créature')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -153,7 +153,7 @@ class _EditBestiaryPageState extends State<EditBestiaryPage> {
           const SizedBox(height: 16),
 
           DropdownButtonFormField<Entitype>(
-            value: _type,
+            initialValue: _type,
             decoration: const InputDecoration(labelText: 'Type'),
             items: Entitype.values
                 .map((t) => DropdownMenuItem(
@@ -178,7 +178,7 @@ class _EditBestiaryPageState extends State<EditBestiaryPage> {
 
           TextField(
             controller: _skillsCtrl,
-            decoration: const InputDecoration(labelText: 'Comp\u00e9tences *'),
+            decoration: const InputDecoration(labelText: 'Compétences *'),
             minLines: 2,
             maxLines: 8,
             onChanged: (_) => setState(() {}),

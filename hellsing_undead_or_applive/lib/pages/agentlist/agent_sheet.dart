@@ -1163,8 +1163,16 @@ class _MissionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Filtrer les MissionRecord avec id -66
-    final missions = agent.missions.where((m) => m.id != -66).toList();
+    // Filtrer les MissionRecord avec id -66, puis trier par completedAt croissant
+    // (nulls en dernier). L'ordre chronologique détermine dans quelle tranche de
+    // niveau chaque mission apparaît (la plus ancienne → niveau le plus bas).
+    final missions = agent.missions.where((m) => m.id != -66).toList()
+      ..sort((a, b) {
+        if (a.completedAt == null && b.completedAt == null) return 0;
+        if (a.completedAt == null) return 1;
+        if (b.completedAt == null) return -1;
+        return a.completedAt!.compareTo(b.completedAt!);
+      });
 
     // Construire les sous-sections visibles
     final tiles = <Widget>[];
@@ -1271,6 +1279,30 @@ class _MissionRecordTile extends StatelessWidget {
 
   const _MissionRecordTile({required this.mission});
 
+  Future<void> _openMission(BuildContext context) async {
+    final snap = await FirebaseFirestore.instance
+        .collection('common')
+        .doc('archives')
+        .collection('missions')
+        .where('id', isEqualTo: mission.id)
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mission introuvable.')),
+        );
+      }
+      return;
+    }
+
+    final full = Mission.fromMap(snap.docs.first.data());
+    if (context.mounted) {
+      Navigator.pushNamed(context, Routes.missionSheet, arguments: full);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final date = mission.completedAt;
@@ -1280,27 +1312,39 @@ class _MissionRecordTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              mission.title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(mission.description, style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 4),
-            Text(
-              dateLabel,
-              style: TextStyle(
-                fontSize: 12,
-                color: date != null ? Colors.green.shade700 : Colors.grey,
-                fontStyle: FontStyle.italic,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _openMission(context),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      mission.title,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(mission.description, style: const TextStyle(fontSize: 13)),
+              const SizedBox(height: 4),
+              Text(
+                dateLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: date != null ? Colors.green.shade700 : Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1563,7 +1607,7 @@ Future<_ContactDialogResult?> _showAddContactDialog(
                     ),
                   if (!isFree)
                     DropdownButtonFormField<int>(
-                      value: cost,
+                      initialValue: cost,
                       items: availableCosts
                           .map((v) => DropdownMenuItem(
                                 value: v,

@@ -104,7 +104,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
 
   final List<_ContactFormData> _contacts = [];
 
-  int get _usedPc => _contacts.fold(0, (sum, c) => sum + c.cost);
+  int get _usedPc => _contacts.fold(0, (sums, c) => sums + c.cost);
 
   int get _remainingPc => _pc - _usedPc;
   
@@ -628,7 +628,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Photo de profil (optionnel)',
+            'Photo de profil (optionnel)\n(10,20Mo MAX)',
             style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: 8),

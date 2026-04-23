@@ -184,7 +184,7 @@ class _CreateResDevPageState extends State<CreateResDevPage> {
       // Marquer le projet comme complété
       await _projectRepo.setCompleted(_selectedDocId!);
 
-      if (mounted) Navigator.of(context).pushReplacementNamed(Routes.resDev);
+      if (mounted) Navigator.of(context).pushReplacementNamed(Routes.resDevList);
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }
@@ -546,7 +546,7 @@ class _CreateResDevPageState extends State<CreateResDevPage> {
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: () =>
-                  Navigator.pushReplacementNamed(context, Routes.resDev),
+                  Navigator.pushReplacementNamed(context, Routes.resDevList),
               child: const Text('Retour'),
             ),
           ),

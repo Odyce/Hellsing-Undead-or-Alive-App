@@ -12,6 +12,7 @@ export 'inventory/inventory_model.dart';
 export 'inventory/weapons_model.dart';
 export 'archives/missions_model.dart';
 export 'archives/archives_repository.dart';
+export 'archives/agent_ref.dart';
 export 'archives/npc_model.dart';
 export 'archives/objects_model.dart';
 export 'archives/field_note_model.dart';

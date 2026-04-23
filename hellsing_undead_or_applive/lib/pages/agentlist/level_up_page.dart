@@ -829,22 +829,27 @@ class _LevelUpPageState extends State<LevelUpPage> {
                 ),
               ),
               const SizedBox(height: 4),
-              ...choice.options.map((opt) {
-                return RadioListTile<String>(
-                  title: Text(opt.label),
-                  value: opt.id,
-                  groupValue: _choices[choice.id],
-                  onChanged: (value) {
-                    setState(() {
-                      _choices[choice.id] = value!;
-                      // Reset les sous-choix quand on change d'option
-                      _selectedSkill = null;
-                      _selectedAttributeIndex = null;
-                      _classBonusAllocations.clear();
-                    });
-                  },
-                );
-              }),
+              RadioGroup<String>(
+                groupValue: _choices[choice.id],
+                onChanged: (value) {
+                  setState(() {
+                    _choices[choice.id] = value!;
+                    // Reset les sous-choix quand on change d'option
+                    _selectedSkill = null;
+                    _selectedAttributeIndex = null;
+                    _classBonusAllocations.clear();
+                  });
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: choice.options.map((opt) {
+                    return RadioListTile<String>(
+                      title: Text(opt.label),
+                      value: opt.id,
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         ),
@@ -889,19 +894,24 @@ class _LevelUpPageState extends State<LevelUpPage> {
             style: TextStyle(color: Colors.grey),
           )
         else
-          ...available.map((skill) {
-            return RadioListTile<int>(
-              title: Text(skill.name),
-              subtitle: Text(skill.description, maxLines: 2, overflow: TextOverflow.ellipsis),
-              value: skill.id,
-              groupValue: _selectedSkill?.id,
-              onChanged: (value) {
-                setState(() {
-                  _selectedSkill = skill;
-                });
-              },
-            );
-          }),
+          RadioGroup<int>(
+            groupValue: _selectedSkill?.id,
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                _selectedSkill = available.firstWhere((s) => s.id == value);
+              });
+            },
+            child: Column(
+              children: available.map((skill) {
+                return RadioListTile<int>(
+                  title: Text(skill.name),
+                  subtitle: Text(skill.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  value: skill.id,
+                );
+              }).toList(),
+            ),
+          ),
       ],
     );
   }
@@ -919,16 +929,20 @@ class _LevelUpPageState extends State<LevelUpPage> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        ...List.generate(3, (i) {
-          return RadioListTile<int>(
-            title: Text('${labels[i]} (${agent.attributes[i]})'),
-            value: i,
-            groupValue: _selectedAttributeIndex,
-            onChanged: (value) {
-              setState(() => _selectedAttributeIndex = value);
-            },
-          );
-        }),
+        RadioGroup<int>(
+          groupValue: _selectedAttributeIndex,
+          onChanged: (value) {
+            setState(() => _selectedAttributeIndex = value);
+          },
+          child: Column(
+            children: List.generate(3, (i) {
+              return RadioListTile<int>(
+                title: Text('${labels[i]} (${agent.attributes[i]})'),
+                value: i,
+              );
+            }),
+          ),
+        ),
       ],
     );
   }

@@ -33,7 +33,165 @@ class MissionRepository {
   CollectionReference<Map<String, dynamic>> get _missionsRef =>
       _firestore.collection('common').doc('archives').collection('missions');
 
-  /// Crée une Mission dans common/archives/missions
+  // ─── Sync : MissionRecord ─────────────────────────────────────────────────
+
+  /// Ajoute ou met à jour un MissionRecord dans la liste missions d'un agent.
+  Future<void> _upsertAgentMissionRecord(
+      AgentRef ref, MissionRecord record) async {
+    final agentDoc = _firestore
+        .collection('users')
+        .doc(ref.ownerUid)
+        .collection('agents')
+        .doc(ref.agentDocId);
+
+    final snap = await agentDoc.get();
+    if (!snap.exists) return;
+
+    final raw = snap.data()!;
+    final missions = (raw['missions'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .toList();
+
+    final idx = missions.indexWhere((m) => m['id'] == record.id);
+    if (idx >= 0) {
+      missions[idx] = record.toMap();
+    } else {
+      missions.add(record.toMap());
+    }
+
+    await agentDoc.update({'missions': missions});
+  }
+
+  /// Supprime un MissionRecord d'un agent.
+  Future<void> _removeAgentMissionRecord(AgentRef ref, int missionId) async {
+    final agentDoc = _firestore
+        .collection('users')
+        .doc(ref.ownerUid)
+        .collection('agents')
+        .doc(ref.agentDocId);
+
+    final snap = await agentDoc.get();
+    if (!snap.exists) return;
+
+    final raw = snap.data()!;
+    final missions = (raw['missions'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .where((m) => m['id'] != missionId)
+        .toList();
+
+    await agentDoc.update({'missions': missions});
+  }
+
+  /// Ajoute ou met à jour un MissionRecord dans un document de la collection [collRef]
+  /// dont le champ 'id' vaut [entityId].
+  Future<void> _upsertEntityMissionRecord(
+    CollectionReference<Map<String, dynamic>> collRef,
+    int entityId,
+    MissionRecord record,
+  ) async {
+    final snap =
+        await collRef.where('id', isEqualTo: entityId).limit(1).get();
+    if (snap.docs.isEmpty) return;
+
+    final docRef = snap.docs.first.reference;
+    final raw = snap.docs.first.data();
+    final missions = (raw['missions'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .toList();
+
+    final idx = missions.indexWhere((m) => m['id'] == record.id);
+    if (idx >= 0) {
+      missions[idx] = record.toMap();
+    } else {
+      missions.add(record.toMap());
+    }
+
+    await docRef.update({'missions': missions});
+  }
+
+  /// Supprime un MissionRecord d'un document de la collection [collRef]
+  /// dont le champ 'id' vaut [entityId].
+  Future<void> _removeEntityMissionRecord(
+    CollectionReference<Map<String, dynamic>> collRef,
+    int entityId,
+    int missionId,
+  ) async {
+    final snap =
+        await collRef.where('id', isEqualTo: entityId).limit(1).get();
+    if (snap.docs.isEmpty) return;
+
+    final docRef = snap.docs.first.reference;
+    final raw = snap.docs.first.data();
+    final missions = (raw['missions'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .where((m) => m['id'] != missionId)
+        .toList();
+
+    await docRef.update({'missions': missions});
+  }
+
+  CollectionReference<Map<String, dynamic>> get _npcsRef =>
+      _firestore.collection('common').doc('archives').collection('npcs');
+
+  CollectionReference<Map<String, dynamic>> get _bestiaryRef =>
+      _firestore.collection('common').doc('archives').collection('bestiary');
+
+  /// Synchronise les MissionRecords de toutes les entités impliquées.
+  ///
+  /// [added]   → entités nouvellement ajoutées à la mission (reçoivent un MissionRecord).
+  /// [removed] → entités retirées de la mission (leur MissionRecord est supprimé).
+  /// [kept]    → entités déjà présentes (leur MissionRecord est mis à jour).
+  Future<void> _syncAllEntities({
+    required List<AgentRef> agentsAdded,
+    required List<AgentRef> agentsRemoved,
+    required List<AgentRef> agentsKept,
+    required List<PNJ> pnjsAdded,
+    required List<PNJ> pnjsRemoved,
+    required List<PNJ> pnjsKept,
+    required List<Monster> monstersAdded,
+    required List<Monster> monstersRemoved,
+    required List<Monster> monstersKept,
+    required MissionRecord record,
+  }) async {
+    final futures = <Future<void>>[];
+
+    for (final ref in agentsAdded) {
+      futures.add(_upsertAgentMissionRecord(ref, record));
+    }
+    for (final ref in agentsKept) {
+      futures.add(_upsertAgentMissionRecord(ref, record));
+    }
+    for (final ref in agentsRemoved) {
+      futures.add(_removeAgentMissionRecord(ref, record.id));
+    }
+
+    for (final pnj in pnjsAdded) {
+      futures.add(_upsertEntityMissionRecord(_npcsRef, pnj.id, record));
+    }
+    for (final pnj in pnjsKept) {
+      futures.add(_upsertEntityMissionRecord(_npcsRef, pnj.id, record));
+    }
+    for (final pnj in pnjsRemoved) {
+      futures.add(_removeEntityMissionRecord(_npcsRef, pnj.id, record.id));
+    }
+
+    for (final m in monstersAdded) {
+      futures.add(_upsertEntityMissionRecord(_bestiaryRef, m.id, record));
+    }
+    for (final m in monstersKept) {
+      futures.add(_upsertEntityMissionRecord(_bestiaryRef, m.id, record));
+    }
+    for (final m in monstersRemoved) {
+      futures.add(_removeEntityMissionRecord(_bestiaryRef, m.id, record.id));
+    }
+
+    await Future.wait(futures);
+  }
+
+  // ─── CRUD missions ────────────────────────────────────────────────────────
+
+  /// Crée une Mission dans common/archives/missions et synchronise les
+  /// MissionRecords sur chaque entité impliquée.
   Future<void> createMission({
     required String title,
     String? notesForDM,
@@ -45,10 +203,10 @@ class MissionRepository {
     required DateTime postedAt,
     DateTime? playedAt,
     DateTime? completedAt,
-    List<Agent>? agentInvolved,
+    List<AgentRef>? agentInvolved,
     List<PNJ>? pnjInvolved,
     List<Monster>? monsterInvolved,
-    List<Agent>? agentDeceased,
+    List<AgentRef>? agentDeceased,
     required int bountyMin,
     required int bountyMax,
     List<String>? reportPaths,
@@ -68,17 +226,38 @@ class MissionRepository {
       postedAt: postedAt,
       playedAt: playedAt,
       completedAt: completedAt,
-      agentInvolved: agentInvolved,
+      agentInvolved: agentInvolved?.map((r) => r.agent).toList(),
       pnjInvolved: pnjInvolved,
       monsterInvolved: monsterInvolved,
       bountyMin: bountyMin,
       bountyMax: bountyMax,
       reportPaths: reportPaths,
-      agentDeceased: agentDeceased,
+      agentDeceased: agentDeceased?.map((r) => r.agent).toList(),
       urgent: urgent,
     );
 
     await _missionsRef.add(mission.toMap());
+
+    final record = MissionRecord(
+      id: nextId,
+      title: title,
+      description: descriptionIntro,
+      completedAt: completedAt,
+    );
+
+    await _syncAllEntities(
+      agentsAdded: agentInvolved ?? [],
+      agentsRemoved: [],
+      agentsKept: [],
+      pnjsAdded: pnjInvolved ?? [],
+      pnjsRemoved: [],
+      pnjsKept: [],
+      monstersAdded: monsterInvolved ?? [],
+      monstersRemoved: [],
+      monstersKept: [],
+      record: record,
+    );
+
     StatsRepository.scheduleRebuild();
   }
 
@@ -88,12 +267,75 @@ class MissionRepository {
     return snap.docs.isEmpty ? null : snap.docs.first.id;
   }
 
-  /// Met à jour les champs d'une mission existante
+  /// Met à jour les champs d'une mission existante (sans sync d'entités).
+  /// Préférer [updateMissionFull] pour une mise à jour complète avec sync.
   Future<void> updateMission(int missionId, Map<String, dynamic> fields) async {
     final docId = await _findMissionDocId(missionId);
     if (docId == null) return;
     await _missionsRef.doc(docId).update(fields);
     StatsRepository.scheduleRebuild();
+  }
+
+  /// Met à jour une mission et synchronise les MissionRecords de toutes les
+  /// entités (ajout, suppression, mise à jour selon le diff old → new).
+  Future<void> updateMissionFull({
+    required int missionId,
+    required Map<String, dynamic> fields,
+    required List<AgentRef> newAgentInvolved,
+    required List<AgentRef> oldAgentInvolved,
+    required List<PNJ> newPnjInvolved,
+    required List<PNJ> oldPnjInvolved,
+    required List<Monster> newMonsterInvolved,
+    required List<Monster> oldMonsterInvolved,
+    required String title,
+    required String description,
+    required DateTime? completedAt,
+  }) async {
+    await updateMission(missionId, fields);
+
+    final oldAgentIds = oldAgentInvolved.map((r) => r.agent.id).toSet();
+    final newAgentIds = newAgentInvolved.map((r) => r.agent.id).toSet();
+    final agentsAdded =
+        newAgentInvolved.where((r) => !oldAgentIds.contains(r.agent.id)).toList();
+    final agentsRemoved =
+        oldAgentInvolved.where((r) => !newAgentIds.contains(r.agent.id)).toList();
+    final agentsKept =
+        newAgentInvolved.where((r) => oldAgentIds.contains(r.agent.id)).toList();
+
+    final oldPnjIds = oldPnjInvolved.map((p) => p.id).toSet();
+    final newPnjIds = newPnjInvolved.map((p) => p.id).toSet();
+    final pnjsAdded = newPnjInvolved.where((p) => !oldPnjIds.contains(p.id)).toList();
+    final pnjsRemoved = oldPnjInvolved.where((p) => !newPnjIds.contains(p.id)).toList();
+    final pnjsKept = newPnjInvolved.where((p) => oldPnjIds.contains(p.id)).toList();
+
+    final oldMonsterIds = oldMonsterInvolved.map((m) => m.id).toSet();
+    final newMonsterIds = newMonsterInvolved.map((m) => m.id).toSet();
+    final monstersAdded =
+        newMonsterInvolved.where((m) => !oldMonsterIds.contains(m.id)).toList();
+    final monstersRemoved =
+        oldMonsterInvolved.where((m) => !newMonsterIds.contains(m.id)).toList();
+    final monstersKept =
+        newMonsterInvolved.where((m) => oldMonsterIds.contains(m.id)).toList();
+
+    final record = MissionRecord(
+      id: missionId,
+      title: title,
+      description: description,
+      completedAt: completedAt,
+    );
+
+    await _syncAllEntities(
+      agentsAdded: agentsAdded,
+      agentsRemoved: agentsRemoved,
+      agentsKept: agentsKept,
+      pnjsAdded: pnjsAdded,
+      pnjsRemoved: pnjsRemoved,
+      pnjsKept: pnjsKept,
+      monstersAdded: monstersAdded,
+      monstersRemoved: monstersRemoved,
+      monstersKept: monstersKept,
+      record: record,
+    );
   }
 
   /// Ajoute un rapport PDF à une mission existante
@@ -359,7 +601,7 @@ class ArtefactRepository {
       type: type,
       subType: subType,
       effect: effect,
-      modif: null, // TODO: implémenter quand la DB sera prête
+      modif: null,
       size: size,
       fire: fire,
       calibre: calibre,

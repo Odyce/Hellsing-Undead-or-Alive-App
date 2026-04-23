@@ -47,7 +47,10 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
   Future<void> _loadUserAgents() async {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
+      if (uid == null) {
+        if (mounted) setState(() => _error = 'Utilisateur non connecté.');
+        return;
+      }
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -58,7 +61,9 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
           .map((d) => Agent.fromMap(d.data()))
           .toList();
       setState(() => _userAgents = agents);
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Chargement agents: $e');
+    }
   }
 
   // ─── Image Cloudinary ────────────────────────────────────────────────────────
@@ -72,11 +77,11 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
       ..files.add(await MultipartFile.fromPath('file', file.path));
 
     final response = await request.send();
-    if (response.statusCode == 200) {
-      final body = await response.stream.bytesToString();
-      return jsonDecode(body)['secure_url'] as String?;
+    final body = await response.stream.bytesToString();
+    if (response.statusCode != 200) {
+      throw Exception('Upload Cloudinary ${response.statusCode}: $body');
     }
-    return null;
+    return jsonDecode(body)['secure_url'] as String?;
   }
 
   Future<void> _pickImage() async {
@@ -99,15 +104,22 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
   }
 
   // ─── Validation ──────────────────────────────────────────────────────────────
-  bool get _canCreate {
-    if (_loading) return false;
-    if (_nameCtrl.text.trim().isEmpty) return false;
-    if (_descriptionCtrl.text.trim().isEmpty) return false;
-    if (_costCtrl.text.trim().isEmpty) return false;
-    if (int.tryParse(_costCtrl.text.trim()) == null) return false;
-    if (_selectedBenefactor == null) return false;
-    if (_prereqControllers.every((c) => c.text.trim().isEmpty)) return false;
-    return true;
+  bool get _canCreate => !_loading && _missingFields().isEmpty;
+
+  List<String> _missingFields() {
+    final missing = <String>[];
+    if (_nameCtrl.text.trim().isEmpty) missing.add('Nom');
+    if (_descriptionCtrl.text.trim().isEmpty) missing.add('Description');
+    if (_costCtrl.text.trim().isEmpty) {
+      missing.add('Coût');
+    } else if (int.tryParse(_costCtrl.text.trim()) == null) {
+      missing.add('Coût (entier requis)');
+    }
+    if (_selectedBenefactor == null) missing.add('Bénéficiaire');
+    if (_prereqControllers.every((c) => c.text.trim().isEmpty)) {
+      missing.add('Au moins un prérequis');
+    }
+    return missing;
   }
 
   // ─── Soumission ───────────────────────────────────────────────────────────────
@@ -133,7 +145,7 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
         cost:        int.parse(_costCtrl.text.trim()),
       );
 
-      if (mounted) Navigator.of(context).pushReplacementNamed(Routes.resDev);
+      if (mounted) Navigator.of(context).pushReplacementNamed(Routes.resDevList);
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }
@@ -267,6 +279,21 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
             const SizedBox(height: 12),
           ],
 
+          // ── Conditions manquantes (si bouton désactivé) ──────────────────────
+          if (!_canCreate && !_loading) ...[
+            Builder(builder: (_) {
+              final missing = _missingFields();
+              if (missing.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Champs requis manquants : ${missing.join(', ')}',
+                  style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                ),
+              );
+            }),
+          ],
+
           // ── Bouton ────────────────────────────────────────────────────────────
           FilledButton(
             onPressed: _canCreate ? _submit : null,
@@ -283,7 +310,7 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: () =>
-                  Navigator.pushReplacementNamed(context, Routes.resDev),
+                  Navigator.pushReplacementNamed(context, Routes.resDevList),
               child: const Text('Retour'),
             ),
           ),

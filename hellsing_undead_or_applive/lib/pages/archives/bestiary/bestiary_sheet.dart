@@ -7,6 +7,7 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/archives/widgets/field_notes_section.dart';
+import 'package:hellsing_undead_or_applive/pages/archives/widgets/mission_history_section.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class BestiarySheetPage extends StatefulWidget {
@@ -25,7 +26,7 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
   final MonsterRepository _repository = MonsterRepository();
 
   static String _typeLabel(Entitype t) => switch (t) {
-        Entitype.demon  => 'D\u00e9mon',
+        Entitype.demon  => 'Démon',
         Entitype.angel  => 'Ange',
         Entitype.midian => 'Midian',
         Entitype.beast  => 'B\u00eate',
@@ -93,7 +94,7 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Illustration ajout\u00e9e.')),
+          const SnackBar(content: Text('Illustration ajoutée.')),
         );
       }
     } catch (e) {
@@ -239,8 +240,8 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
             Text(_monster.description),
             const SizedBox(height: 24),
 
-            // ── Comp\u00e9tences ───────────────────────────────────────────────────
-            _SectionTitle('Comp\u00e9tences'),
+            // ── Compétences ───────────────────────────────────────────────────
+            _SectionTitle('Compétences'),
             const SizedBox(height: 8),
             Text(_monster.skills),
             const SizedBox(height: 24),
@@ -278,6 +279,10 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
               ],
             ),
             const SizedBox(height: 32),
+
+            // ── Missions ──────────────────────────────────────────────────────
+            MissionHistorySection(missions: _monster.missions),
+            if (_monster.missions.isNotEmpty) const SizedBox(height: 32),
 
             // ── Notes des agents ──────────────────────────────────────────────
             FieldNotesSection(targetType: 'monster', targetId: _monster.id),

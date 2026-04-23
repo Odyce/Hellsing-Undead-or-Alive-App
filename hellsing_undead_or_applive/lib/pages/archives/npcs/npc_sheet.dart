@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/archives/widgets/field_notes_section.dart';
+import 'package:hellsing_undead_or_applive/pages/archives/widgets/mission_history_section.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 
 class NpcSheetPage extends StatefulWidget {
@@ -18,7 +19,7 @@ class _NpcSheetPageState extends State<NpcSheetPage> {
   final PNJRepository _repository = PNJRepository();
 
   static String _typeLabel(Entitype t) => switch (t) {
-        Entitype.demon  => 'D\u00e9mon',
+        Entitype.demon  => 'Démon',
         Entitype.angel  => 'Semi-Ange',
         Entitype.midian => 'Midian',
         Entitype.beast  => 'B\u00eate',
@@ -27,9 +28,9 @@ class _NpcSheetPageState extends State<NpcSheetPage> {
 
   static String _relationLabel(Relationship r) => switch (r) {
         Relationship.neutral => 'Neutre',
-        Relationship.ally    => 'Alli\u00e9',
+        Relationship.ally    => 'Allié',
         Relationship.enemy   => 'Ennemi',
-        Relationship.trader  => "Alli\u00e9 tant qu'il y a des b\u00e9n\u00e9fices",
+        Relationship.trader  => "Allié tant qu'il y a des bénéfices",
       };
 
   @override
@@ -63,16 +64,18 @@ class _NpcSheetPageState extends State<NpcSheetPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           title: const Text('Modifier la relation'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: Relationship.values.map((r) {
-              return RadioListTile<Relationship>(
-                title: Text(_relationLabel(r)),
-                value: r,
-                groupValue: picked,
-                onChanged: (v) => setDialogState(() => picked = v),
-              );
-            }).toList(),
+          content: RadioGroup<Relationship>(
+            groupValue: picked,
+            onChanged: (v) => setDialogState(() => picked = v),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: Relationship.values.map((r) {
+                return RadioListTile<Relationship>(
+                  title: Text(_relationLabel(r)),
+                  value: r,
+                );
+              }).toList(),
+            ),
           ),
           actions: [
             TextButton(
@@ -106,7 +109,7 @@ class _NpcSheetPageState extends State<NpcSheetPage> {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(alive! ? 'Vivant' : 'D\u00e9c\u00e9d\u00e9',
+              Text(alive! ? 'Vivant' : 'Décédé',
                   style: TextStyle(
                     color: alive! ? Colors.green : Colors.red,
                     fontWeight: FontWeight.w600,
@@ -186,7 +189,7 @@ class _NpcSheetPageState extends State<NpcSheetPage> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  _pnj.alive ? 'Vivant' : 'D\u00e9c\u00e9d\u00e9',
+                  _pnj.alive ? 'Vivant' : 'Décédé',
                   style: TextStyle(
                     color: _pnj.alive ? Colors.green : Colors.red,
                     fontWeight: FontWeight.w600,
@@ -227,6 +230,10 @@ class _NpcSheetPageState extends State<NpcSheetPage> {
             const SizedBox(height: 8),
             Text(_pnj.description),
             const SizedBox(height: 32),
+
+            // ── Missions ──────────────────────────────────────────────────────
+            MissionHistorySection(missions: _pnj.missions),
+            if (_pnj.missions.isNotEmpty) const SizedBox(height: 32),
 
             // ── Notes des agents ──────────────────────────────────────────────
             FieldNotesSection(targetType: 'npc', targetId: _pnj.id),

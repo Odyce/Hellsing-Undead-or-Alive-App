@@ -29,14 +29,19 @@ class _EditMissionPageState extends State<EditMissionPage> {
   DateTime? _playedAt;
   DateTime? _completedAt;
 
-  // ─── Listes d'entit\u00e9s ─────────────────────────────────────────────────────
-  List<Agent> _agentInvolved = [];
+  // ─── Listes d'entités ─────────────────────────────────────────────────────
+  List<AgentRef> _agentInvolved = [];
   List<PNJ> _pnjInvolved = [];
   List<Monster> _monsterInvolved = [];
-  List<Agent> _agentDeceased = [];
+  List<AgentRef> _agentDeceased = [];
 
-  // ─── Donn\u00e9es pour les pickers ──────────────────────────────────────────────
-  List<Agent> _allAgents = [];
+  // ─── État original des entités (pour le diff lors de la sauvegarde) ────────
+  List<AgentRef> _originalAgentInvolved = [];
+  List<PNJ> _originalPnjInvolved = [];
+  List<Monster> _originalMonsterInvolved = [];
+
+  // ─── Données pour les pickers ──────────────────────────────────────────────
+  List<AgentRef> _allAgentRefs = [];
   List<PNJ> _allPNJs = [];
   List<Monster> _allMonsters = [];
   bool _pickersLoaded = false;
@@ -76,10 +81,11 @@ class _EditMissionPageState extends State<EditMissionPage> {
     _postedAt = _original.postedAt;
     _playedAt = _original.playedAt;
     _completedAt = _original.completedAt;
-    _agentInvolved = List<Agent>.from(_original.agentInvolved ?? []);
+    // Les listes d'AgentRef sont initialisées vides ici et remplies après
+    // le chargement du picker (dans _loadPickerData) car on a besoin des
+    // chemins Firestore (ownerUid, agentDocId) qui ne sont pas dans Mission.
     _pnjInvolved = List<PNJ>.from(_original.pnjInvolved ?? []);
     _monsterInvolved = List<Monster>.from(_original.monsterInvolved ?? []);
-    _agentDeceased = List<Agent>.from(_original.agentDeceased ?? []);
   }
 
   Future<void> _loadPickerData() async {
@@ -96,7 +102,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
     final monsters = results[1].docs.map((d) => Monster.fromMap(d.data())).toList();
 
     // Charger tous les agents (parcourir tous les users)
-    final allAgents = <Agent>[];
+    final allAgentRefs = <AgentRef>[];
     final usersSnap = await firestore.collection('users').get();
     for (final userDoc in usersSnap.docs) {
       final agentsSnap = await firestore
@@ -106,15 +112,42 @@ class _EditMissionPageState extends State<EditMissionPage> {
           .where('validated', isEqualTo: true)
           .get();
       for (final agentDoc in agentsSnap.docs) {
-        allAgents.add(Agent.fromMap(agentDoc.data()));
+        allAgentRefs.add(AgentRef(
+          ownerUid: userDoc.id,
+          agentDocId: agentDoc.id,
+          agent: Agent.fromMap(agentDoc.data()),
+        ));
       }
     }
+
+    // Reconstituer les listes d'AgentRef à partir des agents de la mission
+    // originale, en les matchant par id dans la liste complète chargée.
+    final originalAgentIds =
+        _original.agentInvolved?.map((a) => a.id).toSet() ?? {};
+    final originalDeceasedIds =
+        _original.agentDeceased?.map((a) => a.id).toSet() ?? {};
+
+    final matchedOriginalAgents = allAgentRefs
+        .where((r) => originalAgentIds.contains(r.agent.id))
+        .toList();
+    final matchedOriginalDeceased = allAgentRefs
+        .where((r) => originalDeceasedIds.contains(r.agent.id))
+        .toList();
 
     if (mounted) {
       setState(() {
         _allPNJs = pnjs..sort((a, b) => a.name.compareTo(b.name));
         _allMonsters = monsters..sort((a, b) => a.name.compareTo(b.name));
-        _allAgents = allAgents..sort((a, b) => a.name.compareTo(b.name));
+        _allAgentRefs = allAgentRefs
+          ..sort((a, b) => a.agent.name.compareTo(b.agent.name));
+
+        // Initialiser les listes courantes et les originales pour le diff
+        _agentInvolved = List<AgentRef>.from(matchedOriginalAgents);
+        _agentDeceased = List<AgentRef>.from(matchedOriginalDeceased);
+        _originalAgentInvolved = List<AgentRef>.from(matchedOriginalAgents);
+        _originalPnjInvolved = List<PNJ>.from(_pnjInvolved);
+        _originalMonsterInvolved = List<Monster>.from(_monsterInvolved);
+
         _pickersLoaded = true;
       });
     }
@@ -137,12 +170,12 @@ class _EditMissionPageState extends State<EditMissionPage> {
       _bountyMinError = min == null
           ? 'Nombre entier requis.'
           : min < 0
-              ? 'Ne peut pas \u00eatre n\u00e9gatif.'
+              ? 'Ne peut pas \u00eatre négatif.'
               : null;
       _bountyMaxError = max == null
           ? 'Nombre entier requis.'
           : max < 0
-              ? 'Ne peut pas \u00eatre n\u00e9gatif.'
+              ? 'Ne peut pas \u00eatre négatif.'
               : (min != null && max < min)
                   ? 'Doit \u00eatre \u2265 prime min.'
                   : null;
@@ -189,7 +222,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
         CladeName.arthur          => 'The Legend of King Arthur',
       };
 
-  // ─── Pickers g\u00e9n\u00e9riques ──────────────────────────────────────────────────
+  // ─── Pickers génériques ──────────────────────────────────────────────────
   Future<void> _showMultiPicker<T>({
     required String title,
     required List<T> allItems,
@@ -282,13 +315,25 @@ class _EditMissionPageState extends State<EditMissionPage> {
         'bountyMin': int.parse(_bountyMinCtrl.text),
         'bountyMax': int.parse(_bountyMaxCtrl.text),
         'bounty': bounty,
-        'agentInvolved': _agentInvolved.map((a) => a.toMap()).toList(),
+        'agentInvolved': _agentInvolved.map((r) => r.agent.toMap()).toList(),
         'pnjInvolved': _pnjInvolved.map((p) => p.toMap()).toList(),
         'monsterInvolved': _monsterInvolved.map((m) => m.toMap()).toList(),
-        'agentDeceased': _agentDeceased.map((a) => a.toMap()).toList(),
+        'agentDeceased': _agentDeceased.map((r) => r.agent.toMap()).toList(),
       };
 
-      await _repository.updateMission(_original.id, fields);
+      await _repository.updateMissionFull(
+        missionId: _original.id,
+        fields: fields,
+        newAgentInvolved: _agentInvolved,
+        oldAgentInvolved: _originalAgentInvolved,
+        newPnjInvolved: _pnjInvolved,
+        oldPnjInvolved: _originalPnjInvolved,
+        newMonsterInvolved: _monsterInvolved,
+        oldMonsterInvolved: _originalMonsterInvolved,
+        title: _titleCtrl.text.trim(),
+        description: _descriptionIntroCtrl.text.trim(),
+        completedAt: _completedAt,
+      );
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -327,10 +372,10 @@ class _EditMissionPageState extends State<EditMissionPage> {
           ),
           const SizedBox(height: 16),
 
-          // ── Difficult\u00e9 ─────────────────────────────────────────────────────
+          // ── Difficulté ─────────────────────────────────────────────────────
           DropdownButtonFormField<Difficulty>(
-            value: _difficulty,
-            decoration: const InputDecoration(labelText: 'Difficult\u00e9'),
+            initialValue: _difficulty,
+            decoration: const InputDecoration(labelText: 'Difficulté'),
             items: Difficulty.values
                 .map((d) => DropdownMenuItem(
                       value: d,
@@ -345,7 +390,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
 
           // ── Clade ──────────────────────────────────────────────────────────
           DropdownButtonFormField<CladeName>(
-            value: _clade,
+            initialValue: _clade,
             decoration: const InputDecoration(labelText: 'Clade'),
             items: CladeName.values
                 .map((c) => DropdownMenuItem(
@@ -427,7 +472,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
             contentPadding: EdgeInsets.zero,
             title: const Text('Date de jeu'),
             subtitle: Text(
-              _playedAt != null ? _formatDate(_playedAt!) : 'Non renseign\u00e9e',
+              _playedAt != null ? _formatDate(_playedAt!) : 'Non renseignée',
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -449,11 +494,11 @@ class _EditMissionPageState extends State<EditMissionPage> {
 
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Date de compl\u00e9tion'),
+            title: const Text('Date de complétion'),
             subtitle: Text(
               _completedAt != null
                   ? _formatDate(_completedAt!)
-                  : 'Non renseign\u00e9e',
+                  : 'Non renseignée',
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -495,7 +540,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
             controller: _descriptionOutroCtrl,
             decoration: const InputDecoration(
               labelText: 'Outro (optionnel)',
-              helperText: 'R\u00e9sum\u00e9 ou conclusion apr\u00e8s la mission.',
+              helperText: 'Résumé ou conclusion apr\u00e8s la mission.',
             ),
             minLines: 2,
             maxLines: 8,
@@ -510,69 +555,69 @@ class _EditMissionPageState extends State<EditMissionPage> {
             controller: _notesForDMCtrl,
             decoration: const InputDecoration(
               labelText: 'Notes (optionnel)',
-              helperText: 'Informations r\u00e9serv\u00e9es au MJ.',
+              helperText: 'Informations réservées au MJ.',
             ),
             minLines: 2,
             maxLines: 8,
           ),
           const SizedBox(height: 24),
 
-          // ── Pickers entit\u00e9s ────────────────────────────────────────────────
-          Text('Entit\u00e9s li\u00e9es',
+          // ── Pickers entités ────────────────────────────────────────────────
+          Text('Entités liées',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
 
           if (!_pickersLoaded)
             const Center(child: CircularProgressIndicator())
           else ...[
-            // Agents impliqu\u00e9s
+            // Agents impliqués
             _EntityPickerTile(
-              label: 'Agents impliqu\u00e9s',
+              label: 'Agents impliqués',
               count: _agentInvolved.length,
-              chips: _agentInvolved.map((a) => a.name).toList(),
-              onTap: () => _showMultiPicker<Agent>(
-                title: 'Agents impliqu\u00e9s',
-                allItems: _allAgents,
+              chips: _agentInvolved.map((r) => r.agent.name).toList(),
+              onTap: () => _showMultiPicker<AgentRef>(
+                title: 'Agents impliqués',
+                allItems: _allAgentRefs,
                 selected: _agentInvolved,
-                labelOf: (a) => a.name,
-                idOf: (a) => a.id,
+                labelOf: (r) => r.agent.name,
+                idOf: (r) => r.agent.id,
                 onChanged: (list) => setState(() {
                   _agentInvolved = list;
-                  // Nettoyer les d\u00e9c\u00e9d\u00e9s qui ne sont plus impliqu\u00e9s
-                  final involvedIds = list.map((a) => a.id).toSet();
-                  _agentDeceased.removeWhere((a) => !involvedIds.contains(a.id));
+                  final involvedIds = list.map((r) => r.agent.id).toSet();
+                  _agentDeceased
+                      .removeWhere((r) => !involvedIds.contains(r.agent.id));
                 }),
               ),
             ),
             const SizedBox(height: 8),
 
-            // Agents d\u00e9c\u00e9d\u00e9s (sous-ensemble des impliqu\u00e9s)
+            // Agents décédés (sous-ensemble des impliqués)
             _EntityPickerTile(
-              label: 'Agents d\u00e9c\u00e9d\u00e9s',
+              label: 'Agents décédés',
               count: _agentDeceased.length,
-              chips: _agentDeceased.map((a) => a.name).toList(),
+              chips: _agentDeceased.map((r) => r.agent.name).toList(),
               chipColor: Colors.red.shade50,
               onTap: _agentInvolved.isEmpty
                   ? null
-                  : () => _showMultiPicker<Agent>(
-                        title: 'Agents d\u00e9c\u00e9d\u00e9s',
+                  : () => _showMultiPicker<AgentRef>(
+                        title: 'Agents décédés',
                         allItems: _agentInvolved,
                         selected: _agentDeceased,
-                        labelOf: (a) => a.name,
-                        idOf: (a) => a.id,
+                        labelOf: (r) => r.agent.name,
+                        idOf: (r) => r.agent.id,
                         onChanged: (list) =>
                             setState(() => _agentDeceased = list),
                       ),
             ),
             const SizedBox(height: 8),
 
-            // PNJs impliqu\u00e9s
+            // PNJs impliqués
             _EntityPickerTile(
-              label: 'PNJs impliqu\u00e9s',
+              label: 'PNJs impliqués',
               count: _pnjInvolved.length,
               chips: _pnjInvolved.map((p) => p.name).toList(),
               onTap: () => _showMultiPicker<PNJ>(
-                title: 'PNJs impliqu\u00e9s',
+                title: 'PNJs impliqués',
                 allItems: _allPNJs,
                 selected: _pnjInvolved,
                 labelOf: (p) => p.name,
@@ -582,13 +627,13 @@ class _EditMissionPageState extends State<EditMissionPage> {
             ),
             const SizedBox(height: 8),
 
-            // Monstres impliqu\u00e9s
+            // Monstres impliqués
             _EntityPickerTile(
-              label: 'Monstres impliqu\u00e9s',
+              label: 'Monstres impliqués',
               count: _monsterInvolved.length,
               chips: _monsterInvolved.map((m) => m.name).toList(),
               onTap: () => _showMultiPicker<Monster>(
-                title: 'Monstres impliqu\u00e9s',
+                title: 'Monstres impliqués',
                 allItems: _allMonsters,
                 selected: _monsterInvolved,
                 labelOf: (m) => m.name,
@@ -629,7 +674,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
   }
 }
 
-// ─── Widget helper pour les pickers d'entit\u00e9s ─────────────────────────────────
+// ─── Widget helper pour les pickers d'entités ─────────────────────────────────
 
 class _EntityPickerTile extends StatelessWidget {
   final String label;

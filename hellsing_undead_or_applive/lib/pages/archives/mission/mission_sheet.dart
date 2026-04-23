@@ -101,7 +101,7 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
     if (size > _maxReportBytes) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Le fichier d\u00e9passe 1 Mo.')),
+          const SnackBar(content: Text('Le fichier dépasse 1 Mo.')),
         );
       }
       return;
@@ -131,7 +131,7 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rapport ajout\u00e9 avec succ\u00e8s.')),
+          const SnackBar(content: Text('Rapport ajouté avec succ\u00e8s.')),
         );
       }
     } catch (e) {
@@ -241,7 +241,7 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                               Chip(label: Text(_cladeLabel(_mission.clade))),
                               Chip(
                                 label: Text(
-                                  'Difficult\u00e9 : ${_difficultyLabel(_mission.difficulty)}',
+                                  'Difficulté : ${_difficultyLabel(_mission.difficulty)}',
                                 ),
                               ),
                             ],
@@ -269,11 +269,11 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                           const Divider(height: 32),
 
                           // ── Dates ──────────────────────────────────────────
-                          _DateRow(label: 'Affich\u00e9e le', date: _mission.postedAt),
+                          _DateRow(label: 'Affichée le', date: _mission.postedAt),
                           if (_mission.playedAt != null)
-                            _DateRow(label: 'Jou\u00e9e le', date: _mission.playedAt!),
+                            _DateRow(label: 'Jouée le', date: _mission.playedAt!),
                           if (_mission.completedAt != null)
-                            _DateRow(label: 'Termin\u00e9e le', date: _mission.completedAt!),
+                            _DateRow(label: 'Terminée le', date: _mission.completedAt!),
 
                           const Divider(height: 32),
 
@@ -312,11 +312,11 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                             ),
                           ],
 
-                          // ── Agents impliqu\u00e9s ─────────────────────────────
+                          // ── Agents impliqués ─────────────────────────────
                           if (_mission.agentInvolved != null &&
                               _mission.agentInvolved!.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            _SectionTitle('Agents impliqu\u00e9s'),
+                            _SectionTitle('Agents impliqués'),
                             const SizedBox(height: 8),
                             Wrap(
                               spacing: 6,
@@ -327,11 +327,11 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                             ),
                           ],
 
-                          // ── PNJs impliqu\u00e9s ───────────────────────────────
+                          // ── PNJs impliqués ───────────────────────────────
                           if (_mission.pnjInvolved != null &&
                               _mission.pnjInvolved!.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            _SectionTitle('PNJs impliqu\u00e9s'),
+                            _SectionTitle('PNJs impliqués'),
                             const SizedBox(height: 8),
                             Wrap(
                               spacing: 6,
@@ -342,11 +342,11 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                             ),
                           ],
 
-                          // ── Monstres impliqu\u00e9s ───────────────────────────
+                          // ── Monstres impliqués ───────────────────────────
                           if (_mission.monsterInvolved != null &&
                               _mission.monsterInvolved!.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            _SectionTitle('Monstres impliqu\u00e9s'),
+                            _SectionTitle('Monstres impliqués'),
                             const SizedBox(height: 8),
                             Wrap(
                               spacing: 6,
@@ -357,11 +357,11 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                             ),
                           ],
 
-                          // ── Agents d\u00e9c\u00e9d\u00e9s ─────────────────────────────
+                          // ── Agents décédés ─────────────────────────────
                           if (_mission.agentDeceased != null &&
                               _mission.agentDeceased!.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            _SectionTitle('Agents d\u00e9c\u00e9d\u00e9s'),
+                            _SectionTitle('Agents décédés'),
                             const SizedBox(height: 8),
                             Wrap(
                               spacing: 6,

@@ -861,10 +861,10 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
       ..fields['upload_preset'] = uploadPreset
       ..files.add(await MultipartFile.fromPath('file', image.path));
     final response = await request.send();
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Erreur upload Cloudinary: ${response.statusCode}');
-    }
     final body = await response.stream.bytesToString();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Erreur upload Cloudinary ${response.statusCode}: $body');
+    }
     final data = jsonDecode(body);
     return data['secure_url'];
   }

@@ -40,12 +40,12 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
   final List<File> _reports = [];
 
   // ─── Listes d'entités ──────────────────────────────────────────────────────
-  List<Agent> _agentInvolved = [];
+  List<AgentRef> _agentInvolved = [];
   List<PNJ> _pnjInvolved = [];
   List<Monster> _monsterInvolved = [];
-  List<Agent> _agentDeceased = [];
+  List<AgentRef> _agentDeceased = [];
 
-  List<Agent> _allAgents = [];
+  List<AgentRef> _allAgentRefs = [];
   List<PNJ> _allPNJs = [];
   List<Monster> _allMonsters = [];
   bool _pickersLoaded = false;
@@ -78,7 +78,7 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
     final pnjs = results[0].docs.map((d) => PNJ.fromMap(d.data())).toList();
     final monsters = results[1].docs.map((d) => Monster.fromMap(d.data())).toList();
 
-    final allAgents = <Agent>[];
+    final allAgentRefs = <AgentRef>[];
     final usersSnap = await firestore.collection('users').get();
     for (final userDoc in usersSnap.docs) {
       final agentsSnap = await firestore
@@ -88,7 +88,11 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
           .where('validated', isEqualTo: true)
           .get();
       for (final agentDoc in agentsSnap.docs) {
-        allAgents.add(Agent.fromMap(agentDoc.data()));
+        allAgentRefs.add(AgentRef(
+          ownerUid: userDoc.id,
+          agentDocId: agentDoc.id,
+          agent: Agent.fromMap(agentDoc.data()),
+        ));
       }
     }
 
@@ -96,7 +100,8 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
       setState(() {
         _allPNJs = pnjs..sort((a, b) => a.name.compareTo(b.name));
         _allMonsters = monsters..sort((a, b) => a.name.compareTo(b.name));
-        _allAgents = allAgents..sort((a, b) => a.name.compareTo(b.name));
+        _allAgentRefs = allAgentRefs
+          ..sort((a, b) => a.agent.name.compareTo(b.agent.name));
         _pickersLoaded = true;
       });
     }
@@ -651,34 +656,36 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
           else ...[
             _buildPickerTile(
               label: 'Agents impliqués',
-              chips: _agentInvolved.map((a) => a.name).toList(),
-              onTap: () => _showMultiPicker<Agent>(
+              chips: _agentInvolved.map((r) => r.agent.name).toList(),
+              onTap: () => _showMultiPicker<AgentRef>(
                 title: 'Agents impliqués',
-                allItems: _allAgents,
+                allItems: _allAgentRefs,
                 selected: _agentInvolved,
-                labelOf: (a) => a.name,
-                idOf: (a) => a.id,
+                labelOf: (r) => r.agent.name,
+                idOf: (r) => r.agent.id,
                 onChanged: (list) => setState(() {
                   _agentInvolved = list;
-                  final involvedIds = list.map((a) => a.id).toSet();
-                  _agentDeceased.removeWhere((a) => !involvedIds.contains(a.id));
+                  final involvedIds = list.map((r) => r.agent.id).toSet();
+                  _agentDeceased
+                      .removeWhere((r) => !involvedIds.contains(r.agent.id));
                 }),
               ),
             ),
             const SizedBox(height: 8),
             _buildPickerTile(
               label: 'Agents décédés',
-              chips: _agentDeceased.map((a) => a.name).toList(),
+              chips: _agentDeceased.map((r) => r.agent.name).toList(),
               chipColor: Colors.red.shade50,
               onTap: _agentInvolved.isEmpty
                   ? null
-                  : () => _showMultiPicker<Agent>(
+                  : () => _showMultiPicker<AgentRef>(
                         title: 'Agents décédés',
                         allItems: _agentInvolved,
                         selected: _agentDeceased,
-                        labelOf: (a) => a.name,
-                        idOf: (a) => a.id,
-                        onChanged: (list) => setState(() => _agentDeceased = list),
+                        labelOf: (r) => r.agent.name,
+                        idOf: (r) => r.agent.id,
+                        onChanged: (list) =>
+                            setState(() => _agentDeceased = list),
                       ),
             ),
             const SizedBox(height: 8),

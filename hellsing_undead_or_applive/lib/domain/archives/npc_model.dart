@@ -1,4 +1,4 @@
-// import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/domain/agents/agent_bonus_data.dart';
 
 enum Entitype { demon, angel, midian, beast, human }
 
@@ -12,6 +12,7 @@ class PNJ {
   final String description;
   final Relationship relation;
   final bool alive;
+  final List<MissionRecord> missions;
 
   const PNJ({
     required this.id,
@@ -21,6 +22,7 @@ class PNJ {
     required this.description,
     required this.relation,
     required this.alive,
+    this.missions = const [],
   });
 
   // --------------------
@@ -34,6 +36,7 @@ class PNJ {
     String? description,
     Relationship? relation,
     bool? alive,
+    List<MissionRecord>? missions,
   }) {
     return PNJ(
       id: id ?? this.id,
@@ -43,6 +46,7 @@ class PNJ {
       description: description ?? this.description,
       relation: relation ?? this.relation,
       alive: alive ?? this.alive,
+      missions: missions ?? this.missions,
     );
   }
 
@@ -58,6 +62,7 @@ class PNJ {
       "description": description,
       "relation": relation.name,
       "alive": alive,
+      "missions": missions.map((m) => m.toMap()).toList(),
     };
   }
 
@@ -70,6 +75,11 @@ class PNJ {
       description: map["description"],
       relation: Relationship.values.byName(map["relation"]),
       alive: map["alive"],
+      missions: map["missions"] != null
+          ? (map["missions"] as List)
+              .map((m) => MissionRecord.fromMap(m as Map<String, dynamic>))
+              .toList()
+          : [],
     );
   }
 
@@ -85,6 +95,7 @@ class PNJ {
       "description": description,
       "relation": relation.name,
       "alive": alive,
+      "missions": missions.map((m) => m.toJson()).toList(),
     };
   }
 
@@ -97,6 +108,11 @@ class PNJ {
       description: json["description"],
       relation: Relationship.values.byName(json["relation"]),
       alive: json["alive"],
+      missions: json["missions"] != null
+          ? (json["missions"] as List)
+              .map((m) => MissionRecord.fromJson(m as Map<String, dynamic>))
+              .toList()
+          : [],
     );
   }
 }
@@ -113,6 +129,7 @@ class Monster {
   final String location;
   final int hp;
   final List<int> hpScale;
+  final List<MissionRecord> missions;
 
   const Monster({
     required this.id,
@@ -126,6 +143,7 @@ class Monster {
     required this.location,
     required this.hp,
     required this.hpScale,
+    this.missions = const [],
   });
 
   // --------------------
@@ -143,6 +161,7 @@ class Monster {
     String? location,
     int? hp,
     List<int>? hpScale,
+    List<MissionRecord>? missions,
   }) {
     return Monster(
       id: id ?? this.id,
@@ -156,6 +175,7 @@ class Monster {
       location: location ?? this.location,
       hp: hp ?? this.hp,
       hpScale: hpScale ?? this.hpScale,
+      missions: missions ?? this.missions,
     );
   }
 
@@ -175,6 +195,7 @@ class Monster {
       "location": location,
       "hp": hp,
       "hpScale": hpScale,
+      "missions": missions.map((m) => m.toMap()).toList(),
     };
   }
 
@@ -193,6 +214,11 @@ class Monster {
       location: map["location"] ?? '',
       hp: (map["hp"] as num?)?.toInt() ?? 0,
       hpScale: map["hpScale"] != null ? List<int>.from(map["hpScale"]) : [],
+      missions: map["missions"] != null
+          ? (map["missions"] as List)
+              .map((m) => MissionRecord.fromMap(m as Map<String, dynamic>))
+              .toList()
+          : [],
     );
   }
 
@@ -212,6 +238,7 @@ class Monster {
       "location": location,
       "hp": hp,
       "hpScale": hpScale,
+      "missions": missions.map((m) => m.toJson()).toList(),
     };
   }
 
@@ -230,6 +257,11 @@ class Monster {
       location: json["location"] ?? '',
       hp: (json["hp"] as num?)?.toInt() ?? 0,
       hpScale: json["hpScale"] != null ? List<int>.from(json["hpScale"]) : [],
+      missions: json["missions"] != null
+          ? (json["missions"] as List)
+              .map((m) => MissionRecord.fromJson(m as Map<String, dynamic>))
+              .toList()
+          : [],
     );
   }
 }
