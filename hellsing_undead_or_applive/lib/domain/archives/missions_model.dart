@@ -17,14 +17,14 @@ class Mission {
   final DateTime postedAt;
   final DateTime? playedAt;
   final DateTime? completedAt;
-  final List<Agent>? agentInvolved;
+  final List<MissionAgent>? agentInvolved;
   final List<PNJ>? pnjInvolved;
   final List<Monster>? monsterInvolved;
   final int? bounty;
   final int bountyMin;
   final int bountyMax;
   final List<String>? reportPaths;
-  final List<Agent>? agentDeceased;
+  final List<MissionAgent>? agentDeceased;
   final bool urgent;
 
   const Mission({
@@ -65,14 +65,14 @@ class Mission {
     DateTime? postedAt,
     DateTime? playedAt,
     DateTime? completedAt,
-    List<Agent>? agentInvolved,
+    List<MissionAgent>? agentInvolved,
     List<PNJ>? pnjInvolved,
     List<Monster>? monsterInvolved,
     int? bounty,
     int? bountyMin,
     int? bountyMax,
     List<String>? reportPaths,
-    List<Agent>? agentDeceased,
+    List<MissionAgent>? agentDeceased,
     bool? urgent,
   }) {
     return Mission(
@@ -149,7 +149,9 @@ class Mission {
       playedAt: _parseDate(map["playedAt"]),
       completedAt: _parseDate(map["completedAt"]),
       agentInvolved: map["agentInvolved"] != null
-          ? (map["agentInvolved"] as List).map((a) => Agent.fromMap(a)).toList()
+          ? (map["agentInvolved"] as List)
+              .map((a) => MissionAgent.fromMap(Map<String, dynamic>.from(a as Map)))
+              .toList()
           : null,
       pnjInvolved: map["pnjInvolved"] != null
           ? (map["pnjInvolved"] as List).map((a) => PNJ.fromMap(a)).toList()
@@ -164,7 +166,9 @@ class Mission {
           ? List<String>.from(map["reportPaths"])
           : null,
       agentDeceased: map["agentDeceased"] != null
-          ? (map["agentDeceased"] as List).map((a) => Agent.fromMap(a)).toList()
+          ? (map["agentDeceased"] as List)
+              .map((a) => MissionAgent.fromMap(Map<String, dynamic>.from(a as Map)))
+              .toList()
           : null,
       urgent: map["urgent"] as bool? ?? false,
     );
@@ -212,7 +216,9 @@ class Mission {
       playedAt: json["playedAt"] != null ? DateTime.parse(json["playedAt"]) : null,
       completedAt: json["completedAt"] != null ? DateTime.parse(json["completedAt"]) : null,
       agentInvolved: json["agentInvolved"] != null
-          ? (json["agentInvolved"] as List).map((a) => Agent.fromJson(a)).toList()
+          ? (json["agentInvolved"] as List)
+              .map((a) => MissionAgent.fromJson(Map<String, dynamic>.from(a as Map)))
+              .toList()
           : null,
       pnjInvolved: json["pnjInvolved"] != null
           ? (json["pnjInvolved"] as List).map((a) => PNJ.fromJson(a)).toList()
@@ -227,7 +233,9 @@ class Mission {
           ? List<String>.from(json["reportPaths"])
           : null,
       agentDeceased: json["agentDeceased"] != null
-          ? (json["agentDeceased"] as List).map((a) => Agent.fromJson(a)).toList()
+          ? (json["agentDeceased"] as List)
+              .map((a) => MissionAgent.fromJson(Map<String, dynamic>.from(a as Map)))
+              .toList()
           : null,
       urgent: json["urgent"],
     );

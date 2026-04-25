@@ -662,12 +662,12 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
                 allItems: _allAgentRefs,
                 selected: _agentInvolved,
                 labelOf: (r) => r.agent.name,
-                idOf: (r) => r.agent.id,
+                idOf: (r) => r.agentDocId,
                 onChanged: (list) => setState(() {
                   _agentInvolved = list;
-                  final involvedIds = list.map((r) => r.agent.id).toSet();
+                  final involvedIds = list.map((r) => r.agentDocId).toSet();
                   _agentDeceased
-                      .removeWhere((r) => !involvedIds.contains(r.agent.id));
+                      .removeWhere((r) => !involvedIds.contains(r.agentDocId));
                 }),
               ),
             ),
@@ -683,7 +683,7 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
                         allItems: _agentInvolved,
                         selected: _agentDeceased,
                         labelOf: (r) => r.agent.name,
-                        idOf: (r) => r.agent.id,
+                        idOf: (r) => r.agentDocId,
                         onChanged: (list) =>
                             setState(() => _agentDeceased = list),
                       ),

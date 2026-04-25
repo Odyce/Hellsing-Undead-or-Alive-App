@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class ArchiveMenuPage extends StatelessWidget {
   const ArchiveMenuPage({super.key});
@@ -119,21 +120,11 @@ class ArchiveMenuPage extends StatelessWidget {
                     ),
                   ),
 
-                  const Spacer(),
-
-                  Align(
-                    alignment: Alignment.bottomLeft,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, Routes.home);
-                      },
-                      child: const Text("Retour"),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
+          const SafeBackButtonOverlay(),
         ]
       ),
     );

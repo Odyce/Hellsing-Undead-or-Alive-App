@@ -51,6 +51,7 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
           StreamBuilder<bool>(
             stream: _repository.notificationsEnabledStream(_uid!),
             builder: (context, snap) {
+              print("Debug code Lacrimosa");
               final enabled = snap.data ?? true;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -85,6 +86,7 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
               child: StreamBuilder<List<AppNotification>>(
                 stream: _repository.notificationsStream(_uid!),
                 builder: (context, snap) {
+                  print("Debug code Juanita");
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }

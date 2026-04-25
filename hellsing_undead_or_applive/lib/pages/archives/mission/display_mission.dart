@@ -5,6 +5,7 @@ import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class DisplayMissionPage extends StatefulWidget {
   const DisplayMissionPage({super.key});
@@ -122,19 +123,21 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── En-tête ──────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Center(
-                child: const Text(
-                  "Tableau d'affichage",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // ── En-tête ──────────────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Center(
+                    child: const Text(
+                      "Tableau d'affichage",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-              ),
-            ),
 
             // ── Filtres ──────────────────────────────────────────────────────
             FilterBar(
@@ -153,6 +156,7 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
                     .where('completedAt', isNull: true)
                     .snapshots(),
                 builder: (context, snapshot) {
+                  print("Debug code Pinata");
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
@@ -187,20 +191,11 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
               ),
             ),
 
-            // ── Bouton retour ────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, Routes.missions),
-                  child: const Text('Retour'),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SafeBackButtonOverlay(),
+        ],
       ),
     );
   }

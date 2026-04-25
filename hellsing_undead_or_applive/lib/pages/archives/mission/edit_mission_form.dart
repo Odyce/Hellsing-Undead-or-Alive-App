@@ -120,19 +120,36 @@ class _EditMissionPageState extends State<EditMissionPage> {
       }
     }
 
-    // Reconstituer les listes d'AgentRef à partir des agents de la mission
-    // originale, en les matchant par id dans la liste complète chargée.
-    final originalAgentIds =
-        _original.agentInvolved?.map((a) => a.id).toSet() ?? {};
-    final originalDeceasedIds =
-        _original.agentDeceased?.map((a) => a.id).toSet() ?? {};
+    // Reconstituer les listes d'AgentRef à partir des MissionAgent stockés
+    // dans la mission. On matche par (ownerUid, agentDocId) qui est
+    // globalement unique. Pour les missions créées avant l'ajout de ces
+    // champs, on retombe sur (agent.id, agent.name) — les Agent.id seuls ne
+    // suffisent pas car ils sont scopés par utilisateur.
+    AgentRef? matchMissionAgent(MissionAgent m) {
+      if (m.agentDocId.isNotEmpty && m.ownerUid.isNotEmpty) {
+        for (final r in allAgentRefs) {
+          if (r.ownerUid == m.ownerUid && r.agentDocId == m.agentDocId) {
+            return r;
+          }
+        }
+        return null;
+      }
+      for (final r in allAgentRefs) {
+        if (r.agent.id == m.agent.id && r.agent.name == m.agent.name) {
+          return r;
+        }
+      }
+      return null;
+    }
 
-    final matchedOriginalAgents = allAgentRefs
-        .where((r) => originalAgentIds.contains(r.agent.id))
-        .toList();
-    final matchedOriginalDeceased = allAgentRefs
-        .where((r) => originalDeceasedIds.contains(r.agent.id))
-        .toList();
+    final matchedOriginalAgents = <AgentRef>[
+      for (final m in _original.agentInvolved ?? <MissionAgent>[])
+        ?matchMissionAgent(m),
+    ];
+    final matchedOriginalDeceased = <AgentRef>[
+      for (final m in _original.agentDeceased ?? <MissionAgent>[])
+        ?matchMissionAgent(m),
+    ];
 
     if (mounted) {
       setState(() {
@@ -315,10 +332,14 @@ class _EditMissionPageState extends State<EditMissionPage> {
         'bountyMin': int.parse(_bountyMinCtrl.text),
         'bountyMax': int.parse(_bountyMaxCtrl.text),
         'bounty': bounty,
-        'agentInvolved': _agentInvolved.map((r) => r.agent.toMap()).toList(),
+        'agentInvolved': _agentInvolved
+            .map((r) => MissionAgent.fromAgentRef(r).toMap())
+            .toList(),
         'pnjInvolved': _pnjInvolved.map((p) => p.toMap()).toList(),
         'monsterInvolved': _monsterInvolved.map((m) => m.toMap()).toList(),
-        'agentDeceased': _agentDeceased.map((r) => r.agent.toMap()).toList(),
+        'agentDeceased': _agentDeceased
+            .map((r) => MissionAgent.fromAgentRef(r).toMap())
+            .toList(),
       };
 
       await _repository.updateMissionFull(
@@ -580,12 +601,12 @@ class _EditMissionPageState extends State<EditMissionPage> {
                 allItems: _allAgentRefs,
                 selected: _agentInvolved,
                 labelOf: (r) => r.agent.name,
-                idOf: (r) => r.agent.id,
+                idOf: (r) => r.agentDocId,
                 onChanged: (list) => setState(() {
                   _agentInvolved = list;
-                  final involvedIds = list.map((r) => r.agent.id).toSet();
+                  final involvedIds = list.map((r) => r.agentDocId).toSet();
                   _agentDeceased
-                      .removeWhere((r) => !involvedIds.contains(r.agent.id));
+                      .removeWhere((r) => !involvedIds.contains(r.agentDocId));
                 }),
               ),
             ),
@@ -604,7 +625,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
                         allItems: _agentInvolved,
                         selected: _agentDeceased,
                         labelOf: (r) => r.agent.name,
-                        idOf: (r) => r.agent.id,
+                        idOf: (r) => r.agentDocId,
                         onChanged: (list) =>
                             setState(() => _agentDeceased = list),
                       ),

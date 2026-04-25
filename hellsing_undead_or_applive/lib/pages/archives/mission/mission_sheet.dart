@@ -322,7 +322,7 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                               spacing: 6,
                               runSpacing: 4,
                               children: _mission.agentInvolved!
-                                  .map((a) => Chip(label: Text(a.name)))
+                                  .map((a) => Chip(label: Text(a.agent.name)))
                                   .toList(),
                             ),
                           ],
@@ -337,7 +337,14 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                               spacing: 6,
                               runSpacing: 4,
                               children: _mission.pnjInvolved!
-                                  .map((p) => Chip(label: Text(p.name)))
+                                  .map((p) => ActionChip(
+                                        label: Text(p.name),
+                                        onPressed: () => Navigator.pushNamed(
+                                          context,
+                                          Routes.npcSheet,
+                                          arguments: p,
+                                        ),
+                                      ))
                                   .toList(),
                             ),
                           ],
@@ -352,7 +359,14 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                               spacing: 6,
                               runSpacing: 4,
                               children: _mission.monsterInvolved!
-                                  .map((m) => Chip(label: Text(m.name)))
+                                  .map((m) => ActionChip(
+                                        label: Text(m.name),
+                                        onPressed: () => Navigator.pushNamed(
+                                          context,
+                                          Routes.bestiarySheet,
+                                          arguments: m,
+                                        ),
+                                      ))
                                   .toList(),
                             ),
                           ],
@@ -368,7 +382,7 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                               runSpacing: 4,
                               children: _mission.agentDeceased!
                                   .map((a) => Chip(
-                                        label: Text(a.name),
+                                        label: Text(a.agent.name),
                                         backgroundColor: Colors.red.shade50,
                                       ))
                                   .toList(),

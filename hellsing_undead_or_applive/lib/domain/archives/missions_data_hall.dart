@@ -34,16 +34,27 @@ Future<List<Mission>> getMissionByClade(CladeName clade) async {
 
 // Firestore ne supporte pas le filtrage direct dans des listes d'objets imbriqués,
 // on récupère toutes les missions et on filtre côté client.
-Future<List<Mission>> getMissionByAgent(Agent agent) async {
+//
+// On prend un AgentRef plutôt qu'un Agent car Agent.id seul n'est pas
+// globalement unique (scopé par utilisateur). Fallback (id + name) pour les
+// missions créées avant l'introduction de ownerUid/agentDocId.
+Future<List<Mission>> getMissionByAgent(AgentRef ref) async {
   final snapshot = await FirebaseFirestore.instance
       .collection(_missionsCollection)
       .get();
 
+  bool matches(MissionAgent a) {
+    if (a.agentDocId.isNotEmpty && a.ownerUid.isNotEmpty) {
+      return a.ownerUid == ref.ownerUid && a.agentDocId == ref.agentDocId;
+    }
+    return a.agent.id == ref.agent.id && a.agent.name == ref.agent.name;
+  }
+
   return snapshot.docs
       .map((doc) => Mission.fromMap(doc.data()))
       .where((m) =>
-          (m.agentInvolved?.any((a) => a.id == agent.id) ?? false) ||
-          (m.agentDeceased?.any((a) => a.id == agent.id) ?? false))
+          (m.agentInvolved?.any(matches) ?? false) ||
+          (m.agentDeceased?.any(matches) ?? false))
       .toList();
 }
 
@@ -55,8 +66,8 @@ Future<List<Mission>> getMissionByAgentName(String agentName) async {
   return snapshot.docs
       .map((doc) => Mission.fromMap(doc.data()))
       .where((m) =>
-          (m.agentInvolved?.any((a) => a.name == agentName) ?? false) ||
-          (m.agentDeceased?.any((a) => a.name == agentName) ?? false))
+          (m.agentInvolved?.any((a) => a.agent.name == agentName) ?? false) ||
+          (m.agentDeceased?.any((a) => a.agent.name == agentName) ?? false))
       .toList();
 }
 

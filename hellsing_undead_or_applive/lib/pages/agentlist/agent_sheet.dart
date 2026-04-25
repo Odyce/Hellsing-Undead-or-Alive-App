@@ -216,6 +216,7 @@ class _AgentSheetPageState extends State<AgentSheetPage>
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: agentRef.snapshots(),
       builder: (context, snapshot) {
+        print("Debug code Vida Loca");
         // Titre dynamique — on le lit dès que possible
         final agentName = snapshot.data?.data()?['name'] as String?;
 

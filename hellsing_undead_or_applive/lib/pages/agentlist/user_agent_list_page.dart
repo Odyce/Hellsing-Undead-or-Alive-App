@@ -132,6 +132,7 @@ class _UserAgentView extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: agentsRef.snapshots(),
       builder: (context, snapshot) {
+        print("Debug code Colada");
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }

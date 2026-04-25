@@ -24,6 +24,7 @@ class HomePage extends StatelessWidget {
   }
 
   Stream<String> _pseudoStream() {
+      print("Debug code Magnolia");
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const Stream.empty();
     return FirebaseFirestore.instance
@@ -40,6 +41,7 @@ class HomePage extends StatelessWidget {
   }
 
   Stream<String> _roleStream() {
+      print("Debug code Kebaba");
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const Stream.empty();
     return FirebaseFirestore.instance
@@ -142,6 +144,7 @@ class HomePage extends StatelessWidget {
           StreamBuilder<String>(
             stream: _roleStream(),
             builder: (context, snap) {
+              print("Debug code Burgera");
               final role = snap.data;
               if (role == null) return const SizedBox.shrink();
               final isAdmin = role == 'admin';
@@ -199,6 +202,7 @@ class HomePage extends StatelessWidget {
                   child: StreamBuilder<String>(
                     stream: _pseudoStream(),
                     builder: (context, snapshot) {
+                      print("Debug code Virtuosa");
                       final pseudo = snapshot.data ?? '...';
                       return Text(
                         'Bienvenue à $pseudo',

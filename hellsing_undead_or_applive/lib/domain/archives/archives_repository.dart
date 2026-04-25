@@ -226,13 +226,13 @@ class MissionRepository {
       postedAt: postedAt,
       playedAt: playedAt,
       completedAt: completedAt,
-      agentInvolved: agentInvolved?.map((r) => r.agent).toList(),
+      agentInvolved: agentInvolved?.map(MissionAgent.fromAgentRef).toList(),
       pnjInvolved: pnjInvolved,
       monsterInvolved: monsterInvolved,
       bountyMin: bountyMin,
       bountyMax: bountyMax,
       reportPaths: reportPaths,
-      agentDeceased: agentDeceased?.map((r) => r.agent).toList(),
+      agentDeceased: agentDeceased?.map(MissionAgent.fromAgentRef).toList(),
       urgent: urgent,
     );
 
@@ -293,14 +293,14 @@ class MissionRepository {
   }) async {
     await updateMission(missionId, fields);
 
-    final oldAgentIds = oldAgentInvolved.map((r) => r.agent.id).toSet();
-    final newAgentIds = newAgentInvolved.map((r) => r.agent.id).toSet();
+    final oldAgentKeys = oldAgentInvolved.map((r) => r.agentDocId).toSet();
+    final newAgentKeys = newAgentInvolved.map((r) => r.agentDocId).toSet();
     final agentsAdded =
-        newAgentInvolved.where((r) => !oldAgentIds.contains(r.agent.id)).toList();
+        newAgentInvolved.where((r) => !oldAgentKeys.contains(r.agentDocId)).toList();
     final agentsRemoved =
-        oldAgentInvolved.where((r) => !newAgentIds.contains(r.agent.id)).toList();
+        oldAgentInvolved.where((r) => !newAgentKeys.contains(r.agentDocId)).toList();
     final agentsKept =
-        newAgentInvolved.where((r) => oldAgentIds.contains(r.agent.id)).toList();
+        newAgentInvolved.where((r) => oldAgentKeys.contains(r.agentDocId)).toList();
 
     final oldPnjIds = oldPnjInvolved.map((p) => p.id).toSet();
     final newPnjIds = newPnjInvolved.map((p) => p.id).toSet();
