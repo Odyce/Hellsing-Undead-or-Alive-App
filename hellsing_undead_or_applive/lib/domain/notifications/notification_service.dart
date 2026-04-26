@@ -18,9 +18,11 @@ class NotificationService {
     if (_initialized) return;
     _initialized = true;
 
+    // flutter_local_notifications ne supporte pas Windows
+    if (!kIsWeb && Platform.isWindows) return;
+
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // Windows / Linux : pas de config spécifique nécessaire
     const linuxSettings = LinuxInitializationSettings(
       defaultActionName: 'Ouvrir',
     );
@@ -43,6 +45,7 @@ class NotificationService {
 
   // ─── Démarrer l'écoute Firestore pour un utilisateur ───────────────────────
   void startListening(String uid) {
+    if (!kIsWeb && Platform.isWindows) return;
     _sub?.cancel();
 
     _sub = FirebaseFirestore.instance

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/theme/app_theme.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -155,7 +156,7 @@ class HomePage extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isAdmin ? Colors.orange : Colors.blueGrey,
+                    color: isAdmin ? AppColors.adminBadge : AppColors.userBadge,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(

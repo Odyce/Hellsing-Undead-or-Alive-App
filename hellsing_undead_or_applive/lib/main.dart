@@ -9,6 +9,7 @@ import 'firebase_options.dart';
 import 'package:hellsing_undead_or_applive/domain/notifications/notification_service.dart';
 import 'package:hellsing_undead_or_applive/pages/models.dart';
 import 'package:hellsing_undead_or_applive/routes/app_routes.dart';
+import 'package:hellsing_undead_or_applive/theme/app_theme.dart';
 
 
 Future<void> main() async {
@@ -40,7 +41,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Hellsing App',
-      theme: ThemeData(useMaterial3: true),
+      theme: AppTheme.light,
 
       routes: AppRoutes.all,
 
