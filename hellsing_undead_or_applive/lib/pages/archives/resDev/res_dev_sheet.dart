@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class ResDevSheetPage extends StatelessWidget {
   const ResDevSheetPage({super.key});
@@ -90,7 +90,10 @@ class ResDevSheetPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: Text(name),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -196,15 +199,6 @@ class ResDevSheetPage extends StatelessWidget {
               const SizedBox(height: 24),
             ],
 
-            // ── Retour ────────────────────────────────────────────────────────
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, Routes.resDev),
-                child: const Text('Retour'),
-              ),
-            ),
           ],
         ),
       ),

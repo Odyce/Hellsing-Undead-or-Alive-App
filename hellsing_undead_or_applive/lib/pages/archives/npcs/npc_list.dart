@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class NpcListPage extends StatefulWidget {
   const NpcListPage({super.key});
@@ -122,10 +123,12 @@ class _NpcListPageState extends State<NpcListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── En-tête ───────────────────────────────────────────────────────
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // ── En-tête ───────────────────────────────────────────────────────
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Center(
@@ -175,20 +178,11 @@ class _NpcListPageState extends State<NpcListPage> {
                           : _buildTable(),
             ),
 
-            // ── Bouton retour en bas ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, Routes.archives),
-                  child: const Text('Retour'),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SafeBackButtonOverlay(),
+        ],
       ),
     );
   }

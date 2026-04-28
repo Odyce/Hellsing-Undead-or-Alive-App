@@ -156,7 +156,7 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
                     .where('completedAt', isNull: true)
                     .snapshots(),
                 builder: (context, snapshot) {
-                  print("Debug code Pinata");
+                  //print("debug code Pinata");
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }

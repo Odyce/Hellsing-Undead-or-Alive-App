@@ -9,6 +9,7 @@ import 'package:http/http.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class MissionSheetPage extends StatefulWidget {
   const MissionSheetPage({super.key});
@@ -161,9 +162,11 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
             // ── En-t\u00eate ──────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -454,18 +457,11 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
             ),
 
             // ── Bouton retour en bas ─────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Retour'),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SafeBackButtonOverlay(),
+        ],
       ),
     );
   }

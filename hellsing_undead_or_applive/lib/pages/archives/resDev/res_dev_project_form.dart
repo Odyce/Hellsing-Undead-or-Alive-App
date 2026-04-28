@@ -8,6 +8,7 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class ResDevProjectFormPage extends StatefulWidget {
   const ResDevProjectFormPage({super.key});
@@ -164,7 +165,10 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouveau projet R&D')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Nouveau projet R&D'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -306,14 +310,6 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
                 : const Text('Créer le projet'),
           ),
 
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, Routes.resDevList),
-              child: const Text('Retour'),
-            ),
-          ),
         ],
       ),
     );

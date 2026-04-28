@@ -25,7 +25,7 @@ class HomePage extends StatelessWidget {
   }
 
   Stream<String> _pseudoStream() {
-      print("Debug code Magnolia");
+      //print("debug code Magnolia");
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const Stream.empty();
     return FirebaseFirestore.instance
@@ -42,7 +42,7 @@ class HomePage extends StatelessWidget {
   }
 
   Stream<String> _roleStream() {
-      print("Debug code Kebaba");
+      //print("debug code Kebaba");
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const Stream.empty();
     return FirebaseFirestore.instance
@@ -78,7 +78,7 @@ class HomePage extends StatelessWidget {
         return _HomeButton(
           label: b.label,
           icon: b.icon,
-          onTap: () => Navigator.pushReplacementNamed(context, b.route),
+          onTap: () => Navigator.pushNamed(context, b.route),
         );
       }
 
@@ -139,13 +139,13 @@ class HomePage extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.notifications),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, Routes.notifications),
+              Navigator.pushNamed(context, Routes.notifications),
         ),
         actions: [
           StreamBuilder<String>(
             stream: _roleStream(),
             builder: (context, snap) {
-              print("Debug code Burgera");
+              //print("debug code Burgera");
               final role = snap.data;
               if (role == null) return const SizedBox.shrink();
               final isAdmin = role == 'admin';
@@ -203,7 +203,7 @@ class HomePage extends StatelessWidget {
                   child: StreamBuilder<String>(
                     stream: _pseudoStream(),
                     builder: (context, snapshot) {
-                      print("Debug code Virtuosa");
+                      //print("debug code Virtuosa");
                       final pseudo = snapshot.data ?? '...';
                       return Text(
                         'Bienvenue à $pseudo',

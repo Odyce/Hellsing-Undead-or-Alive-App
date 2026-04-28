@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class ArtefactSheetPage extends StatelessWidget {
   const ArtefactSheetPage({super.key});
@@ -101,7 +101,10 @@ class ArtefactSheetPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: Text(name),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -179,16 +182,6 @@ class ArtefactSheetPage extends StatelessWidget {
               _buildWeaponSection(context, item),
             ],
 
-            // ── Retour ────────────────────────────────────────────────────────
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, Routes.artefacts),
-                child: const Text('Retour'),
-              ),
-            ),
           ],
         ),
       ),

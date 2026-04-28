@@ -6,6 +6,7 @@ import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class AgentSheetPage extends StatefulWidget {
   final String agentDocId;
@@ -216,7 +217,7 @@ class _AgentSheetPageState extends State<AgentSheetPage>
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: agentRef.snapshots(),
       builder: (context, snapshot) {
-        print("Debug code Vida Loca");
+        //print("debug code Vida Loca");
         // Titre dynamique — on le lit dès que possible
         final agentName = snapshot.data?.data()?['name'] as String?;
 
@@ -239,6 +240,7 @@ class _AgentSheetPageState extends State<AgentSheetPage>
           },
           child: Scaffold(
           appBar: AppBar(
+            leading: const SafeBackButton(),
             title: Text(
               agentName != null ? "Fiche de $agentName" : "Fiche de l'agent",
               style: GoogleFonts.cinzelDecorative(),
@@ -391,29 +393,6 @@ class _AgentSheetPageState extends State<AgentSheetPage>
                           ),
                         ),
 
-                        const SizedBox(height: 12),
-
-                        // Bouton retour
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton(
-                            onPressed: () async {
-                              if (_inventoryDirty) {
-                                showDialog(
-                                  context: context,
-                                  barrierDismissible: false,
-                                  builder: (_) => const Center(child: CircularProgressIndicator()),
-                                );
-                                await _saveInventoryIfDirty();
-                                if (context.mounted) Navigator.of(context).pop();
-                              }
-                              if (context.mounted) {
-                                Navigator.pushReplacementNamed(context, Routes.agentList);
-                              }
-                            },
-                            child: const Text("Retour"),
-                          ),
-                        ),
                       ],
                     ),
                   ),

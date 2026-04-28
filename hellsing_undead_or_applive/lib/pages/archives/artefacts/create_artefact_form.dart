@@ -7,6 +7,7 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class CreateArtefactPage extends StatefulWidget {
   const CreateArtefactPage({super.key});
@@ -283,7 +284,10 @@ class _CreateArtefactPageState extends State<CreateArtefactPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouvel artefact')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Nouvel artefact'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -683,14 +687,6 @@ class _CreateArtefactPageState extends State<CreateArtefactPage> {
             ),
           ),
 
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: TextButton(
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, Routes.artefacts),
-              child: const Text('Retour'),
-            ),
-          ),
         ],
       ),
     );

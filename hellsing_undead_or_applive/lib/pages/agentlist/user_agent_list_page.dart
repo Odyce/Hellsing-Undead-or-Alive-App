@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/pages/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class AgentsListPage extends StatefulWidget {
   const AgentsListPage({super.key});
@@ -96,19 +97,11 @@ class _AgentsListPageState extends State<AgentsListPage> {
                         ? _AdminAgentView(currentUid: user.uid)
                         : _UserAgentView(currentUid: user.uid),
                   ),
-                  Align(
-                    alignment: Alignment.bottomLeft,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, Routes.home);
-                      },
-                      child: const Text("Retour"),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
+          const SafeBackButtonOverlay(),
         ]
       ),
     );
@@ -132,7 +125,7 @@ class _UserAgentView extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: agentsRef.snapshots(),
       builder: (context, snapshot) {
-        print("Debug code Colada");
+        //print("debug code Colada");
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -148,7 +141,7 @@ class _UserAgentView extends StatelessWidget {
           return Center(
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacementNamed(context, Routes.agentCreate);
+                Navigator.pushNamed(context, Routes.agentCreate);
               },
               child: const Text("Créer un nouvel agent"),
             ),
@@ -277,7 +270,7 @@ class _AdminAgentViewState extends State<_AdminAgentView> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Navigator.pushReplacementNamed(
+              onPressed: () => Navigator.pushNamed(
                   context, Routes.agentValidationList),
               icon: const Icon(Icons.verified_user_outlined),
               label: const Text('Validation des agents'),

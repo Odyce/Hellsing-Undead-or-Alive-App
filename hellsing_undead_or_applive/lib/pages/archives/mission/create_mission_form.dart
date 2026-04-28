@@ -8,6 +8,7 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class CreateMissionPage extends StatefulWidget {
   const CreateMissionPage({super.key});
@@ -454,7 +455,10 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Créer une mission')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Créer une mission'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -813,14 +817,6 @@ class _CreateMissionPageState extends State<CreateMissionPage> {
             ),
           ),
 
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: TextButton(
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, Routes.missions),
-              child: const Text('Retour'),
-            ),
-          ),
         ],
       ),
     );

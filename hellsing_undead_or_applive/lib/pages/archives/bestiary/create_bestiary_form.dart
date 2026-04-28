@@ -6,6 +6,7 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class CreateBestiaryPage extends StatefulWidget {
   const CreateBestiaryPage({super.key});
@@ -173,7 +174,10 @@ class _CreateBestiaryPageState extends State<CreateBestiaryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouvelle entrée bestiaire')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Nouvelle entrée bestiaire'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -389,14 +393,6 @@ class _CreateBestiaryPageState extends State<CreateBestiaryPage> {
             ),
           ),
 
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: TextButton(
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, Routes.bestiary),
-              child: const Text('Retour'),
-            ),
-          ),
         ],
       ),
     );

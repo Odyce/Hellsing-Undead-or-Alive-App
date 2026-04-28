@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class MissionChronologyPage extends StatefulWidget {
   const MissionChronologyPage({super.key});
@@ -92,10 +93,12 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── En-tête ──────────────────────────────────────────────────────
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // ── En-tête ──────────────────────────────────────────────────────
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Center(
@@ -168,20 +171,11 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                           : _buildCarousel(),
             ),
 
-            // ── Bouton retour en bas ─────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, Routes.missions),
-                  child: const Text('Retour'),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SafeBackButtonOverlay(),
+        ],
       ),
     );
   }

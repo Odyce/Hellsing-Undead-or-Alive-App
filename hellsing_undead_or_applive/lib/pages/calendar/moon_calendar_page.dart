@@ -6,6 +6,7 @@ import 'package:apsl_sun_calc/apsl_sun_calc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hellsing_undead_or_applive/domain/archives/missions_model.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 enum MoonMajorPhase {
   newMoon,
@@ -295,6 +296,7 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text("Calendrier"),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -458,16 +460,7 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
                     },
                   ),
                 ),
-              ] else
-                const Spacer(),
-
-              Align(
-                alignment: Alignment.bottomLeft,
-                child: TextButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, Routes.home),
-                  child: const Text("Retour"),
-                ),
-              ),
+              ],
             ],
           ),
         ]

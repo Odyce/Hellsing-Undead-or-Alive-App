@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class ArtefactListPage extends StatefulWidget {
   const ArtefactListPage({super.key});
@@ -95,10 +96,12 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── En-tête ───────────────────────────────────────────────────────
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // ── En-tête ───────────────────────────────────────────────────────
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Center(
@@ -148,20 +151,11 @@ class _ArtefactListPageState extends State<ArtefactListPage> {
                           : _buildTable(),
             ),
 
-            // ── Bouton retour ─────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, Routes.archives),
-                  child: const Text('Retour'),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SafeBackButtonOverlay(),
+        ],
       ),
     );
   }

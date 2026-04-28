@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 import 'package:http/http.dart';
 
 
@@ -876,7 +877,10 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
     final allWeaponSlots  = _allWeaponSlots;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Inventaire de départ')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Inventaire de départ'),
+      ),
       body: Column(children: [
 
         // Header sticky argent
@@ -966,13 +970,6 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
                 child: _loading
                     ? const CircularProgressIndicator()
                     : const Text("Créer l'agent"),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Retour'),
               ),
             ),
           ]),

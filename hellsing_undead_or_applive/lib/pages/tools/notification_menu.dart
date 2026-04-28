@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class NotificationMenuPage extends StatefulWidget {
   const NotificationMenuPage({super.key});
@@ -45,13 +45,13 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: Text('Notifications', style: GoogleFonts.cinzelDecorative()),
-        automaticallyImplyLeading: false,
         actions: [
           StreamBuilder<bool>(
             stream: _repository.notificationsEnabledStream(_uid!),
             builder: (context, snap) {
-              print("Debug code Lacrimosa");
+              //print("debug code Lacrimosa");
               final enabled = snap.data ?? true;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -86,7 +86,7 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
               child: StreamBuilder<List<AppNotification>>(
                 stream: _repository.notificationsStream(_uid!),
                 builder: (context, snap) {
-                  print("Debug code Juanita");
+                  //print("debug code Juanita");
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
@@ -112,19 +112,6 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
               ),
             ),
 
-            // ── Bouton retour ─────────────────────────────────────────────────
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: TextButton(
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, Routes.home),
-                  child: const Text('Retour'),
-                ),
-              ),
-            ),
           ],
         ),
       ),

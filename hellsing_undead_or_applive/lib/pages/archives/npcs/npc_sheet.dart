@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/archives/widgets/field_notes_section.dart';
 import 'package:hellsing_undead_or_applive/pages/archives/widgets/mission_history_section.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class NpcSheetPage extends StatefulWidget {
   const NpcSheetPage({super.key});
@@ -144,7 +144,10 @@ class _NpcSheetPageState extends State<NpcSheetPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_pnj.name)),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: Text(_pnj.name),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -238,16 +241,6 @@ class _NpcSheetPageState extends State<NpcSheetPage> {
             // ── Notes des agents ──────────────────────────────────────────────
             FieldNotesSection(targetType: 'npc', targetId: _pnj.id),
             const SizedBox(height: 32),
-
-            // ── Retour ────────────────────────────────────────────────────────
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, Routes.npcs),
-                child: const Text('Retour'),
-              ),
-            ),
           ],
         ),
       ),

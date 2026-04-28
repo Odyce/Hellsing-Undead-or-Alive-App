@@ -49,7 +49,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.missions);
+                      Navigator.pushNamed(context, Routes.missions);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -64,7 +64,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.bestiary);
+                      Navigator.pushNamed(context, Routes.bestiary);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -79,7 +79,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.artefacts);
+                      Navigator.pushNamed(context, Routes.artefacts);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -94,7 +94,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.npcs);
+                      Navigator.pushNamed(context, Routes.npcs);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -109,7 +109,7 @@ class ArchiveMenuPage extends StatelessWidget {
 
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.resDev);
+                      Navigator.pushNamed(context, Routes.resDev);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),

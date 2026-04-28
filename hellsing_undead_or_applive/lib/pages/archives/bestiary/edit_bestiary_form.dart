@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class EditBestiaryPage extends StatefulWidget {
   const EditBestiaryPage({super.key});
@@ -134,7 +135,10 @@ class _EditBestiaryPageState extends State<EditBestiaryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Modifier la créature')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Modifier la créature'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -253,13 +257,6 @@ class _EditBestiaryPageState extends State<EditBestiaryPage> {
             ),
           ),
 
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
-            ),
-          ),
         ],
       ),
     );

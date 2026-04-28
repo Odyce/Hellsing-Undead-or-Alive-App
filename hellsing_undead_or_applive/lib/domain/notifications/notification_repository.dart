@@ -46,7 +46,7 @@ class NotificationRepository {
 
   // ─── Stream : liste des notifications, plus récente en premier ───────────────
   Stream<List<AppNotification>> notificationsStream(String uid) {
-    print("Debug code Banana");
+    //print("debug code Banana");
     return _notifRef(uid)
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -71,7 +71,7 @@ class NotificationRepository {
 
   // ─── Stream : état du toggle notifications ────────────────────────────────────
   Stream<bool> notificationsEnabledStream(String uid) {
-    print("Debug code Papaya");
+    //print("debug code Papaya");
     return _userRef(uid).snapshots().map((snap) {
       final data = snap.data();
       if (data == null) return true;

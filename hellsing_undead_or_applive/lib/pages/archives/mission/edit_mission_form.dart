@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class EditMissionPage extends StatefulWidget {
   const EditMissionPage({super.key});
@@ -381,7 +382,10 @@ class _EditMissionPageState extends State<EditMissionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Modifier la mission')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Modifier la mission'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -682,13 +686,6 @@ class _EditMissionPageState extends State<EditMissionPage> {
             ),
           ),
 
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
-            ),
-          ),
         ],
       ),
     );

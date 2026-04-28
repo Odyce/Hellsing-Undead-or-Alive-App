@@ -59,7 +59,7 @@ class _MissionMenuPageState extends State<MissionMenuPage> {
 
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.missionBoard);
+                      Navigator.pushNamed(context, Routes.missionBoard);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -74,7 +74,7 @@ class _MissionMenuPageState extends State<MissionMenuPage> {
 
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.missionChrono);
+                      Navigator.pushNamed(context, Routes.missionChrono);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -90,7 +90,7 @@ class _MissionMenuPageState extends State<MissionMenuPage> {
 
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.pushReplacementNamed(context, Routes.missionCreate);
+                        Navigator.pushNamed(context, Routes.missionCreate);
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),

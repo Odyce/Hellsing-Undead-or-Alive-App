@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 // ---------------------------------------------------------------------------
 // Missions cumulées requises pour chaque niveau
@@ -665,6 +666,7 @@ class _LevelUpPageState extends State<LevelUpPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: Text('Niveau ${widget.targetLevel}'),
       ),
       body: _saving || _loadingRules

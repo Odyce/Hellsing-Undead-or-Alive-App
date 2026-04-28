@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:hellsing_undead_or_applive/widgets/filter_bar.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 // Wrapper pour transporter docId + projet ensemble
 class _ProjectEntry {
@@ -159,7 +160,10 @@ class _ResDevListPageState extends State<ResDevListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('R&D')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('R&D'),
+      ),
       floatingActionButton: _isAdmin
           ? Column(
               mainAxisSize: MainAxisSize.min,
@@ -193,18 +197,6 @@ class _ResDevListPageState extends State<ResDevListPage> {
                     onChanged: (f) => setState(() => _activeFilters = f),
                   ),
                 Expanded(child: _buildContent()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () => Navigator.pushReplacementNamed(
-                          context, Routes.archives),
-                      child: const Text('Retour'),
-                    ),
-                  ),
-                ),
               ],
             ),
     );

@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/create_agent_inventory_form.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 import 'package:image_picker/image_picker.dart';
 
 /////////////////////////////////
@@ -582,6 +582,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text('Créer un Agent'),
       ),
       body: ListView(
@@ -628,7 +629,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Photo de profil (optionnel)\n(10,20Mo MAX)',
+            'Photo de profil (optionnel)   (10,20Mo MAX)',
             style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: 8),
@@ -1132,13 +1133,6 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
             child: ElevatedButton(
               onPressed: _goToInventoryForm,
               child: const Text('Suivant'),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: TextButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, Routes.agentList),
-              child: const Text("Retour"),
             ),
           ),
         ],

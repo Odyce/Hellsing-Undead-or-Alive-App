@@ -8,7 +8,7 @@ import 'package:hellsing_undead_or_applive/domain/rulebook/book_navigator.dart';
 import 'package:hellsing_undead_or_applive/domain/rulebook/book_page.dart';
 import 'package:hellsing_undead_or_applive/domain/rulebook/book_search.dart';
 import 'package:hellsing_undead_or_applive/domain/rulebook/rich_content.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 import 'layouts/single_page_layout.dart';
 import 'layouts/double_page_layout.dart';
@@ -190,8 +190,7 @@ class _BookViewerPageState extends ConsumerState<BookViewerPage> {
             children: [
               // Fermer le livre
               TextButton.icon(
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, Routes.home),
+                onPressed: () => SafeBackButton.pop(context),
                 icon: const Icon(Icons.close, size: 18, color: Colors.white),
                 label: const Text('Fermer',
                     style: TextStyle(color: Colors.white)),

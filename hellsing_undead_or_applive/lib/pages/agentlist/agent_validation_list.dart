@@ -4,7 +4,7 @@ import 'package:hellsing_undead_or_applive/domain/notifications/notification_rep
 import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/agent_sheet.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 /// Données d'un agent non validé, enrichies avec les infos de son propriétaire.
 class _PendingAgent {
@@ -344,7 +344,10 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Agents en attente de validation')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Agents en attente de validation'),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _pendingAgents.isEmpty
@@ -476,18 +479,6 @@ class _AgentValidationListPageState extends State<AgentValidationListPage> {
                     },
                   ),
                 ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          heightFactor: 1,
-          child: TextButton(
-            onPressed: () =>
-                Navigator.pushReplacementNamed(context, Routes.home),
-            child: const Text('Retour'),
-          ),
-        ),
-      ),
     );
   }
 }

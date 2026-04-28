@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class ResDevProjectSheetPage extends StatefulWidget {
   const ResDevProjectSheetPage({super.key});
@@ -130,6 +130,7 @@ class _ResDevProjectSheetPageState extends State<ResDevProjectSheetPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: Text(p.name),
         actions: [
           if (_hasPendingChanges)
@@ -206,15 +207,6 @@ class _ResDevProjectSheetPageState extends State<ResDevProjectSheetPage> {
             ),
           ],
           const SizedBox(height: 32),
-
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, Routes.resDev),
-              child: const Text('Retour'),
-            ),
-          ),
         ],
       ),
     );

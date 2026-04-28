@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 /// ─── Page menu des statistiques ──────────────────────────────────────────────
 class StatsMenuPage extends StatefulWidget {
@@ -80,6 +81,7 @@ class _StatsMenuPageState extends State<StatsMenuPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: Text('Statistiques', style: GoogleFonts.cinzelDecorative()),
         actions: [
           if (_isAdmin)

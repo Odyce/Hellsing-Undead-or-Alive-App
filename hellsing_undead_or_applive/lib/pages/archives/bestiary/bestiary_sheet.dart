@@ -9,6 +9,7 @@ import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/archives/widgets/field_notes_section.dart';
 import 'package:hellsing_undead_or_applive/pages/archives/widgets/mission_history_section.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class BestiarySheetPage extends StatefulWidget {
   const BestiarySheetPage({super.key});
@@ -125,6 +126,7 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: Text(_monster.name),
         actions: [
           IconButton(
@@ -287,16 +289,6 @@ class _BestiarySheetPageState extends State<BestiarySheetPage> {
             // ── Notes des agents ──────────────────────────────────────────────
             FieldNotesSection(targetType: 'monster', targetId: _monster.id),
             const SizedBox(height: 32),
-
-            // ── Retour ────────────────────────────────────────────────────────
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, Routes.bestiary),
-                child: const Text('Retour'),
-              ),
-            ),
           ],
         ),
       ),
