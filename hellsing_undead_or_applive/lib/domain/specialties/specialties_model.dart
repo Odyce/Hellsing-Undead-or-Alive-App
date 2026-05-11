@@ -15,6 +15,11 @@ class Skill {
   final bool limited;
   final String description;
 
+  /// True tant qu'une compétence créée par un joueur (via "Compétence Custom"
+  /// au level-up) n'a pas été détaillée par un admin. Les autres champs
+  /// (cost, costType, description…) sont alors des valeurs placeholders.
+  final bool pendingCustom;
+
   const Skill({
     required this.id,
     required this.name,
@@ -27,6 +32,7 @@ class Skill {
     this.descriptions,
     required this.limited,
     required this.description,
+    this.pendingCustom = false,
   });
 
   // --------------------
@@ -44,6 +50,7 @@ class Skill {
     List<String>? descriptions,
     bool? limited,
     String? description,
+    bool? pendingCustom,
   }) {
     return Skill(
       id: id ?? this.id,
@@ -57,6 +64,7 @@ class Skill {
       descriptions: descriptions ?? this.descriptions,
       limited: limited ?? this.limited,
       description: description ?? this.description,
+      pendingCustom: pendingCustom ?? this.pendingCustom,
     );
   }
 
@@ -76,6 +84,7 @@ class Skill {
       "descriptions": descriptions,
       "limited": limited,
       "description": description,
+      "pendingCustom": pendingCustom,
     };
   }
 
@@ -98,6 +107,7 @@ class Skill {
           : null,
       limited: map["limited"],
       description: map["description"],
+      pendingCustom: map["pendingCustom"] as bool? ?? false,
     );
   }
 
@@ -117,6 +127,7 @@ class Skill {
       "descriptions": descriptions,
       "limited": limited,
       "description": description,
+      "pendingCustom": pendingCustom,
     };
   }
 
@@ -139,6 +150,7 @@ class Skill {
           : null,
       limited: json["limited"],
       description: json["description"],
+      pendingCustom: json["pendingCustom"] as bool? ?? false,
     );
   }
 }

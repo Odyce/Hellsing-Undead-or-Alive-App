@@ -17,6 +17,13 @@ class Routes {
   // ── Archives (menu) ─────────────────────────────────────────────────────────
   static const archives = '/archives';
 
+  // ── Cartes ───────────────────────────────────────────────────────────────────
+  static const cartes = '/cartes';
+
+  // ── Journal ──────────────────────────────────────────────────────────────────
+  static const journal       = '/journal';
+  static const journalCreate = '/journalCreate';
+
   // ── Missions ─────────────────────────────────────────────────────────────────
   static const missions       = '/missions';
   static const missionBoard   = '/missionboard';

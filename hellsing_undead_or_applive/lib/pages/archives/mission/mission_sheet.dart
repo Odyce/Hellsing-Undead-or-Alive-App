@@ -158,6 +158,85 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
     }
   }
 
+  // ─── Suppression définitive de la mission ─────────────────────────────────
+  Future<void> _confirmAndDeleteMission() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    // 1. Calculer l'aperçu de l'impact sur les agents
+    final previews = await _repository.previewMissionDeletion(_mission.id);
+    if (!mounted) return;
+
+    // 2. Dialog de confirmation
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer la mission ?'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Cette action supprimera définitivement la mission '
+                '"${_mission.title}" et la retirera de tous les agents, PNJs '
+                'et monstres impliqués.',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              if (previews.where((p) => p.hasImpact).isEmpty)
+                const Text(
+                  'Aucun agent ne perdra de niveau.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                )
+              else ...[
+                const Text(
+                  'Conséquences sur les niveaux :',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                ...previews.where((p) => p.hasImpact).map(
+                      (p) => Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: _RollbackPreviewLine(preview: p),
+                      ),
+                    ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // 3. Suppression
+    try {
+      await _repository.deleteMission(_mission.id);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Mission supprimée.')),
+      );
+      navigator.pop();
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Erreur : $e')),
+      );
+    }
+  }
+
   // ─── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -183,12 +262,19 @@ class _MissionSheetPageState extends State<MissionSheetPage> {
                       ),
                     ),
                   ),
-                  if (_roleLoaded && _isAdmin)
+                  if (_roleLoaded && _isAdmin) ...[
                     IconButton(
                       icon: const Icon(Icons.edit),
                       tooltip: 'Modifier la mission',
                       onPressed: _openEditForm,
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.red),
+                      tooltip: 'Supprimer la mission',
+                      onPressed: _confirmAndDeleteMission,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -478,6 +564,47 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+    );
+  }
+}
+
+class _RollbackPreviewLine extends StatelessWidget {
+  final AgentRollbackPreview preview;
+  const _RollbackPreviewLine({required this.preview});
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = <String>[];
+    if (preview.rolledBackLevels.isNotEmpty) {
+      lines.add(
+        'Niveau ${preview.currentLevel} → ${preview.newLevel} '
+        '(annulés : ${preview.rolledBackLevels.join(", ")})',
+      );
+    }
+    if (preview.orphanedLevels.isNotEmpty) {
+      lines.add(
+        'Niveau(x) ${preview.orphanedLevels.join(", ")} non annulable(s) '
+        "(pas d'historique)",
+      );
+    }
+    if (lines.isEmpty) {
+      lines.add('Aucun changement de niveau');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '• ${preview.agentName}',
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        ...lines.map(
+          (l) => Padding(
+            padding: const EdgeInsets.only(left: 12, top: 2),
+            child: Text(l, style: const TextStyle(fontSize: 12)),
+          ),
+        ),
+      ],
     );
   }
 }

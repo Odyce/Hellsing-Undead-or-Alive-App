@@ -65,18 +65,20 @@ class BagSlot {
   }
 }
 
+/// Le BankSlot ne contient plus que des armes ou des objets de sac.
+/// Les munitions du coffre sont désormais regroupées dans [Agent.reserve].
+/// L'ancien champ `muni` est ignoré ici — sa migration est traitée par
+/// [Agent.fromMap], qui extrait les munis vers [Reserve].
 class BankSlot {
   final int id;
   final bool empty;
   final BagSlot? bag;
-  final MuniSlot? muni;
   final WeaponSlot? weapon;
 
   const BankSlot({
     required this.id,
     required this.empty,
     this.bag,
-    this.muni,
     this.weapon,
   });
 
@@ -87,14 +89,12 @@ class BankSlot {
     int? id,
     bool? empty,
     BagSlot? bag,
-    MuniSlot? muni,
     WeaponSlot? weapon,
   }) {
     return BankSlot(
       id: id ?? this.id,
       empty: empty ?? this.empty,
       bag: bag ?? this.bag,
-      muni: muni ?? this.muni,
       weapon: weapon ?? this.weapon,
     );
   }
@@ -107,21 +107,22 @@ class BankSlot {
       "id": id,
       "empty": empty,
       "bag": bag?.toMap(),
-      "muni": muni?.toMap(),
       "weapon": weapon?.toMap(),
     };
   }
 
   factory BankSlot.fromMap(Map<String, dynamic> map) {
+    final bag = map["bag"] != null ? BagSlot.fromMap(map["bag"]) : null;
+    final weapon =
+        map["weapon"] != null ? WeaponSlot.fromMap(map["weapon"]) : null;
+    final empty = (bag == null && weapon == null)
+        ? true
+        : (map["empty"] as bool? ?? false);
     return BankSlot(
       id: map["id"],
-      empty: map["empty"],
-      bag: map["bag"] != null ? BagSlot.fromMap(map["bag"]) : null,
-      muni:
-          map["muni"] != null ? MuniSlot.fromMap(map["muni"]) : null,
-      weapon: map["weapon"] != null
-          ? WeaponSlot.fromMap(map["weapon"])
-          : null,
+      empty: empty,
+      bag: bag,
+      weapon: weapon,
     );
   }
 
@@ -133,57 +134,175 @@ class BankSlot {
       "id": id,
       "empty": empty,
       "bag": bag?.toJson(),
-      "muni": muni?.toJson(),
       "weapon": weapon?.toJson(),
     };
   }
 
   factory BankSlot.fromJson(Map<String, dynamic> json) {
+    final bag = json["bag"] != null ? BagSlot.fromJson(json["bag"]) : null;
+    final weapon =
+        json["weapon"] != null ? WeaponSlot.fromJson(json["weapon"]) : null;
+    final empty = (bag == null && weapon == null)
+        ? true
+        : (json["empty"] as bool? ?? false);
     return BankSlot(
       id: json["id"],
-      empty: json["empty"],
-      bag:
-          json["bag"] != null ? BagSlot.fromJson(json["bag"]) : null,
-      muni:
-          json["muni"] != null ? MuniSlot.fromJson(json["muni"]) : null,
-      weapon: json["weapon"] != null
-          ? WeaponSlot.fromJson(json["weapon"])
-          : null,
+      empty: empty,
+      bag: bag,
+      weapon: weapon,
     );
   }
 }
 
+/// Mode d'utilisation d'un [MuniSlot].
+///
+/// - [empty] : slot non utilisé. Calibre toujours [Calibre.empty].
+/// - [munition] : contient une liste de [MuniObject] de la même MuniCateg.
+///   Calibre figé au premier ajout, libéré à la dernière retrait.
+/// - [support] : contient un seul type de [SupportObject] (1 à 6 unités).
+/// - [magazine] : lié à une arme équipée. Calibre = celui de l'arme.
+///   Reste lié même quand vide. Capacité = magazineSize/secondMagazineSize.
+enum MuniSlotMode { empty, munition, support, magazine }
+
 class MuniSlot {
   final int id;
-  final MuniObject? muni;
-  final SupportObject? supp;
-  final int numberLeft;
-  final bool empty;
+  final MuniSlotMode mode;
+  final Calibre calibre;
+  final List<MuniObject> munis;
+  final SupportObject? support;
+  final int supportCount;
+  final int? linkedWeaponSlotId;
+  final int? magazineIndex; // 0 = principal, 1 = secondaire
 
-  const MuniSlot({
+  const MuniSlot._({
     required this.id,
-    this.muni,
-    this.supp,
-    required this.numberLeft,
-    required this.empty,
+    required this.mode,
+    required this.calibre,
+    required this.munis,
+    this.support,
+    required this.supportCount,
+    this.linkedWeaponSlotId,
+    this.magazineIndex,
   });
+
+  // --------------------
+  // Constructeurs nommés
+  // --------------------
+  factory MuniSlot.empty(int id) => MuniSlot._(
+        id: id,
+        mode: MuniSlotMode.empty,
+        calibre: Calibre.empty,
+        munis: const [],
+        supportCount: 0,
+      );
+
+  factory MuniSlot.munition({
+    required int id,
+    required Calibre calibre,
+    required List<MuniObject> munis,
+  }) =>
+      MuniSlot._(
+        id: id,
+        mode: MuniSlotMode.munition,
+        calibre: calibre,
+        munis: List.unmodifiable(munis),
+        supportCount: 0,
+      );
+
+  factory MuniSlot.supportSlot({
+    required int id,
+    required SupportObject support,
+    required int count,
+  }) =>
+      MuniSlot._(
+        id: id,
+        mode: MuniSlotMode.support,
+        calibre: Calibre.empty,
+        munis: const [],
+        support: support,
+        supportCount: count,
+      );
+
+  factory MuniSlot.magazine({
+    required int id,
+    required Calibre calibre,
+    required int linkedWeaponSlotId,
+    required int magazineIndex,
+    List<MuniObject> munis = const [],
+  }) =>
+      MuniSlot._(
+        id: id,
+        mode: MuniSlotMode.magazine,
+        calibre: calibre,
+        munis: List.unmodifiable(munis),
+        supportCount: 0,
+        linkedWeaponSlotId: linkedWeaponSlotId,
+        magazineIndex: magazineIndex,
+      );
+
+  // --------------------
+  // Capacités / utilitaires
+  // --------------------
+
+  /// Capacité du slot pour les modes [empty], [munition] et [support].
+  /// Pour le mode [magazine], la capacité dépend de l'arme liée et doit
+  /// être calculée par l'appelant via le [Weapon.magazineSize] /
+  /// [Weapon.secondMagazineSize] correspondant à [magazineIndex].
+  int? get fixedCapacity {
+    switch (mode) {
+      case MuniSlotMode.empty:
+        return 0;
+      case MuniSlotMode.munition:
+        return (calibre == Calibre.herb || calibre == Calibre.throwable)
+            ? 6
+            : 8;
+      case MuniSlotMode.support:
+        return 6;
+      case MuniSlotMode.magazine:
+        return null;
+    }
+  }
+
+  int get used {
+    switch (mode) {
+      case MuniSlotMode.empty:
+        return 0;
+      case MuniSlotMode.munition:
+      case MuniSlotMode.magazine:
+        return munis.length;
+      case MuniSlotMode.support:
+        return supportCount;
+    }
+  }
+
+  bool get isEmpty => mode == MuniSlotMode.empty;
+  bool get isMagazine => mode == MuniSlotMode.magazine;
 
   // --------------------
   // copyWith
   // --------------------
   MuniSlot copyWith({
     int? id,
-    MuniObject? muni,
-    SupportObject? supp,
-    int? numberLeft,
-    bool? empty,
+    MuniSlotMode? mode,
+    Calibre? calibre,
+    List<MuniObject>? munis,
+    SupportObject? support,
+    int? supportCount,
+    int? linkedWeaponSlotId,
+    int? magazineIndex,
+    bool clearSupport = false,
+    bool clearLink = false,
   }) {
-    return MuniSlot(
+    return MuniSlot._(
       id: id ?? this.id,
-      muni: muni ?? this.muni,
-      supp: supp ?? this.supp,
-      numberLeft: numberLeft ?? this.numberLeft,
-      empty: empty ?? this.empty,
+      mode: mode ?? this.mode,
+      calibre: calibre ?? this.calibre,
+      munis: munis ?? this.munis,
+      support: clearSupport ? null : (support ?? this.support),
+      supportCount: supportCount ?? this.supportCount,
+      linkedWeaponSlotId:
+          clearLink ? null : (linkedWeaponSlotId ?? this.linkedWeaponSlotId),
+      magazineIndex: clearLink ? null : (magazineIndex ?? this.magazineIndex),
     );
   }
 
@@ -193,22 +312,57 @@ class MuniSlot {
   Map<String, dynamic> toMap() {
     return {
       "id": id,
-      "muni": muni?.toMap(),
-      "supp": supp?.toMap(),
-      "numberLeft": numberLeft,
-      "empty": empty,
+      "mode": mode.name,
+      "calibre": calibre.name,
+      "munis": munis.map((m) => m.toMap()).toList(),
+      "support": support?.toMap(),
+      "supportCount": supportCount,
+      "linkedWeaponSlotId": linkedWeaponSlotId,
+      "magazineIndex": magazineIndex,
     };
   }
 
   factory MuniSlot.fromMap(Map<String, dynamic> map) {
-    return MuniSlot(
+    // ── Migration de l'ancien format ────────────────────────────────────────
+    if (!map.containsKey('mode')) {
+      final id = map['id'] as int? ?? 0;
+      final empty = map['empty'] as bool? ?? true;
+      if (empty) return MuniSlot.empty(id);
+      final qty = map['numberLeft'] as int? ?? 1;
+      if (map['muni'] != null) {
+        final muni = MuniObject.fromMap(Map<String, dynamic>.from(map['muni']));
+        final calibre = _legacyDeduceCalibre(muni);
+        return MuniSlot.munition(
+          id: id,
+          calibre: calibre,
+          munis: List.filled(qty, muni),
+        );
+      }
+      if (map['supp'] != null) {
+        final supp =
+            SupportObject.fromMap(Map<String, dynamic>.from(map['supp']));
+        return MuniSlot.supportSlot(
+          id: id,
+          support: supp,
+          count: qty,
+        );
+      }
+      return MuniSlot.empty(id);
+    }
+    // ── Nouveau format ──────────────────────────────────────────────────────
+    return MuniSlot._(
       id: map["id"],
-      muni:
-          map["muni"] != null ? MuniObject.fromMap(map["muni"]) : null,
-      supp:
-          map["supp"] != null ? SupportObject.fromMap(map["supp"]) : null,
-      numberLeft: map["numberLeft"],
-      empty: map["empty"],
+      mode: MuniSlotMode.values.byName(map["mode"]),
+      calibre: Calibre.values.byName(map["calibre"]),
+      munis: (map["munis"] as List? ?? const [])
+          .map((m) => MuniObject.fromMap(Map<String, dynamic>.from(m)))
+          .toList(),
+      support: map["support"] != null
+          ? SupportObject.fromMap(Map<String, dynamic>.from(map["support"]))
+          : null,
+      supportCount: map["supportCount"] as int? ?? 0,
+      linkedWeaponSlotId: map["linkedWeaponSlotId"] as int?,
+      magazineIndex: map["magazineIndex"] as int?,
     );
   }
 
@@ -218,24 +372,70 @@ class MuniSlot {
   Map<String, dynamic> toJson() {
     return {
       "id": id,
-      "muni": muni?.toJson(),
-      "supp": supp?.toJson(),
-      "numberLeft": numberLeft,
-      "empty": empty,
+      "mode": mode.name,
+      "calibre": calibre.name,
+      "munis": munis.map((m) => m.toJson()).toList(),
+      "support": support?.toJson(),
+      "supportCount": supportCount,
+      "linkedWeaponSlotId": linkedWeaponSlotId,
+      "magazineIndex": magazineIndex,
     };
   }
 
   factory MuniSlot.fromJson(Map<String, dynamic> json) {
-    return MuniSlot(
+    if (!json.containsKey('mode')) {
+      final id = json['id'] as int? ?? 0;
+      final empty = json['empty'] as bool? ?? true;
+      if (empty) return MuniSlot.empty(id);
+      final qty = json['numberLeft'] as int? ?? 1;
+      if (json['muni'] != null) {
+        final muni =
+            MuniObject.fromJson(Map<String, dynamic>.from(json['muni']));
+        final calibre = _legacyDeduceCalibre(muni);
+        return MuniSlot.munition(
+          id: id,
+          calibre: calibre,
+          munis: List.filled(qty, muni),
+        );
+      }
+      if (json['supp'] != null) {
+        final supp =
+            SupportObject.fromJson(Map<String, dynamic>.from(json['supp']));
+        return MuniSlot.supportSlot(
+          id: id,
+          support: supp,
+          count: qty,
+        );
+      }
+      return MuniSlot.empty(id);
+    }
+    return MuniSlot._(
       id: json["id"],
-      muni:
-          json["muni"] != null ? MuniObject.fromJson(json["muni"]) : null,
-      supp:
-          json["supp"] != null ? SupportObject.fromJson(json["supp"]) : null,
-      numberLeft: json["numberLeft"],
-      empty: json["empty"],
+      mode: MuniSlotMode.values.byName(json["mode"]),
+      calibre: Calibre.values.byName(json["calibre"]),
+      munis: (json["munis"] as List? ?? const [])
+          .map((m) => MuniObject.fromJson(Map<String, dynamic>.from(m)))
+          .toList(),
+      support: json["support"] != null
+          ? SupportObject.fromJson(Map<String, dynamic>.from(json["support"]))
+          : null,
+      supportCount: json["supportCount"] as int? ?? 0,
+      linkedWeaponSlotId: json["linkedWeaponSlotId"] as int?,
+      magazineIndex: json["magazineIndex"] as int?,
     );
   }
+}
+
+/// Pour les anciennes fiches : retrouve un calibre plausible à partir
+/// d'un [MuniObject] migré (le calibre n'était pas stocké au niveau du slot).
+/// On prend le premier calibre de la MuniCateg qui contient cette muni.
+Calibre _legacyDeduceCalibre(MuniObject m) {
+  for (final cat in MuniCategList().allMuniCateg) {
+    if (cat.munis.any((mu) => mu.id == m.id)) {
+      return cat.included.isNotEmpty ? cat.included.first : Calibre.empty;
+    }
+  }
+  return Calibre.empty;
 }
 
 class WeaponSlot {
@@ -268,7 +468,7 @@ class WeaponSlot {
       kit: null,
       empty: true,
     );
-  } 
+  }
 
   // --------------------
   // copyWith

@@ -25,7 +25,7 @@ class _DoorTransitionPageState extends State<DoorTransitionPage> {
   }
 
   Future<void> _playGif() async {
-    final data = await rootBundle.load('assets/backgrounds/OpenDoorAlpha.gif');
+    final data = await rootBundle.load('assets/backgrounds/OpenDoorV6.gif');
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
 
     for (int i = 0; i < codec.frameCount; i++) {

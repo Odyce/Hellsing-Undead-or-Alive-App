@@ -346,6 +346,222 @@ class MissionRepository {
       'reportPaths': FieldValue.arrayUnion([reportUrl]),
     });
   }
+
+  // ─── Suppression / retrait avec rollback ──────────────────────────────────
+
+  /// Calcule l'aperçu des conséquences d'un retrait de mission pour un agent.
+  /// Retourne `null` si l'agent est introuvable.
+  Future<AgentRollbackPreview?> previewAgentRollback({
+    required String ownerUid,
+    required String agentDocId,
+    required int missionId,
+  }) async {
+    final agentDoc = _firestore
+        .collection('users')
+        .doc(ownerUid)
+        .collection('agents')
+        .doc(agentDocId);
+
+    final snap = await agentDoc.get();
+    if (!snap.exists) return null;
+    final agent = Agent.fromMap(snap.data()!);
+
+    return computeRollbackPreview(
+      ownerUid: ownerUid,
+      agentDocId: agentDocId,
+      agent: agent,
+      removedMissionId: missionId,
+    );
+  }
+
+  /// Aperçu groupé pour tous les agents d'une mission.
+  Future<List<AgentRollbackPreview>> previewMissionDeletion(
+      int missionId) async {
+    final docId = await _findMissionDocId(missionId);
+    if (docId == null) return const [];
+    final raw = (await _missionsRef.doc(docId).get()).data();
+    if (raw == null) return const [];
+    final mission = Mission.fromMap(raw);
+    final previews = <AgentRollbackPreview>[];
+    for (final ma in mission.agentInvolved ?? const <MissionAgent>[]) {
+      if (ma.ownerUid.isEmpty || ma.agentDocId.isEmpty) continue;
+      final preview = await previewAgentRollback(
+        ownerUid: ma.ownerUid,
+        agentDocId: ma.agentDocId,
+        missionId: missionId,
+      );
+      if (preview != null) previews.add(preview);
+    }
+    return previews;
+  }
+
+  /// Applique le rollback sur un document agent et écrit le résultat.
+  Future<RollbackResult?> _applyAndWriteRollback({
+    required String ownerUid,
+    required String agentDocId,
+    required int missionId,
+  }) async {
+    final agentDoc = _firestore
+        .collection('users')
+        .doc(ownerUid)
+        .collection('agents')
+        .doc(agentDocId);
+
+    final snap = await agentDoc.get();
+    if (!snap.exists) return null;
+    final agent = Agent.fromMap(snap.data()!);
+
+    final result = applyRollback(
+      agent: agent,
+      removedMissionId: missionId,
+    );
+    final updated = result.updatedAgent;
+
+    final payload = <String, dynamic>{
+      'level': updated.level,
+      'maxPools': updated.maxPools,
+      'pools': updated.pools,
+      'attributes': updated.attributes,
+      'skills': updated.skills.map((s) => s.toMap()).toList(),
+      'classBonuses': updated.classBonuses,
+      'secondClassBonuses': updated.secondClassBonuses,
+      'pc': updated.pc,
+      'powerScore': updated.powerScore,
+      'missions': updated.missions.map((m) => m.toMap()).toList(),
+      'levelUpHistory':
+          updated.levelUpHistory.map((r) => r.toMap()).toList(),
+    };
+    payload['secondClass'] = updated.secondClass?.toMap();
+
+    await agentDoc.update(payload);
+    return result;
+  }
+
+  /// Notifie l'admin/owner si certains niveaux n'ont pas pu être annulés.
+  Future<void> _notifyOrphanedRollback({
+    required String ownerUid,
+    required String agentName,
+    required List<int> orphanedLevels,
+    required String missionTitle,
+  }) async {
+    if (orphanedLevels.isEmpty) return;
+    final levelsLabel = orphanedLevels.join(', ');
+    await NotificationRepository().saveNotification(
+      ownerUid,
+      title: 'Niveau(x) non annulé(s) — $agentName',
+      body:
+          'Suite au retrait de "$missionTitle", le(s) niveau(x) $levelsLabel '
+          "n'a pas pu être annulé (passage antérieur sans historique). "
+          "L'agent reste à son niveau actuel.",
+      data: {
+        'type': 'orphan_rollback',
+        'agentName': agentName,
+        'missionTitle': missionTitle,
+        'orphanedLevels': orphanedLevels,
+      },
+    );
+  }
+
+  /// Retire un agent d'une mission existante :
+  /// - retire le MissionRecord de l'agent
+  /// - retire l'agent de mission.agentInvolved
+  /// - applique le rollback éventuel des niveaux désormais inaccessibles
+  ///
+  /// Retourne le résultat du rollback (peut être `null` si agent introuvable).
+  Future<RollbackResult?> removeAgentFromMission({
+    required String ownerUid,
+    required String agentDocId,
+    required int missionId,
+  }) async {
+    // 1. Rollback côté agent (le applyRollback retire aussi le MissionRecord)
+    final result = await _applyAndWriteRollback(
+      ownerUid: ownerUid,
+      agentDocId: agentDocId,
+      missionId: missionId,
+    );
+
+    // 2. Retire l'agent de la mission elle-même
+    final docId = await _findMissionDocId(missionId);
+    if (docId != null) {
+      final raw = (await _missionsRef.doc(docId).get()).data();
+      if (raw != null) {
+        final mission = Mission.fromMap(raw);
+        final newInvolved = (mission.agentInvolved ?? const <MissionAgent>[])
+            .where((ma) =>
+                ma.ownerUid != ownerUid || ma.agentDocId != agentDocId)
+            .toList();
+        await _missionsRef.doc(docId).update({
+          'agentInvolved': newInvolved.map((ma) => ma.toMap()).toList(),
+        });
+
+        // Notification orphan si besoin
+        if (result != null && result.orphanedLevels.isNotEmpty) {
+          await _notifyOrphanedRollback(
+            ownerUid: ownerUid,
+            agentName: result.updatedAgent.name,
+            orphanedLevels: result.orphanedLevels,
+            missionTitle: mission.title,
+          );
+        }
+      }
+    }
+
+    StatsRepository.scheduleRebuild();
+    return result;
+  }
+
+  /// Supprime définitivement une mission et propage la suppression :
+  /// - retrait du MissionRecord chez tous les agents impliqués (avec rollback)
+  /// - retrait du MissionRecord chez tous les PNJs et monstres
+  /// - suppression du document mission
+  ///
+  /// Retourne la liste des résultats de rollback par agent.
+  Future<List<RollbackResult>> deleteMission(int missionId) async {
+    final docId = await _findMissionDocId(missionId);
+    if (docId == null) return const [];
+
+    final raw = (await _missionsRef.doc(docId).get()).data();
+    if (raw == null) return const [];
+    final mission = Mission.fromMap(raw);
+
+    // 1. Rollback de chaque agent impliqué
+    final results = <RollbackResult>[];
+    for (final ma in mission.agentInvolved ?? const <MissionAgent>[]) {
+      if (ma.ownerUid.isEmpty || ma.agentDocId.isEmpty) continue;
+      final result = await _applyAndWriteRollback(
+        ownerUid: ma.ownerUid,
+        agentDocId: ma.agentDocId,
+        missionId: missionId,
+      );
+      if (result != null) {
+        results.add(result);
+        if (result.orphanedLevels.isNotEmpty) {
+          await _notifyOrphanedRollback(
+            ownerUid: ma.ownerUid,
+            agentName: result.updatedAgent.name,
+            orphanedLevels: result.orphanedLevels,
+            missionTitle: mission.title,
+          );
+        }
+      }
+    }
+
+    // 2. Retrait des MissionRecord côté PNJs et monstres
+    final futures = <Future<void>>[];
+    for (final pnj in mission.pnjInvolved ?? const <PNJ>[]) {
+      futures.add(_removeEntityMissionRecord(_npcsRef, pnj.id, missionId));
+    }
+    for (final m in mission.monsterInvolved ?? const <Monster>[]) {
+      futures.add(_removeEntityMissionRecord(_bestiaryRef, m.id, missionId));
+    }
+    await Future.wait(futures);
+
+    // 3. Suppression du document mission
+    await _missionsRef.doc(docId).delete();
+
+    StatsRepository.scheduleRebuild();
+    return results;
+  }
 }
 
 // ─── PNJRepository ────────────────────────────────────────────────────────────
@@ -822,5 +1038,57 @@ class ResDevRepository {
         .doc('archives')
         .collection('resdev')
         .add(weapon.toMap());
+  }
+}
+
+// ─── JournalRepository ────────────────────────────────────────────────────────
+
+class JournalRepository {
+  final FirebaseFirestore _firestore;
+
+  JournalRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> get _journalRef =>
+      _firestore.collection('common').doc('archives').collection('journal');
+
+  Future<int> _getNextId() async {
+    final snapshot = await _journalRef.get();
+    int maxId = -1;
+    for (final doc in snapshot.docs) {
+      final id = doc.data()['id'];
+      if (id is int && id > maxId) maxId = id;
+    }
+    return maxId + 1;
+  }
+
+  /// Crée une entrée de Journal dans common/archives/journal
+  Future<void> createEntry({
+    required String imageUrl,
+    required DateTime date,
+    required int pageNumber,
+  }) async {
+    final nextId = await _getNextId();
+    final entry = JournalEntry(
+      id: nextId,
+      imageUrl: imageUrl,
+      // Normalisé à minuit pour que les comparaisons par jour soient stables.
+      date: DateTime(date.year, date.month, date.day),
+      pageNumber: pageNumber,
+      createdAt: DateTime.now(),
+    );
+    await _journalRef.add(entry.toMap());
+  }
+
+  /// Récupère toutes les entrées du Journal.
+  Future<List<JournalEntry>> fetchAll() async {
+    final snapshot = await _journalRef.get();
+    return snapshot.docs.map((d) => JournalEntry.fromMap(d.data())).toList();
+  }
+
+  Future<void> deleteEntry(int entryId) async {
+    final snap = await _journalRef.where('id', isEqualTo: entryId).limit(1).get();
+    if (snap.docs.isEmpty) return;
+    await snap.docs.first.reference.delete();
   }
 }

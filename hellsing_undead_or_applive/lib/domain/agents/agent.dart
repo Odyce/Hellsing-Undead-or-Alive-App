@@ -8,6 +8,11 @@ class Agent {
   final String note;
   final String? profilPicturePath;
 
+  /// Anciennes photos de profil (URLs Cloudinary).
+  /// Alimentée à chaque changement de [profilPicturePath] ; permet de
+  /// restaurer ou supprimer définitivement une ancienne photo.
+  final List<String> profilPictureHistory;
+
   final List<int> attributes; // Dans l'ordre Physique, puis Mental, puis Relationnel
   final List<int> pools; // Dans l'ordre PV, puis PE, puis PM
   final List<int> maxPools; // Dans l'ordre PV max, puis PE max, puis PM max
@@ -24,6 +29,7 @@ class Agent {
   final List<BankSlot> bankSlots;
   final List<MuniSlot> muniSlots;
   final List<WeaponSlot> weaponSlots;
+  final Reserve reserve;
 
   final int money;
   final List<MissionRecord> missions;
@@ -34,6 +40,10 @@ class Agent {
 
   final bool validated;
 
+  /// Historique des passages de niveau, utilisé pour annuler un passage si
+  /// une mission est retirée et que l'agent retombe en dessous du seuil.
+  final List<LevelUpRecord> levelUpHistory;
+
   const Agent({
     required this.id,
     required this.name,
@@ -41,6 +51,7 @@ class Agent {
     required this.state,
     required this.note,
     this.profilPicturePath,
+    this.profilPictureHistory = const [],
     required this.attributes,
     required this.pools,
     required this.maxPools,
@@ -55,12 +66,14 @@ class Agent {
     required this.bankSlots,
     required this.muniSlots,
     required this.weaponSlots,
+    this.reserve = const Reserve(),
     required this.money,
     required this.missions,
     required this.level,
     required this.pc,
     required this.contacts,
     this.validated = false,
+    this.levelUpHistory = const [],
   });
 
   // --------------------
@@ -73,6 +86,7 @@ class Agent {
     String? state,
     String? note,
     String? profilPicturePath,
+    List<String>? profilPictureHistory,
     List<int>? attributes,
     List<int>? pools,
     List<int>? maxPools,
@@ -87,12 +101,14 @@ class Agent {
     List<BankSlot>? bankSlots,
     List<MuniSlot>? muniSlots,
     List<WeaponSlot>? weaponSlots,
+    Reserve? reserve,
     int? money,
     List<MissionRecord>? missions,
     int? level,
     int? pc,
     List<Contact>? contacts,
     bool? validated,
+    List<LevelUpRecord>? levelUpHistory,
   }) {
     return Agent(
       id: id ?? this.id,
@@ -101,6 +117,8 @@ class Agent {
       state: state ?? this.state,
       note: note ?? this.note,
       profilPicturePath: profilPicturePath ?? this.profilPicturePath,
+      profilPictureHistory:
+          profilPictureHistory ?? this.profilPictureHistory,
       attributes: attributes ?? this.attributes,
       pools: pools ?? this.pools,
       maxPools: maxPools ?? this.maxPools,
@@ -115,12 +133,14 @@ class Agent {
       bankSlots: bankSlots ?? this.bankSlots,
       muniSlots: muniSlots ?? this.muniSlots,
       weaponSlots: weaponSlots ?? this.weaponSlots,
+      reserve: reserve ?? this.reserve,
       money: money ?? this.money,
       missions: missions ?? this.missions,
       level: level ?? this.level,
       pc: pc ?? this.pc,
       contacts: contacts ?? this.contacts,
       validated: validated ?? this.validated,
+      levelUpHistory: levelUpHistory ?? this.levelUpHistory,
     );
   }
 
@@ -135,6 +155,7 @@ class Agent {
       "state": state,
       "note": note,
       "profilPicturePath": profilPicturePath,
+      "profilPictureHistory": profilPictureHistory,
 
       "attributes": attributes,
       "pools": pools,
@@ -152,6 +173,7 @@ class Agent {
       "bankSlots": bankSlots.map((b) => b.toMap()).toList(),
       "muniSlots": muniSlots.map((m) => m.toMap()).toList(),
       "weaponSlots": weaponSlots.map((w) => w.toMap()).toList(),
+      "reserve": reserve.toMap(),
 
       "money": money,
       "missions": missions.map((m) => m.toMap()).toList(),
@@ -160,6 +182,7 @@ class Agent {
       "pc": pc,
       "contacts": contacts.map((c) => c.toMap()).toList(),
       "validated": validated,
+      "levelUpHistory": levelUpHistory.map((r) => r.toMap()).toList(),
     };
   }
 
@@ -171,6 +194,9 @@ class Agent {
       state: map["state"],
       note: map["note"],
       profilPicturePath: map["profilPicturePath"],
+      profilPictureHistory: map["profilPictureHistory"] != null
+          ? List<String>.from(map["profilPictureHistory"])
+          : const [],
 
       attributes: List<int>.from(map["attributes"]),
       pools: List<int>.from(map["pools"]),
@@ -194,14 +220,19 @@ class Agent {
           .map((b) => BagSlot.fromMap(b))
           .toList(),
       bankSlots: (map["bankSlots"] as List)
-          .map((b) => BankSlot.fromMap(b))
+          .map((b) => BankSlot.fromMap(Map<String, dynamic>.from(b)))
           .toList(),
       muniSlots: (map["muniSlots"] as List)
-          .map((m) => MuniSlot.fromMap(m))
+          .map((m) => MuniSlot.fromMap(Map<String, dynamic>.from(m)))
           .toList(),
       weaponSlots: (map["weaponSlots"] as List)
           .map((w) => WeaponSlot.fromMap(w))
           .toList(),
+      reserve: _migrateReserve(
+        rawReserve: map["reserve"],
+        legacyBankSlots: map["bankSlots"] as List,
+        useJson: false,
+      ),
 
       money: map["money"],
       missions: (map["missions"] as List)
@@ -214,6 +245,10 @@ class Agent {
           .map((c) => Contact.fromMap(c))
           .toList(),
       validated: map["validated"] ?? false,
+      levelUpHistory: (map["levelUpHistory"] as List?)
+              ?.map((e) => LevelUpRecord.fromMap(Map<String, dynamic>.from(e)))
+              .toList() ??
+          const [],
     );
   }
 
@@ -228,6 +263,7 @@ class Agent {
       "state": state,
       "note": note,
       "profilPicturePath": profilPicturePath,
+      "profilPictureHistory": profilPictureHistory,
 
       "attributes": attributes,
       "pools": pools,
@@ -245,6 +281,7 @@ class Agent {
       "bankSlots": bankSlots.map((b) => b.toJson()).toList(),
       "muniSlots": muniSlots.map((m) => m.toJson()).toList(),
       "weaponSlots": weaponSlots.map((w) => w.toJson()).toList(),
+      "reserve": reserve.toJson(),
 
       "money": money,
       "missions": missions.map((m) => m.toJson()).toList(),
@@ -253,6 +290,7 @@ class Agent {
       "pc": pc,
       "contacts": contacts.map((c) => c.toJson()).toList(),
       "validated": validated,
+      "levelUpHistory": levelUpHistory.map((r) => r.toJson()).toList(),
     };
   }
 
@@ -264,6 +302,9 @@ class Agent {
       state: json["state"],
       note: json["note"],
       profilPicturePath: json["profilPicturePath"],
+      profilPictureHistory: json["profilPictureHistory"] != null
+          ? List<String>.from(json["profilPictureHistory"])
+          : const [],
 
       attributes: List<int>.from(json["attributes"]),
       pools: List<int>.from(json["pools"]),
@@ -287,14 +328,19 @@ class Agent {
           .map((b) => BagSlot.fromJson(b))
           .toList(),
       bankSlots: (json["bankSlots"] as List)
-          .map((b) => BankSlot.fromJson(b))
+          .map((b) => BankSlot.fromJson(Map<String, dynamic>.from(b)))
           .toList(),
       muniSlots: (json["muniSlots"] as List)
-          .map((m) => MuniSlot.fromJson(m))
+          .map((m) => MuniSlot.fromJson(Map<String, dynamic>.from(m)))
           .toList(),
       weaponSlots: (json["weaponSlots"] as List)
           .map((w) => WeaponSlot.fromJson(w))
           .toList(),
+      reserve: _migrateReserve(
+        rawReserve: json["reserve"],
+        legacyBankSlots: json["bankSlots"] as List,
+        useJson: true,
+      ),
 
       money: json["money"],
       missions: (json["missions"] as List)
@@ -307,6 +353,54 @@ class Agent {
           .map((c) => Contact.fromJson(c))
           .toList(),
       validated: json["validated"] ?? false,
+      levelUpHistory: (json["levelUpHistory"] as List?)
+              ?.map((e) =>
+                  LevelUpRecord.fromJson(Map<String, dynamic>.from(e)))
+              .toList() ??
+          const [],
     );
+  }
+
+  /// Construit la [Reserve] depuis le map d'agent.
+  ///
+  /// Cas migration : un agent ancien format n'a pas de champ `reserve`,
+  /// mais peut avoir des `bankSlots[i].muni` non vides. On extrait ces munis
+  /// (et supports munis) vers la réserve construite ici.
+  static Reserve _migrateReserve({
+    required dynamic rawReserve,
+    required List legacyBankSlots,
+    required bool useJson,
+  }) {
+    Reserve reserve = rawReserve != null
+        ? (useJson
+            ? Reserve.fromJson(Map<String, dynamic>.from(rawReserve))
+            : Reserve.fromMap(Map<String, dynamic>.from(rawReserve)))
+        : Reserve.empty();
+
+    for (final raw in legacyBankSlots) {
+      final slotMap = Map<String, dynamic>.from(raw as Map);
+      final legacyMuni = slotMap['muni'];
+      if (legacyMuni == null) continue;
+      final muniSlotMap = Map<String, dynamic>.from(legacyMuni as Map);
+      final qty = (muniSlotMap['numberLeft'] as int?) ?? 1;
+      if (muniSlotMap['muni'] != null) {
+        final muni = useJson
+            ? MuniObject.fromJson(
+                Map<String, dynamic>.from(muniSlotMap['muni']))
+            : MuniObject.fromMap(
+                Map<String, dynamic>.from(muniSlotMap['muni']));
+        reserve = reserve.addMunis(List.filled(qty, muni));
+      } else if (muniSlotMap['supp'] != null) {
+        final supp = useJson
+            ? SupportObject.fromJson(
+                Map<String, dynamic>.from(muniSlotMap['supp']))
+            : SupportObject.fromMap(
+                Map<String, dynamic>.from(muniSlotMap['supp']));
+        for (int i = 0; i < qty; i++) {
+          reserve = reserve.addSupport(supp);
+        }
+      }
+    }
+    return reserve;
   }
 }

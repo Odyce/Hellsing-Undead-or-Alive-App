@@ -78,6 +78,87 @@ class MissionRecord {
   }
 }
 
+/// Trace des modifications appliquées à un agent lors d'un passage de niveau.
+/// Sert à annuler le passage si une mission est retirée a posteriori.
+class LevelUpRecord {
+  /// Niveau atteint par ce passage (le nouveau niveau, pas l'ancien).
+  final int level;
+
+  /// Δ [PV, PE, PM] appliqué sur maxPools.
+  final List<int> deltaMaxPools;
+
+  /// Δ [PV, PE, PM] appliqué sur les pools courants au moment du passage.
+  final List<int> deltaPools;
+
+  /// Δ [Physique, Mental, Relationnel].
+  final List<int> deltaAttributes;
+
+  /// IDs des compétences ajoutées (incl. freeSkills de la classe secondaire au niv. 5).
+  final List<int> addedSkillIds;
+
+  /// Δ par index sur classBonuses.
+  final List<int> deltaClassBonuses;
+
+  /// Δ par index sur secondClassBonuses (vide si pas de classe secondaire).
+  final List<int> deltaSecondClassBonuses;
+
+  /// Δ sur les Points de Contacts.
+  final int deltaPc;
+
+  /// Δ sur le powerScore.
+  final int deltaPowerScore;
+
+  /// True si ce passage a introduit la classe secondaire (niv. 5).
+  final bool addedSecondClass;
+
+  const LevelUpRecord({
+    required this.level,
+    required this.deltaMaxPools,
+    required this.deltaPools,
+    required this.deltaAttributes,
+    required this.addedSkillIds,
+    required this.deltaClassBonuses,
+    required this.deltaSecondClassBonuses,
+    required this.deltaPc,
+    required this.deltaPowerScore,
+    required this.addedSecondClass,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'level': level,
+        'deltaMaxPools': deltaMaxPools,
+        'deltaPools': deltaPools,
+        'deltaAttributes': deltaAttributes,
+        'addedSkillIds': addedSkillIds,
+        'deltaClassBonuses': deltaClassBonuses,
+        'deltaSecondClassBonuses': deltaSecondClassBonuses,
+        'deltaPc': deltaPc,
+        'deltaPowerScore': deltaPowerScore,
+        'addedSecondClass': addedSecondClass,
+      };
+
+  factory LevelUpRecord.fromMap(Map<String, dynamic> map) => LevelUpRecord(
+        level: map['level'] as int,
+        deltaMaxPools: List<int>.from(map['deltaMaxPools'] ?? const [0, 0, 0]),
+        deltaPools: List<int>.from(map['deltaPools'] ?? const [0, 0, 0]),
+        deltaAttributes:
+            List<int>.from(map['deltaAttributes'] ?? const [0, 0, 0]),
+        addedSkillIds: List<int>.from(map['addedSkillIds'] ?? const []),
+        deltaClassBonuses:
+            List<int>.from(map['deltaClassBonuses'] ?? const []),
+        deltaSecondClassBonuses:
+            List<int>.from(map['deltaSecondClassBonuses'] ?? const []),
+        deltaPc: map['deltaPc'] as int? ?? 0,
+        deltaPowerScore: map['deltaPowerScore'] as int? ?? 0,
+        addedSecondClass: map['addedSecondClass'] as bool? ?? false,
+      );
+
+  Map<String, dynamic> toJson() => toMap();
+
+  factory LevelUpRecord.fromJson(Map<String, dynamic> json) =>
+      LevelUpRecord.fromMap(json);
+}
+
 class Contact {
   final String id;
   final String name;

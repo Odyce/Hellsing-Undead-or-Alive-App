@@ -40,6 +40,93 @@ class _StatBox extends StatelessWidget {
   }
 }
 
+/////////////////////////////////
+// Compteur générique avec +/- //
+/////////////////////////////////
+class _CounterRow extends StatelessWidget {
+  final Widget labelChild;
+  final int value;
+  final VoidCallback? onDecrement;
+  final VoidCallback? onIncrement;
+
+  const _CounterRow({
+    required this.labelChild,
+    required this.value,
+    required this.onDecrement,
+    required this.onIncrement,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: labelChild),
+          IconButton(
+            onPressed: onDecrement,
+            icon: const Icon(Icons.remove_circle_outline),
+          ),
+          SizedBox(
+            width: 40,
+            child: Text(
+              '$value',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          IconButton(
+            onPressed: onIncrement,
+            icon: const Icon(Icons.add_circle_outline),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/////////////////////////////////////////////////
+// Libellé d'une compétence avec badge "Limité" //
+/////////////////////////////////////////////////
+class _SkillItemLabel extends StatelessWidget {
+  final Skill skill;
+
+  const _SkillItemLabel({required this.skill});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            skill.name,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (skill.limited) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade700,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Limité',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 ////////////////////////////////////
 // Classe pour gérer les contacts //
 ////////////////////////////////////
@@ -72,15 +159,15 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
   final _noteController = TextEditingController();
   
   File? _selectedImage;
-  final _physiqueCtrl = TextEditingController();
-  final _mentalCtrl = TextEditingController();
-  final _relationnelCtrl = TextEditingController();
+  int _physique = 50;
+  int _mental = 50;
+  int _relationnel = 50;
 
   int _pv = 0;
   int _pe = 0;
   int _pm = 0;
   int _pc = 0;
-  int _remainingPoints = 180;
+  int _remainingPoints = 30;
 
   final RaceList _raceList = RaceList();
   int _selectedRaceIndex = 0; // 0 = Humain par défaut
@@ -94,7 +181,6 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
 
   AgentClass? _selectedClass;
   List<int> _classBonuses = [0, 0, 0];
-  final List<TextEditingController> _classBonusControllers = List.generate(3, (_) => TextEditingController());
 
   List<AgentClass> get _availableClasses => _selectedRace.availableClasses;
 
@@ -219,9 +305,9 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           note: _noteController.text,
           selectedImage: _selectedImage,
           attributes: [
-            _parseInt(_physiqueCtrl),
-            _parseInt(_mentalCtrl),
-            _parseInt(_relationnelCtrl),
+            _physique,
+            _mental,
+            _relationnel,
           ],
           pools: [_pv, _pe, _pm],
           maxPools: [_pv, _pe, _pm],
@@ -267,24 +353,53 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
 
   int _ceilDiv10(int value) => (value / 10).ceil();
 
-  void _recomputePools() {
-    final physique = _parseInt(_physiqueCtrl);
-    final mental = _parseInt(_mentalCtrl);
-    final relationnel = _parseInt(_relationnelCtrl);
+  int get _attributesTotal => _physique + _mental + _relationnel;
 
+  bool _canIncrementAttribute(int currentValue) =>
+      currentValue < 80 && _attributesTotal < 180;
+
+  bool _canDecrementAttribute(int currentValue) => currentValue > 20;
+
+  void _incrementAttribute(int index) {
+    if (index == 0 && _canIncrementAttribute(_physique)) {
+      _physique += 5;
+    } else if (index == 1 && _canIncrementAttribute(_mental)) {
+      _mental += 5;
+    } else if (index == 2 && _canIncrementAttribute(_relationnel)) {
+      _relationnel += 5;
+    } else {
+      return;
+    }
+    _recomputePools();
+  }
+
+  void _decrementAttribute(int index) {
+    if (index == 0 && _canDecrementAttribute(_physique)) {
+      _physique -= 5;
+    } else if (index == 1 && _canDecrementAttribute(_mental)) {
+      _mental -= 5;
+    } else if (index == 2 && _canDecrementAttribute(_relationnel)) {
+      _relationnel -= 5;
+    } else {
+      return;
+    }
+    _recomputePools();
+  }
+
+  void _recomputePools() {
     final maxAttr = [
-      physique,
-      mental,
-      relationnel,
+      _physique,
+      _mental,
+      _relationnel,
     ].reduce((a, b) => a > b ? a : b);
 
     final isVampire = _selectedRace.name.toLowerCase() == 'vampire';
 
     setState(() {
       _pv = isVampire ? 13 : _ceilDiv10(maxAttr) + 2;
-      _pe = _ceilDiv10(physique);
-      _pm = _ceilDiv10(mental);
-      _pc = _ceilDiv10(relationnel);
+      _pe = _ceilDiv10(_physique);
+      _pm = _ceilDiv10(_mental);
+      _pc = _ceilDiv10(_relationnel);
 
       if (_selectedClass?.skillNumberCases == SkillNumberCases.fifth) {
         _pm *= 2;
@@ -296,11 +411,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
   }
 
   void _validateAttributes() {
-    final physique = _parseInt(_physiqueCtrl);
-    final mental = _parseInt(_mentalCtrl);
-    final relationnel = _parseInt(_relationnelCtrl);
-
-    final values = [physique, mental, relationnel];
+    final values = [_physique, _mental, _relationnel];
     final total = values.fold(0, (a, b) => a + b);
 
     String? error;
@@ -373,13 +484,29 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
   /////////////////////////
   void _resetClassBonuses() {
     _classBonuses = [0, 0, 0];
-    for (final c in _classBonusControllers) {
-      c.text = '0';
-    }
+  }
+
+  int get _classBonusTotal => _classBonuses.fold(0, (a, b) => a + b);
+
+  bool _canIncrementClassBonus(int index) =>
+      _classBonuses[index] < 6 && _classBonusTotal < 9;
+
+  bool _canDecrementClassBonus(int index) => _classBonuses[index] > 0;
+
+  void _incrementClassBonus(int index) {
+    if (!_canIncrementClassBonus(index)) return;
+    setState(() => _classBonuses[index]++);
+    _validateClassBonuses();
+  }
+
+  void _decrementClassBonus(int index) {
+    if (!_canDecrementClassBonus(index)) return;
+    setState(() => _classBonuses[index]--);
+    _validateClassBonuses();
   }
 
   void _validateClassBonuses() {
-    final total = _classBonuses.reduce((a, b) => a + b);
+    final total = _classBonusTotal;
 
     String? error;
 
@@ -403,26 +530,22 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
   int _computeSkillCount() {
     if (_selectedClass == null) return 0;
 
-    final physique = _parseInt(_physiqueCtrl);
-    final mental = _parseInt(_mentalCtrl);
-    final relationnel = _parseInt(_relationnelCtrl);
-
     int base;
 
     switch (_selectedClass!.skillNumberCases) {
       case SkillNumberCases.first:
       case SkillNumberCases.third:
-        base = physique;
+        base = _physique;
         break;
 
       case SkillNumberCases.second:
       case SkillNumberCases.fourth:
       case SkillNumberCases.fifth:
-        base = mental;
+        base = _mental;
         break;
 
       case SkillNumberCases.sixth:
-        base = relationnel;
+        base = _relationnel;
         break;
     }
 
@@ -576,6 +699,11 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
     _selectedClass = classes.isNotEmpty ? classes.first : null;
 
     _resetClassBonuses();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recomputePools();
+      _validateClassBonuses();
+    });
   }
 
   @override
@@ -656,37 +784,65 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
             label: const Text('Choisir une image'),
           ),
 
-          TextField(
-            controller: _physiqueCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Physique',
-              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
-              helperText: 'Multiples de 5 uniquement, entre 20 et 80',
+          _CounterRow(
+            labelChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Physique',
+                    style: GoogleFonts.cinzelDecorative(fontSize: 15)),
+                Text(
+                  'Pas de 5, entre 20 et 80',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
-            onChanged: (_) => _recomputePools(),
+            value: _physique,
+            onDecrement: _canDecrementAttribute(_physique)
+                ? () => _decrementAttribute(0)
+                : null,
+            onIncrement: _canIncrementAttribute(_physique)
+                ? () => _incrementAttribute(0)
+                : null,
           ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _mentalCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Mental',
-              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
-              helperText: 'Multiples de 5 uniquement, entre 20 et 80',
+          _CounterRow(
+            labelChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Mental',
+                    style: GoogleFonts.cinzelDecorative(fontSize: 15)),
+                Text(
+                  'Pas de 5, entre 20 et 80',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
-            onChanged: (_) => _recomputePools(),
+            value: _mental,
+            onDecrement: _canDecrementAttribute(_mental)
+                ? () => _decrementAttribute(1)
+                : null,
+            onIncrement: _canIncrementAttribute(_mental)
+                ? () => _incrementAttribute(1)
+                : null,
           ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _relationnelCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Relationnel',
-              labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
-              helperText: 'Multiples de 5 uniquement, entre 20 et 80',
+          _CounterRow(
+            labelChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Relationnel',
+                    style: GoogleFonts.cinzelDecorative(fontSize: 15)),
+                Text(
+                  'Pas de 5, entre 20 et 80',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
-            onChanged: (_) => _recomputePools(),
+            value: _relationnel,
+            onDecrement: _canDecrementAttribute(_relationnel)
+                ? () => _decrementAttribute(2)
+                : null,
+            onIncrement: _canIncrementAttribute(_relationnel)
+                ? () => _incrementAttribute(2)
+                : null,
           ),
           const SizedBox(height: 8),
           Text(
@@ -921,21 +1077,15 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           ),
 
           for (int i = 0; i < 3; i++)
-            Row(
-              children: [
-                Expanded(child: Text(_selectedClass!.classBonus[i])),
-                SizedBox(
-                  width: 60,
-                  child: TextField(
-                    controller: _classBonusControllers[i],
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      _classBonuses[i] = int.tryParse(value) ?? 0;
-                      _validateClassBonuses();
-                    },
-                  ),
-                ),
-              ],
+            _CounterRow(
+              labelChild: Text(_selectedClass!.classBonus[i]),
+              value: _classBonuses[i],
+              onDecrement: _canDecrementClassBonus(i)
+                  ? () => _decrementClassBonus(i)
+                  : null,
+              onIncrement: _canIncrementClassBonus(i)
+                  ? () => _incrementClassBonus(i)
+                  : null,
             ),
 
           if (_classBonusError != null)
@@ -967,42 +1117,54 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
                   runSpacing: 12,
                   children: List.generate(
                     _selectedSkills.length,
-                    (index) => SizedBox(
-                      width: itemWidth,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          DropdownButtonFormField<Skill>(
-                            initialValue: (_selectedSkills[index] != null && _selectedClass!.allSkills.contains(_selectedSkills[index])) ? _selectedSkills[index] : null,
-                            items: _selectedClass!.allSkills
-                                .map(
-                                  (skill) => DropdownMenuItem<Skill>(
-                                    value: skill,
-                                    child: Text(skill.name),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedSkills[index] = value;
-                              });
-                              _validateSkills();
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Skill ${index + 1}',
-                            ),
-                          ),
-                          if (_selectedSkills[index] != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                _selectedSkills[index]!.description,
-                                style: const TextStyle(fontSize: 12),
+                    (index) {
+                      final selectedElsewhere = <Skill>{
+                        for (int j = 0; j < _selectedSkills.length; j++)
+                          if (j != index && _selectedSkills[j] != null)
+                            _selectedSkills[j]!,
+                      };
+                      final availableSkills = _selectedClass!.allSkills
+                          .where((s) => !selectedElsewhere.contains(s))
+                          .toList();
+
+                      return SizedBox(
+                        width: itemWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DropdownButtonFormField<Skill>(
+                              isExpanded: true,
+                              initialValue: (_selectedSkills[index] != null && availableSkills.contains(_selectedSkills[index])) ? _selectedSkills[index] : null,
+                              items: availableSkills
+                                  .map(
+                                    (skill) => DropdownMenuItem<Skill>(
+                                      value: skill,
+                                      child: _SkillItemLabel(skill: skill),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedSkills[index] = value;
+                                });
+                                _validateSkills();
+                              },
+                              decoration: InputDecoration(
+                                labelText: 'Skill ${index + 1}',
                               ),
                             ),
-                        ],
-                      ),
-                    ),
+                            if (_selectedSkills[index] != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  _selectedSkills[index]!.description,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 );
               },

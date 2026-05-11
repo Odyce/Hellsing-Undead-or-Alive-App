@@ -2,6 +2,147 @@ import 'package:hellsing_undead_or_applive/domain/models.dart';
 
 enum Stockage { weapon, bag, muni }
 
+/// Réserve de munitions et de supports munis d'un agent.
+///
+/// Apparait dans le coffre comme une section dédiée. Les calibres
+/// [Calibre.herb] et [Calibre.throwable] ne sont pas stockés en réserve.
+/// Les transferts sont bidirectionnels entre la réserve et les MuniSlot.
+class Reserve {
+  final List<MuniObject> munis;
+  final List<ReserveSupportEntry> supports;
+
+  const Reserve({
+    this.munis = const [],
+    this.supports = const [],
+  });
+
+  factory Reserve.empty() => const Reserve();
+
+  Reserve copyWith({
+    List<MuniObject>? munis,
+    List<ReserveSupportEntry>? supports,
+  }) =>
+      Reserve(
+        munis: munis ?? this.munis,
+        supports: supports ?? this.supports,
+      );
+
+  /// Ajoute une munition (sauf calibres herb / throwable, ignorés).
+  Reserve addMuni(MuniObject m) =>
+      copyWith(munis: [...munis, m]);
+
+  /// Ajoute plusieurs munitions d'un coup.
+  Reserve addMunis(Iterable<MuniObject> ms) =>
+      copyWith(munis: [...munis, ...ms]);
+
+  /// Retire la première munition correspondant à l'id donné.
+  Reserve removeMuniById(int muniId) {
+    final idx = munis.indexWhere((m) => m.id == muniId);
+    if (idx == -1) return this;
+    final next = List<MuniObject>.from(munis)..removeAt(idx);
+    return copyWith(munis: next);
+  }
+
+  /// Ajoute une unité du support indiqué (groupe par id).
+  Reserve addSupport(SupportObject s) {
+    final idx = supports.indexWhere((e) => e.support.id == s.id);
+    if (idx == -1) {
+      return copyWith(
+        supports: [...supports, ReserveSupportEntry(support: s, count: 1)],
+      );
+    }
+    final next = List<ReserveSupportEntry>.from(supports);
+    next[idx] = next[idx].copyWith(count: next[idx].count + 1);
+    return copyWith(supports: next);
+  }
+
+  /// Retire une unité du support indiqué. L'entrée disparaît à 0.
+  Reserve removeSupportById(int supportId) {
+    final idx = supports.indexWhere((e) => e.support.id == supportId);
+    if (idx == -1) return this;
+    final next = List<ReserveSupportEntry>.from(supports);
+    final remaining = next[idx].count - 1;
+    if (remaining <= 0) {
+      next.removeAt(idx);
+    } else {
+      next[idx] = next[idx].copyWith(count: remaining);
+    }
+    return copyWith(supports: next);
+  }
+
+  Map<String, dynamic> toMap() => {
+        "munis": munis.map((m) => m.toMap()).toList(),
+        "supports": supports.map((e) => e.toMap()).toList(),
+      };
+
+  factory Reserve.fromMap(Map<String, dynamic> map) => Reserve(
+        munis: (map["munis"] as List? ?? const [])
+            .map((m) => MuniObject.fromMap(Map<String, dynamic>.from(m)))
+            .toList(),
+        supports: (map["supports"] as List? ?? const [])
+            .map((e) =>
+                ReserveSupportEntry.fromMap(Map<String, dynamic>.from(e)))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        "munis": munis.map((m) => m.toJson()).toList(),
+        "supports": supports.map((e) => e.toJson()).toList(),
+      };
+
+  factory Reserve.fromJson(Map<String, dynamic> json) => Reserve(
+        munis: (json["munis"] as List? ?? const [])
+            .map((m) => MuniObject.fromJson(Map<String, dynamic>.from(m)))
+            .toList(),
+        supports: (json["supports"] as List? ?? const [])
+            .map((e) =>
+                ReserveSupportEntry.fromJson(Map<String, dynamic>.from(e)))
+            .toList(),
+      );
+}
+
+/// Une entrée de support dans la réserve : un type [SupportObject]
+/// regroupé avec son nombre d'unités.
+class ReserveSupportEntry {
+  final SupportObject support;
+  final int count;
+
+  const ReserveSupportEntry({
+    required this.support,
+    required this.count,
+  });
+
+  ReserveSupportEntry copyWith({SupportObject? support, int? count}) =>
+      ReserveSupportEntry(
+        support: support ?? this.support,
+        count: count ?? this.count,
+      );
+
+  Map<String, dynamic> toMap() => {
+        "support": support.toMap(),
+        "count": count,
+      };
+
+  factory ReserveSupportEntry.fromMap(Map<String, dynamic> map) =>
+      ReserveSupportEntry(
+        support:
+            SupportObject.fromMap(Map<String, dynamic>.from(map["support"])),
+        count: map["count"] as int,
+      );
+
+  Map<String, dynamic> toJson() => {
+        "support": support.toJson(),
+        "count": count,
+      };
+
+  factory ReserveSupportEntry.fromJson(Map<String, dynamic> json) =>
+      ReserveSupportEntry(
+        support:
+            SupportObject.fromJson(Map<String, dynamic>.from(json["support"])),
+        count: json["count"] as int,
+      );
+}
+
 class MuniCateg {
   final int id;
   final String name;

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
+import 'package:hellsing_undead_or_applive/pages/agentlist/agent_shop.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 import 'package:http/http.dart';
@@ -31,23 +32,7 @@ String _formatSize(double size) =>
     size % 1 == 0 ? size.toInt().toString() : size.toString();
 
 
-/////////////////////////////////////////////////////////////////////
-// État UI d'un emplacement de munitions                            //
-/////////////////////////////////////////////////////////////////////
-class _MuniSlotData {
-  final MuniObject muni;
-  final int quantity; // 1 ou 6
-  final bool wasFree;
-
-  _MuniSlotData({
-    required this.muni,
-    required this.quantity,
-    required this.wasFree,
-  });
-
-  int get refundAmount =>
-      wasFree ? 0 : (quantity == 1 ? muni.price : muni.priceFor6);
-}
+// (Plus de _MuniSlotData : on stocke directement des MuniSlot du domaine.)
 
 
 /////////////////////////////////////////////////////////////////////
@@ -566,9 +551,10 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
   Weapon? _selectedStartingWeapon;
   late int _remainingMoney;
 
-  final List<WeaponSlot>    _purchasedWeaponSlots = [];
-  final List<_MuniSlotData> _filledMuniSlots      = [];
-  final List<BagSlot>       _purchasedBagSlots    = [];
+  final List<WeaponSlot> _purchasedWeaponSlots = [];
+  final List<MuniSlot>   _purchasedMuniSlots   = []; // slots non-vides
+  final List<BagSlot>    _purchasedBagSlots    = [];
+  Reserve                _localReserve         = const Reserve();
 
   bool _loading = false;
   String? _error;
@@ -605,10 +591,10 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
   int get _cartouchiereCount =>
       _purchasedBagSlots.where((s) => s.support?.id == 16).length;
 
-  int get _totalMuniSlots =>
-      widget.agentClass.muniSlotNumber + _cartouchiereCount;
-
-  int get _freeMuniSlots => _totalMuniSlots - _filledMuniSlots.length;
+  int get _totalMuniSlots {
+    final base = widget.agentClass.muniSlotNumber + _cartouchiereCount;
+    return base.clamp(0, 6);
+  }
 
   // ── Armes ─────────────────────────────────────────────────────────────────
   List<WeaponSlot> _getStartingWeaponSlots() {
@@ -681,35 +667,173 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
     });
   }
 
-  // Retire les munitions dont l'arme associée n'existe plus
+  // Retire les munis des slots dont l'arme associée n'existe plus.
+  // Les munis encore valides (calibre standard) sont déplacées en réserve ;
+  // les calibres herb/throwable sont perdues (jamais à la création de toute façon).
   void _cleanOrphanedMuniSlots() {
-    final remaining = _ownedCalibres;
-    for (int i = _filledMuniSlots.length - 1; i >= 0; i--) {
-      if (!_muniStillValid(_filledMuniSlots[i].muni, remaining)) {
-        _remainingMoney += _filledMuniSlots[i].refundAmount;
-        _filledMuniSlots.removeAt(i);
+    final calibres = _ownedCalibres;
+    for (int i = _purchasedMuniSlots.length - 1; i >= 0; i--) {
+      final s = _purchasedMuniSlots[i];
+      if (s.mode != MuniSlotMode.munition) continue;
+      final stillValid = MuniCategList().allMuniCateg.any((cat) =>
+          cat.included.contains(s.calibre) &&
+          cat.included.any((c) => calibres.contains(c)));
+      if (!stillValid) {
+        if (s.calibre != Calibre.herb && s.calibre != Calibre.throwable) {
+          _localReserve = _localReserve.addMunis(s.munis);
+        }
+        _purchasedMuniSlots.removeAt(i);
       }
     }
   }
 
-  bool _muniStillValid(MuniObject muni, Set<Calibre> calibres) =>
-      MuniCategList().allMuniCateg.any((cat) =>
-          cat.munis.any((m) => m.id == muni.id) &&
-          cat.included.any((c) => calibres.contains(c)));
-
-  // ── Achat / retrait : Munitions ───────────────────────────────────────────
+  // ── Achat : Munitions (logique Q5) ────────────────────────────────────────
   void _onBuyMuni(MuniObject muni, int quantity, bool wasFree) {
     final cost = wasFree ? 0 : (quantity == 1 ? muni.price : muni.priceFor6);
     setState(() {
       _remainingMoney -= cost;
-      _filledMuniSlots.add(_MuniSlotData(muni: muni, quantity: quantity, wasFree: wasFree));
+      var remaining = quantity;
+      // 1er slot existant compatible (calibre/categ ok, non plein)
+      final compatIdx = _firstNonEmptyCompatibleForMuni(muni);
+      if (compatIdx != null) {
+        final slot = _purchasedMuniSlots[compatIdx];
+        final cap = _slotFixedCapacity(slot);
+        final freeSpace = cap - slot.used;
+        final n = remaining < freeSpace ? remaining : freeSpace;
+        _purchasedMuniSlots[compatIdx] = MuniSlot.munition(
+          id: slot.id,
+          calibre: slot.calibre,
+          munis: [...slot.munis, ...List.filled(n, muni)],
+        );
+        remaining -= n;
+        if (remaining > 0) {
+          _localReserve = _localReserve.addMunis(List.filled(remaining, muni));
+          remaining = 0;
+        }
+        return;
+      }
+      // Pas de compat : tenter d'ouvrir un slot vide si quota dispo
+      if (_purchasedMuniSlots.length < _totalMuniSlots) {
+        final calibre = _calibreForMuni(muni);
+        final cap = (calibre == Calibre.herb || calibre == Calibre.throwable)
+            ? 6
+            : 8;
+        final n = remaining < cap ? remaining : cap;
+        _purchasedMuniSlots.add(MuniSlot.munition(
+          id: _purchasedMuniSlots.length,
+          calibre: calibre,
+          munis: List.filled(n, muni),
+        ));
+        remaining -= n;
+      }
+      if (remaining > 0) {
+        _localReserve = _localReserve.addMunis(List.filled(remaining, muni));
+      }
     });
   }
 
-  void _removeMuniSlot(int index) {
+  void _onBuySupportMuni(SupportObject support) {
     setState(() {
-      _remainingMoney += _filledMuniSlots[index].refundAmount;
-      _filledMuniSlots.removeAt(index);
+      _remainingMoney -= support.price;
+      // 1er slot support du même type non plein
+      for (int i = 0; i < _purchasedMuniSlots.length; i++) {
+        final s = _purchasedMuniSlots[i];
+        if (s.mode == MuniSlotMode.support &&
+            s.support?.id == support.id &&
+            s.supportCount < 6) {
+          _purchasedMuniSlots[i] = MuniSlot.supportSlot(
+            id: s.id, support: support, count: s.supportCount + 1,
+          );
+          return;
+        }
+      }
+      // Slot vide disponible (quota)
+      if (_purchasedMuniSlots.length < _totalMuniSlots) {
+        _purchasedMuniSlots.add(MuniSlot.supportSlot(
+          id: _purchasedMuniSlots.length,
+          support: support,
+          count: 1,
+        ));
+        return;
+      }
+      _localReserve = _localReserve.addSupport(support);
+    });
+  }
+
+  /// 1er slot existant compatible avec une muni (mode munition,
+  /// calibre/categ matchent, non plein).
+  int? _firstNonEmptyCompatibleForMuni(MuniObject m) {
+    for (int i = 0; i < _purchasedMuniSlots.length; i++) {
+      final s = _purchasedMuniSlots[i];
+      if (s.mode != MuniSlotMode.munition) continue;
+      final cap = _slotFixedCapacity(s);
+      if (s.used >= cap) continue;
+      final cat = _findMuniCateg(m);
+      if (cat == null) continue;
+      if (!cat.included.contains(s.calibre)) continue;
+      return i;
+    }
+    return null;
+  }
+
+  MuniCateg? _findMuniCateg(MuniObject m) {
+    for (final cat in MuniCategList().allMuniCateg) {
+      if (cat.munis.any((mu) => mu.id == m.id)) return cat;
+    }
+    return null;
+  }
+
+  /// Résumé d'une liste de munis pour l'affichage (groupage par id).
+  String _muniSummary(List<MuniObject> munis) {
+    if (munis.isEmpty) return 'Vide';
+    final byId = <int, ({String name, int qty})>{};
+    for (final m in munis) {
+      final cur = byId[m.id];
+      byId[m.id] = (name: m.name, qty: (cur?.qty ?? 0) + 1);
+    }
+    return byId.values.map((e) => '${e.name} ×${e.qty}').join(' + ');
+  }
+
+  int _slotFixedCapacity(MuniSlot s) {
+    switch (s.mode) {
+      case MuniSlotMode.empty:
+        return 0;
+      case MuniSlotMode.munition:
+        return (s.calibre == Calibre.herb || s.calibre == Calibre.throwable)
+            ? 6
+            : 8;
+      case MuniSlotMode.support:
+        return 6;
+      case MuniSlotMode.magazine:
+        return 0; // pas de magasin à la création
+    }
+  }
+
+  /// Retire complètement un slot et rembourse selon sa composition.
+  void _removeMuniSlot(int index) {
+    final s = _purchasedMuniSlots[index];
+    int refund = 0;
+    if (s.mode == MuniSlotMode.munition) {
+      // Groupage par muni.id pour appliquer priceFor6 sur les paquets
+      final byId = <int, ({MuniObject m, int qty})>{};
+      for (final m in s.munis) {
+        final cur = byId[m.id];
+        byId[m.id] = (m: m, qty: (cur?.qty ?? 0) + 1);
+      }
+      for (final entry in byId.values) {
+        // Munis gratuites (calibre du slot dans m.free) ne sont pas remboursées
+        final isFree = entry.m.free != null && entry.m.free!.contains(s.calibre);
+        if (isFree) continue;
+        final groupsOf6 = entry.qty ~/ 6;
+        final remainder = entry.qty - groupsOf6 * 6;
+        refund += groupsOf6 * entry.m.priceFor6 + remainder * entry.m.price;
+      }
+    } else if (s.mode == MuniSlotMode.support && s.support != null) {
+      refund = s.support!.price * s.supportCount;
+    }
+    setState(() {
+      _remainingMoney += refund;
+      _purchasedMuniSlots.removeAt(index);
     });
   }
 
@@ -729,12 +853,21 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
     setState(() {
       _remainingMoney += refund;
       _purchasedBagSlots.removeAt(index);
-      // Cascade : si c'est une Cartouchière, retirer le dernier slot de muni si nécessaire
+      // Cascade : si c'est une Cartouchière, le quota muni a baissé.
+      // Les slots surnuméraires sont déplacés vers la Réserve (sauf herb/throwable).
       if (isCartou) {
-        final newTotal = _totalMuniSlots; // recalculé après suppression
-        while (_filledMuniSlots.length > newTotal) {
-          _remainingMoney += _filledMuniSlots.last.refundAmount;
-          _filledMuniSlots.removeLast();
+        final newTotal = _totalMuniSlots;
+        while (_purchasedMuniSlots.length > newTotal) {
+          final s = _purchasedMuniSlots.removeLast();
+          if (s.mode == MuniSlotMode.munition &&
+              s.calibre != Calibre.herb &&
+              s.calibre != Calibre.throwable) {
+            _localReserve = _localReserve.addMunis(s.munis);
+          } else if (s.mode == MuniSlotMode.support && s.support != null) {
+            for (int i = 0; i < s.supportCount; i++) {
+              _localReserve = _localReserve.addSupport(s.support!);
+            }
+          }
         }
       }
     });
@@ -753,12 +886,12 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
 
   void _showBuyMuniPopup() => showDialog(
     context: context,
-    builder: (_) => _MuniBuyPopup(
-      initialMoney:    _remainingMoney,
-      remainingSlots:  _freeMuniSlots,
+    builder: (_) => AgentShopMuniPopup(
+      initialMoney: _remainingMoney,
       availableCategs: _availableMuniCategs,
-      ownedCalibres:   _ownedCalibres,
-      onBuy:           _onBuyMuni,
+      ownedCalibres: _ownedCalibres,
+      onBuy: _onBuyMuni,
+      onBuySupport: _onBuySupportMuni,
     ),
   );
 
@@ -781,12 +914,20 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
     final total = _totalMuniSlots;
     final count = total > 0 ? total : 1;
     return List.generate(count, (i) {
-      if (i < _filledMuniSlots.length) {
-        final d = _filledMuniSlots[i];
-        return MuniSlot(id: i, muni: d.muni, numberLeft: d.quantity, empty: false);
+      if (i < _purchasedMuniSlots.length) {
+        return _purchasedMuniSlots[i].copyWith(id: i);
       }
-      return MuniSlot(id: i, empty: true, numberLeft: 0);
+      return MuniSlot.empty(i);
     });
+  }
+
+  Calibre _calibreForMuni(MuniObject muni) {
+    for (final cat in MuniCategList().allMuniCateg) {
+      if (cat.munis.any((m) => m.id == muni.id)) {
+        return cat.included.isNotEmpty ? cat.included.first : Calibre.empty;
+      }
+    }
+    return Calibre.empty;
   }
 
   List<BagSlot> _buildBagSlotsForSave() => List.generate(10, (i) {
@@ -832,6 +973,7 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
         bankSlots:         _initBankSlots(),
         muniSlots:         _buildMuniSlotsForSave(),
         weaponSlots:       _buildWeaponSlotsForSave(),
+        reserve:           _localReserve,
         money:             _remainingMoney,
         missions:          _initMissions(),
         level:             1,
@@ -1031,14 +1173,21 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
   // ── Section munitions ─────────────────────────────────────────────────────
   Widget _buildMuniSection() {
     final total  = _totalMuniSlots;
-    final filled = _filledMuniSlots.length;
+    final filled = _purchasedMuniSlots.length;
     final hasCompatible = _availableMuniCategs.isNotEmpty;
+    final reserveItems =
+        _localReserve.munis.length + _localReserve.supports.fold<int>(
+              0, (n, e) => n + e.count,
+            );
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Inventaire de munitions', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 4),
       Text('$filled / $total emplacement(s) rempli(s)',
           style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+      if (reserveItems > 0)
+        Text('Réserve : $reserveItems unité(s)',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
       const SizedBox(height: 12),
       if (total == 0)
         Padding(
@@ -1058,15 +1207,11 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
       SizedBox(
         width: double.infinity,
         child: OutlinedButton.icon(
-          onPressed: (!hasCompatible || filled >= total) ? null : _showBuyMuniPopup,
+          onPressed: hasCompatible ? _showBuyMuniPopup : null,
           icon: const Icon(Icons.add),
-          label: Text(
-            !hasCompatible
-                ? 'Aucune arme à munitions'
-                : filled >= total
-                    ? 'Tous les emplacements sont remplis'
-                    : 'Nouvelles munitions',
-          ),
+          label: Text(hasCompatible
+              ? 'Acheter des munitions'
+              : 'Aucune arme à munitions'),
         ),
       ),
     ]);
@@ -1155,7 +1300,14 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
   }
 
   Widget _buildFilledMuniTile(int index) {
-    final d = _filledMuniSlots[index];
+    final s = _purchasedMuniSlots[index];
+    final cap = _slotFixedCapacity(s);
+    final calibreLabel =
+        s.calibre == Calibre.empty ? '—' : s.calibre.name;
+    final modeLabel = s.mode == MuniSlotMode.support ? 'Support' : 'Munition';
+    final title = s.mode == MuniSlotMode.support && s.support != null
+        ? '${s.support!.name}  ×${s.supportCount}'
+        : _muniSummary(s.munis);
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade400),
@@ -1164,16 +1316,15 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
       child: ListTile(
         dense: true,
         leading: const Icon(Icons.shield_outlined, size: 20),
-        title: Text(d.muni.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(
-          '${d.quantity == 1 ? "1 unité" : "6 unités"}  •  '
-          "${d.wasFree ? 'Obtenu gratuitement' : '${d.muni.price}p l\'unité'}",
+          '$modeLabel · $calibreLabel · ${s.used}/$cap',
           style: const TextStyle(fontSize: 11),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline, size: 18),
           color: Colors.red,
-          tooltip: d.wasFree ? 'Retirer (non remboursé)' : 'Retirer (remboursé)',
+          tooltip: 'Retirer ce slot (remboursé)',
           onPressed: () => _removeMuniSlot(index),
         ),
       ),

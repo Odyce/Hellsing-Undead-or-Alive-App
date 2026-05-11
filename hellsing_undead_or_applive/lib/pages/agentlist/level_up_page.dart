@@ -5,52 +5,6 @@ import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 // ---------------------------------------------------------------------------
-// Missions cumulées requises pour chaque niveau
-// ---------------------------------------------------------------------------
-/// Nombre de missions dans chaque palier (index 0 = niveau 1, etc.)
-const List<int> _missionsPerLevel = [
-  3, // Niveau 1
-  3, // Niveau 2
-  4, // Niveau 3
-  5, // Niveau 4
-  6, // Niveau 5
-  7, // Niveau 6
-  8, // Niveau 7
-  9, // Niveau 8
-  10, // Niveau 9
-  11, // Niveau 10
-];
-const int _legendaryMissionsPerLevel = 7;
-
-/// Missions cumulées requises pour passer au niveau [targetLevel].
-/// Ex : pour passer au niveau 2, il faut 3 missions (palier du niveau 1).
-int cumulativeMissionsRequired(int targetLevel) {
-  int total = 0;
-  for (int i = 0; i < targetLevel - 1; i++) {
-    if (i < _missionsPerLevel.length) {
-      total += _missionsPerLevel[i];
-    } else {
-      total += _legendaryMissionsPerLevel;
-    }
-  }
-  return total;
-}
-
-/// Retourne la liste des niveaux auxquels l'agent peut monter.
-List<int> availableLevelUps(Agent agent) {
-  final result = <int>[];
-  final missionCount = agent.missions.where((m) => m.id != -66).length;
-  for (int nextLvl = agent.level + 1; nextLvl <= agent.level + 20; nextLvl++) {
-    if (missionCount >= cumulativeMissionsRequired(nextLvl)) {
-      result.add(nextLvl);
-    } else {
-      break;
-    }
-  }
-  return result;
-}
-
-// ---------------------------------------------------------------------------
 // Classes communes (disponibles à toutes les races) = IDs 0-6
 // ---------------------------------------------------------------------------
 const List<int> _commonClassIds = [0, 1, 2, 3, 4, 5, 6];
@@ -165,6 +119,11 @@ class _LevelUpPageState extends State<LevelUpPage> {
   // Skill sélectionnée (quand le choix inclut "1 nouvelle compétence")
   Skill? _selectedSkill;
 
+  // Sentinel pour l'option "Compétence Custom" dans le radio group
+  static const int _kCustomSkillSentinelId = -77;
+  bool _customSkillSelected = false;
+  final TextEditingController _customSkillNameCtrl = TextEditingController();
+
   // Attribut sélectionné (quand le choix inclut "+5 dans une Caractéristique")
   int? _selectedAttributeIndex; // 0=Physique, 1=Mental, 2=Relationnel
 
@@ -184,6 +143,28 @@ class _LevelUpPageState extends State<LevelUpPage> {
     if (_raceName == 'autre') {
       _loadCustomRules();
     }
+  }
+
+  @override
+  void dispose() {
+    _customSkillNameCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Crée la Skill placeholder à insérer dans agent.skills lors d'un choix
+  /// "Compétence Custom". L'admin la détaillera lors de la validation.
+  Skill _buildPendingCustomSkill(String name) {
+    final id = -DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    return Skill(
+      id: id,
+      name: name.trim(),
+      cost: 0,
+      costType: CostType.pe,
+      multiCost: false,
+      limited: false,
+      description: '',
+      pendingCustom: true,
+    );
   }
 
   Future<void> _loadCustomRules() async {
@@ -427,7 +408,13 @@ class _LevelUpPageState extends State<LevelUpPage> {
     }
 
     // Vérifier les sous-choix
-    if (_needsSkillSelection() && _selectedSkill == null) return false;
+    if (_needsSkillSelection()) {
+      if (_customSkillSelected) {
+        if (_customSkillNameCtrl.text.trim().isEmpty) return false;
+      } else if (_selectedSkill == null) {
+        return false;
+      }
+    }
     if (_needsAttributeSelection() && _selectedAttributeIndex == null) return false;
     if (_needsClassBonusAllocation() && !_isClassBonusAllocationValid()) return false;
 
@@ -563,12 +550,18 @@ class _LevelUpPageState extends State<LevelUpPage> {
           case 'power_minus10':
             newPowerScore = (newPowerScore ?? 0) - 10;
           case 'skill':
-            if (_selectedSkill != null) {
+            if (_customSkillSelected) {
+              newSkills
+                  .add(_buildPendingCustomSkill(_customSkillNameCtrl.text));
+            } else if (_selectedSkill != null) {
               newSkills.add(_selectedSkill!);
             }
           case 'skill_pc1':
           case 'skill_pc1_auto':
-            if (_selectedSkill != null) {
+            if (_customSkillSelected) {
+              newSkills
+                  .add(_buildPendingCustomSkill(_customSkillNameCtrl.text));
+            } else if (_selectedSkill != null) {
               newSkills.add(_selectedSkill!);
             }
             newPc += 1;
@@ -610,6 +603,63 @@ class _LevelUpPageState extends State<LevelUpPage> {
       newMaxPools[2] = newMaxPools[2].clamp(0, _maxPEPM);
       newPools[2] = newPools[2].clamp(0, newMaxPools[2]);
 
+      // ── Construire le LevelUpRecord (pour pouvoir annuler ce passage) ──
+      final addedSkillIds = <int>[];
+      for (final s in newSkills) {
+        if (!agent.skills.any((old) => old.id == s.id)) {
+          addedSkillIds.add(s.id);
+        }
+      }
+
+      final deltaClassBonuses = List<int>.generate(
+        newClassBonuses.length,
+        (i) => newClassBonuses[i] -
+            (i < agent.classBonuses.length ? agent.classBonuses[i] : 0),
+      );
+
+      final addedSecondClassThisLevel =
+          _isLevelFive && agent.secondClass == null && newSecondClass != null;
+
+      final List<int> deltaSecondClassBonuses;
+      if (addedSecondClassThisLevel) {
+        // Toutes les valeurs sont des "ajouts" puisque la classe est nouvelle
+        deltaSecondClassBonuses = List<int>.from(newSecondClassBonuses);
+      } else if (agent.secondClass != null) {
+        deltaSecondClassBonuses = List<int>.generate(
+          newSecondClassBonuses.length,
+          (i) => newSecondClassBonuses[i] -
+              (i < agent.secondClassBonuses.length
+                  ? agent.secondClassBonuses[i]
+                  : 0),
+        );
+      } else {
+        deltaSecondClassBonuses = const [];
+      }
+
+      final record = LevelUpRecord(
+        level: widget.targetLevel,
+        deltaMaxPools: List<int>.generate(
+          3,
+          (i) => newMaxPools[i] - agent.maxPools[i],
+        ),
+        deltaPools: List<int>.generate(
+          3,
+          (i) => newPools[i] - agent.pools[i],
+        ),
+        deltaAttributes: List<int>.generate(
+          3,
+          (i) => newAttributes[i] - agent.attributes[i],
+        ),
+        addedSkillIds: addedSkillIds,
+        deltaClassBonuses: deltaClassBonuses,
+        deltaSecondClassBonuses: deltaSecondClassBonuses,
+        deltaPc: newPc - agent.pc,
+        deltaPowerScore: (newPowerScore ?? 0) - (agent.powerScore ?? 0),
+        addedSecondClass: addedSecondClassThisLevel,
+      );
+
+      final newHistory = [...agent.levelUpHistory, record];
+
       // Écriture Firestore
       final uid = widget.ownerUid;
       final agentRef = FirebaseFirestore.instance
@@ -617,6 +667,8 @@ class _LevelUpPageState extends State<LevelUpPage> {
           .doc(uid)
           .collection('agents')
           .doc(widget.agentDocId);
+
+      final hasPendingCustomSkill = newSkills.any((s) => s.pendingCustom);
 
       final updateData = <String, dynamic>{
         'level': widget.targetLevel,
@@ -627,6 +679,7 @@ class _LevelUpPageState extends State<LevelUpPage> {
         'classBonuses': newClassBonuses,
         'pc': newPc,
         'powerScore': newPowerScore,
+        'levelUpHistory': newHistory.map((r) => r.toMap()).toList(),
       };
 
       if (newSecondClass != null) {
@@ -634,16 +687,36 @@ class _LevelUpPageState extends State<LevelUpPage> {
         updateData['secondClassBonuses'] = newSecondClassBonuses;
       }
 
+      if (hasPendingCustomSkill) {
+        updateData['validated'] = false;
+        updateData['pendingCustomSkill'] = true;
+      }
+
       await agentRef.update(updateData);
       StatsRepository.scheduleRebuild();
 
+      if (hasPendingCustomSkill) {
+        await NotificationRepository().notifyAdmins(
+          title: 'Compétence custom à détailler',
+          body:
+              'Compétence custom "${_customSkillNameCtrl.text.trim()}" '
+              "à détailler pour l'agent ${agent.name}.",
+          data: {
+            'type': 'agent_validation',
+            'agentName': agent.name,
+            'subtype': 'custom_skill',
+          },
+        );
+      }
+
       if (mounted) {
+        final levelMsg =
+            '${agent.name} est passé au niveau ${widget.targetLevel} !';
+        final extraMsg = hasPendingCustomSkill
+            ? ' La compétence custom est en attente de détails par le MJ.'
+            : '';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${agent.name} est passé au niveau ${widget.targetLevel} !',
-            ),
-          ),
+          SnackBar(content: Text('$levelMsg$extraMsg')),
         );
         Navigator.pop(context, true);
       }
@@ -840,6 +913,8 @@ class _LevelUpPageState extends State<LevelUpPage> {
                     _selectedSkill = null;
                     _selectedAttributeIndex = null;
                     _classBonusAllocations.clear();
+                    _customSkillSelected = false;
+                    _customSkillNameCtrl.clear();
                   });
                 },
                 child: Column(
@@ -882,6 +957,10 @@ class _LevelUpPageState extends State<LevelUpPage> {
       }
     }
 
+    final radioGroupValue = _customSkillSelected
+        ? _kCustomSkillSentinelId
+        : _selectedSkill?.id;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -890,30 +969,65 @@ class _LevelUpPageState extends State<LevelUpPage> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        if (available.isEmpty)
-          const Text(
-            'Aucune compétence disponible.',
-            style: TextStyle(color: Colors.grey),
-          )
-        else
-          RadioGroup<int>(
-            groupValue: _selectedSkill?.id,
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() {
+        RadioGroup<int>(
+          groupValue: radioGroupValue,
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() {
+              if (value == _kCustomSkillSentinelId) {
+                _customSkillSelected = true;
+                _selectedSkill = null;
+              } else {
+                _customSkillSelected = false;
                 _selectedSkill = available.firstWhere((s) => s.id == value);
-              });
-            },
-            child: Column(
-              children: available.map((skill) {
+              }
+            });
+          },
+          child: Column(
+            children: [
+              if (available.isEmpty && !_customSkillSelected)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Aucune compétence prédéfinie disponible — tu peux créer une compétence custom.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ...available.map((skill) {
                 return RadioListTile<int>(
                   title: Text(skill.name),
-                  subtitle: Text(skill.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  subtitle: Text(skill.description,
+                      maxLines: 2, overflow: TextOverflow.ellipsis),
                   value: skill.id,
                 );
-              }).toList(),
-            ),
+              }),
+              RadioListTile<int>(
+                title: const Text(
+                  'Compétence Custom',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Sera détaillée par le MJ après validation de la fiche.',
+                  style: TextStyle(fontSize: 12),
+                ),
+                value: _kCustomSkillSentinelId,
+              ),
+            ],
           ),
+        ),
+        if (_customSkillSelected) ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: _customSkillNameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Nom de la compétence',
+              helperText: 'Champ obligatoire',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
       ],
     );
   }

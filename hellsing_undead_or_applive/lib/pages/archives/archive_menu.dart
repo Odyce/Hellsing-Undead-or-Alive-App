@@ -120,6 +120,36 @@ class ArchiveMenuPage extends StatelessWidget {
                     ),
                   ),
 
+                  const SizedBox(height: 16),
+
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, Routes.cartes);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        "Cartes",
+                        style: GoogleFonts.cinzelDecorative(fontSize: 18),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, Routes.journal);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        "Journal",
+                        style: GoogleFonts.cinzelDecorative(fontSize: 18),
+                      ),
+                    ),
+                  ),
+
                 ],
               ),
             ),

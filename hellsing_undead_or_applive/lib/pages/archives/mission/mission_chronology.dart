@@ -35,6 +35,16 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
     return _allMissions.where((m) => m.title.toLowerCase().contains(query)).toList();
   }
 
+  // Liste des années UNIQUES présentes dans les missions filtrées,
+  // dans le même ordre que la liste (donc décroissant : plus récente en index 0).
+  List<int> get _filteredYears {
+    final years = <int>{};
+    for (final m in _filteredMissions) {
+      if (m.completedAt != null) years.add(m.completedAt!.year);
+    }
+    return years.toList();
+  }
+
   // ─── Chargement ──────────────────────────────────────────────────────────────
   @override
   void initState() {
@@ -56,23 +66,38 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
           .where((m) => m.completedAt != null)
           .toList();
 
-      // La plus ancienne completedAt tout en haut — nulls à la fin
+      // Tri DÉCROISSANT : la mission la plus récente en index 0, la plus ancienne en dernier.
+      // → la page s'ouvre naturellement sur la plus récente sans avoir besoin
+      //   de fixer un initialPage, ce qui évite la désynchro entre la position
+      //   du PageController et le rendu de l'AnimatedBuilder avant le premier layout
+      //   (cause probable du "lag" au démarrage du scroll signalé par l'utilisateur).
       missions.sort((a, b) {
         if (a.completedAt == null && b.completedAt == null) return 0;
         if (a.completedAt == null) return 1;
         if (b.completedAt == null) return -1;
-        return a.completedAt!.compareTo(b.completedAt!);
+        return b.completedAt!.compareTo(a.completedAt!);
       });
 
-      // On initialise le controller ICI, en lui donnant la dernière page comme point de départ
       _pageController = PageController(
         viewportFraction: _itemSpacingFraction,
-        initialPage: missions.isNotEmpty ? missions.length - 1 : 0,
       );
 
       setState(() {
         _allMissions = missions;
         _loading = false;
+      });
+
+      // Préchargement des illustrations dès que le contexte est prêt :
+      // évite que le scroll ne déclenche un fetch réseau pour chaque mission qui
+      // entre dans la fenêtre visible (cause du tressautement intermittent).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        for (final m in missions) {
+          final path = m.illustrationPath;
+          if (path != null && path.isNotEmpty) {
+            precacheImage(NetworkImage(path), context).catchError((_) {});
+          }
+        }
       });
     } catch (e) {
       setState(() {
@@ -128,7 +153,7 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                             setState(() {
                               _searchQuery = '';
                               if (_pageController.hasClients && _filteredMissions.isNotEmpty) {
-                                _pageController.jumpToPage(_filteredMissions.length - 1);
+                                _pageController.jumpToPage(0);
                               }
                             });
                           },
@@ -144,9 +169,9 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
-                    // On ramène l'utilisateur à la première page pour éviter un crash si la liste rétrécit
+                    // On ramène l'utilisateur sur la mission la plus récente du sous-ensemble filtré (index 0).
                     if (_pageController.hasClients && _filteredMissions.isNotEmpty) {
-                      _pageController.jumpToPage(_filteredMissions.length - 1);
+                      _pageController.jumpToPage(0);
                     }
                   });
                 },
@@ -197,7 +222,25 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
   }
 
   // ─── Bande des années (gauche) ────────────────────────────────────────────────
+  //
+  // N'affiche que les années UNIQUES (pas une entrée par mission).
+  // Le strip reste immobile tant que la mission centrale ne change pas d'année,
+  // et glisse uniquement au franchissement d'une frontière d'année.
+  //
+  // Mécanique : la "yearPage" est dérivée de la mission page par interpolation
+  // linéaire entre les year-index des deux missions encadrant la page courante.
+  // Si elles partagent la même année, yearPage est constante → strip immobile.
+  // Sinon, yearPage transitionne linéairement de l'une à l'autre.
   Widget _buildYearStrip() {
+    final years = _filteredYears;
+    if (years.isEmpty) return const SizedBox.shrink();
+
+    // Pour chaque mission, l'index de son année dans la liste unique.
+    final missionYearIndex = List<int>.generate(_filteredMissions.length, (i) {
+      final year = _filteredMissions[i].completedAt!.year;
+      return years.indexOf(year);
+    });
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalHeight = constraints.maxHeight;
@@ -208,23 +251,36 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
             final page = _pageController.hasClients
                 ? (_pageController.page ?? 0.0)
                 : 0.0;
+
+            final iLow = page.floor().clamp(0, _filteredMissions.length - 1);
+            final iHigh = page.ceil().clamp(0, _filteredMissions.length - 1);
+            final yearLow = missionYearIndex[iLow];
+            final yearHigh = missionYearIndex[iHigh];
+            final yearPage = (iLow == iHigh)
+                ? yearLow.toDouble()
+                : yearLow + (yearHigh - yearLow) * (page - iLow);
+
             final itemHeight = totalHeight * _itemSpacingFraction;
 
             return ClipRect(
               child: Stack(
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
-                children: List.generate(_filteredMissions.length, (i) {
-                  final offset   = i - page;
+                children: List.generate(years.length, (i) {
+                  final offset   = i - yearPage;
                   final distance = offset.abs();
                   if (distance > 3.5) return const SizedBox.shrink();
 
                   final dy      = offset * itemHeight;
                   final scale   = (1.0 - distance * 0.18).clamp(0.3, 1.0);
                   final opacity = (1.0 - distance * 0.25).clamp(0.0, 1.0);
-                  final isCurrent = page.round() == i;
+                  final isCurrent = yearPage.round() == i;
 
-                  final year = _filteredMissions[i].completedAt?.year.toString() ?? '?';
+                  // Boost de taille pour l'année centrale, lissé sur les voisines
+                  // pour que la transition d'une année à l'autre ne fasse pas
+                  // de saut visuel.
+                  final currentBoost = (1.0 - distance).clamp(0.0, 1.0);
+                  final fontSize = 15.0 + 7.0 * currentBoost;
 
                   return Transform.translate(
                     offset: Offset(0, dy),
@@ -233,10 +289,10 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                       child: Transform.scale(
                         scale: scale,
                         child: Text(
-                          year,
+                          years[i].toString(),
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: fontSize,
                             fontWeight: isCurrent
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -367,13 +423,12 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
                     width: 64,
                     height: 64,
                     fit: BoxFit.contain,
+                    // Placeholder STATIQUE : pas de CircularProgressIndicator pour
+                    // éviter une animation parasite qui force des repaints pendant
+                    // qu'une nouvelle carte entre dans la fenêtre du carousel.
                     loadingBuilder: (_, child, progress) => progress == null
                         ? child
-                        : const SizedBox(
-                            width: 64,
-                            height: 64,
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
+                        : const SizedBox(width: 64, height: 64),
                     errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
                 ),
