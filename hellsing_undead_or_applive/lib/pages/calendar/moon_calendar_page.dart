@@ -6,6 +6,7 @@ import 'package:apsl_sun_calc/apsl_sun_calc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hellsing_undead_or_applive/domain/archives/missions_model.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/theme/app_theme.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 enum MoonMajorPhase {
@@ -296,7 +297,7 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const SafeBackButton(),
+        leading: const SafeBackButton(color: AppColors.primary),
         title: const Text("Calendrier"),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -322,9 +323,23 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
           ),
           Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: TableCalendar(
+              Container(
+                margin: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x55000000),
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
+                      spreadRadius: 3,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: TableCalendar(
                   firstDay: _firstDay,
                   lastDay: _lastDay,
                   focusedDay: _focusedDay,
@@ -436,6 +451,7 @@ class _MoonCalendarPageState extends State<MoonCalendarPage> {
                       );
                     },
                   ),
+                ),
                 ),
               ),
 

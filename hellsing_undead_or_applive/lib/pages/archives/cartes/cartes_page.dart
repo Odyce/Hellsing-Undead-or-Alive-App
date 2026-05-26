@@ -46,15 +46,21 @@ class CartesPage extends StatelessWidget {
                       style: GoogleFonts.cinzelDecorative(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        backgroundColor: Colors.white.withValues(alpha: 0.80),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TabBar(
                     isScrollable: true,
-                    labelStyle: GoogleFonts.cinzelDecorative(fontSize: 13),
-                    unselectedLabelStyle:
-                        GoogleFonts.cinzelDecorative(fontSize: 13),
+                    labelStyle: GoogleFonts.cinzelDecorative(
+                      fontSize: 13,
+                      backgroundColor: Colors.white.withValues(alpha: 0.80),
+                    ),
+                    unselectedLabelStyle: GoogleFonts.cinzelDecorative(
+                      fontSize: 13,
+                      backgroundColor: Colors.white.withValues(alpha: 0.55),
+                    ),
                     tabs: const [
                       Tab(text: "Activités Midianes"),
                       Tab(text: "Chemins de fer"),
