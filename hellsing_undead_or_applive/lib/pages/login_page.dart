@@ -122,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
       case 'user-disabled':
         return "Ce compte est désactivé, envoie un message aux admins.";
       default:
-        return "Connexion impossible (${e.code}).";
+        return "Connexion impossible (${e.code}). \n((Possiblement mauvais mot de passe))";
     }
   }
 
@@ -264,7 +264,7 @@ class _LoginPageState extends State<LoginPage> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Text(
-                                  "Service secrets de Sa Majesté",
+                                  "Services secrets de Sa Majesté",
                                   style: GoogleFonts.cinzelDecorative(
                                     textStyle: theme.textTheme.headlineSmall,
                                     fontWeight: FontWeight.w700,

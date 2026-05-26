@@ -5,7 +5,7 @@ class RaceList {
     Race(
       id: 0, 
       name: "Humain", 
-      description: "Les humains sont l’espèce dominante sur la planète, mais ont longtemps été sans défense face aux Midians. Cependant les agents de la Fondation Hellsing sont majoritairement des humains spécialisés dans la traque et l’exécution des créatures de la nuit. Parmi eux, de rares individus ont pu développer des dons mystiques, propre à l'humanité et ne sont pas à sous-estimer.\n\nEn effet, la force de l'humanité réside dans sa mortalité, et la conscience que les Hommes ont de celle-ci, les poussant à repousser toujours plus loin leurs limites, à aiguiser leurs talents innés et à en acquérir constamment de nouveaux.", 
+      description: "Les Humains sont l’espèce dominante sur la planète, mais ont longtemps été sans défense face aux Midians. Cependant les agents de la Fondation Hellsing sont majoritairement des Humains spécialisés dans la traque et l’exécution des créatures de la nuit. Parmi eux, de rares individus ont pu développer des dons mystiques, propres à l'humanité, et ne sont pas à sous-estimer.\n\nEn effet, la force de l'humanité réside dans sa mortalité, et la conscience que les Hommes ont de celle-ci, les poussant à repousser toujours plus loin leurs limites, à aiguiser leurs talents innés et à en acquérir constamment de nouveaux.", 
       availableClasses: ClassList().getClassListByIds(0, 6) + ClassList().getClassListByIds(12, 15)
     ),
 
@@ -13,7 +13,7 @@ class RaceList {
     Race(
       id: 1, 
       name: "Semi-Ange", 
-      description: "Un Semi-ange est un humain à l'esprit habité par deux âmes. Depuis leurs naissances, ceux-ci sont possédés par une âme angélique leur conférant de puissants pouvoirs mystiques. Cet âme angélique n'est pas indépendante mais sa présence influence fortement le comportement du Semi-Ange, le poussant vers un « Bien » abstrait et absolu parfois au prix de douloureuses contradictions. Ainsi, il est courant que les Semi-anges succombent à des profonds troubles psychologiques ou se tourne vers la religion sans même être conscient de leurs conditions.\n\nLa Fondation Hellsing offre à ces êtres d'exception un moyen de canaliser ce besoin de faire le Bien en mettant leur puissance considérable au service de l'Humanité.", 
+      description: "Un Semi-Ange est un Humain à l'esprit habité par deux âmes. Depuis leurs naissances, ceux-ci sont possédés par une âme angélique leur conférant de puissants pouvoirs mystiques. Cet âme angélique n'est pas indépendante mais sa présence influence fortement le comportement du Semi-Ange, le poussant vers un « Bien » abstrait et absolu parfois au prix de douloureuses contradictions. Ainsi, il est courant que les Semi-Anges succombent à des profonds troubles psychologiques ou se tournent vers la religion sans même être conscients de leurs conditions.\n\nLa Fondation Hellsing offre à ces êtres d'exception un moyen de canaliser ce besoin de faire le Bien en mettant leur puissance considérable au service de l'Humanité.", 
       bonuses: [
         "10% au jet au soleil et en terres consacrées.", 
         "Sang toxique pour les Vampires.", 
@@ -31,11 +31,11 @@ class RaceList {
     Race(
       id: 2, 
       name: "Vampire", 
-      description: "Ces êtres des ténèbres n'ont d'humain que l'apparence, se nourrissent de sang et craignent le soleil. Ce sont les cibles principales de la Fondation Hellsing, qui visent à les éliminer pour débarrasser l'humanité de ces prédateurs. Toutefois certains de ces damnés continuent de se battre aux cotés des humains, contre leurs semblables.\n\nConsidérés comme des traîtres dans les communautés de Midians, les vampires de la Fondation sont vus comme des armes au service de l'humanité. Ils doivent donc être gardés sous contrôle. Ainsi ils sont nourris avec le minimum de sang possible et ont interdiction de se nourrir sans autorisation ou de transformer qui que ce soit sous peine de passer de chasseur à proie.", 
+      description: "Ces êtres des ténèbres n'ont d'humain que l'apparence, se nourrissent de sang et craignent le soleil. Ce sont les cibles principales de la Fondation Hellsing, qui visent à les éliminer pour débarrasser l'humanité de ces prédateurs. Toutefois certains de ces damnés continuent de se battre aux cotés des humains, contre leurs semblables.\n\nConsidérés comme des traîtres dans les communautés de Midians, les Vampires de la Fondation sont vus comme des armes au service de l'humanité. Ils doivent donc être gardés sous contrôle. Ainsi ils sont nourris avec le minimum de sang possible et ont interdiction de se nourrir sans autorisation ou de transformer qui que ce soit sous peine de passer de chasseur à proie.", 
       bonuses: [
         "Régénération de PV passive et lente (1h rend 1PV).",
-        "Force musculaire grandement accrue (+10% au jet si l'action nécessite de la force, +2 dégâts au attaque de corps à corps).",
-        "Peut transformer un humain en vampire ou en goule en buvant tout son sang ( soumis à un test de pouvoir vampirique).",
+        "Force musculaire grandement accrue (+10% au jet si l'action nécessite de la force, +2 dégâts aux attaques de corps à corps).",
+        "Peut transformer un Humain en vampire ou en goule en buvant tout son sang ( soumis à un test de pouvoir vampirique).",
         "Vision Nocturne.",
         "Ne peut être mentalement épuisé, peut effectuer des actions demandant une dépense de PM en puisant dans ses PV, à raison d'1 PM par PV sacrifié."
       ], 
@@ -53,7 +53,7 @@ class RaceList {
     Race(
       id: 3, 
       name: "Demi-Vampire", 
-      description: "Quand un vampire attaque un humain, celui ci ne meurs pas toujours. Il développe une partie de pouvoir vampirique qui l'attire constamment vers les ténèbres, il devient un Demi-Vampire. Cette malédiction augmente ses capacités physiques, en faisant un chasseur plus puissant que la normale, mais à quel prix ?\n\nLors de sa mort, la transformation est inévitable. Il perdra toute forme d'identité et de personnalité humaine pour renaître sous forme de vampire. Ainsi la plupart des demi-vampire cherchent à briser leur malédiction en tuant le vampire qui les a attaqués dans l'espoir de regagner leur humanité menacé.", 
+      description: "Quand un Vampire attaque un Humain, celui-ci ne meurt pas toujours. Il développe une partie de pouvoir vampirique qui l'attire constamment vers les ténèbres, il devient un Demi-Vampire. Cette malédiction augmente ses capacités physiques, en faisant un chasseur plus puissant que la normale, mais à quel prix ?\n\nLors de sa mort, la transformation est inévitable. Il perdra toute forme d'identité et de personnalité humaine pour renaître sous forme de Vampire. Ainsi la plupart des Demi-Vampires cherchent à briser leur malédiction en tuant le Vampire qui les a attaqués dans l'espoir de regagner leur humanité menacée.", 
       bonuses: [
         "Force accrue la nuit (+10% la nuit, +40% si consommation de sang, si l'action met en jeu de la force pure. +1 dégâts aux attaques de corps à corps).",
         "Peut ressentir le pouvoir vampirique chez quelqu'un par contact visuel.",

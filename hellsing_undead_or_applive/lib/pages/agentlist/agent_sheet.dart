@@ -1328,7 +1328,7 @@ class _AgentSheetPageState extends State<AgentSheetPage>
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text("Power Score : ${agent.powerScore}"),
+                                        Text("Pouvoir : ${agent.powerScore}"),
                                         _diceButton(context, maxValue: 100, threshold: agent.powerScore! % 100),
                                       ],
                                     ),

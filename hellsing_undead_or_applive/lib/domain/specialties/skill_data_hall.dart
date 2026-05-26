@@ -23,7 +23,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Force la cible à se mettre derrière une couverture. N'inflige pas de dégâts. +20% de bonus par tir successifs."
+      description: "Force la cible à se mettre derrière une couverture. N'inflige pas de dégâts. +20% de bonus par tir successif."
     ),
     Skill(
       id: 2,
@@ -32,7 +32,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Gratuit hors combat. Ajoute un Mod 15% a toutes tentatives de menace."
+      description: "Gratuit hors combat. Ajoute un Mod +15% a toute tentative de menace."
     ),
     Skill(
       id: 3,
@@ -86,7 +86,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "1 Tour d' attente, +30% au jet, Mod 15%. inefficace au delà de la portée pratique de l'arme."
+      description: "1 Tour d'attente, +30% au jet, Mod +15%. inefficace au-delà de la portée pratique de l'arme."
     ),
     Skill(
       id: 9, 
@@ -104,7 +104,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Tire en ricochet avec un Mod 10%."
+      description: "Tire en ricochet avec un Mod +10%."
     ),
     Skill(
       id: 11, 
@@ -146,7 +146,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "1 PE par bombe, lance un nombre illimité de bombe dans la même action."
+      description: "1 PE par bombe, lance un nombre illimité de bombes dans la même action."
     ),
     Skill(
       id: 15, 
@@ -164,7 +164,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "D6 de dégâts, Mod10% au jet de Lancer."
+      description: "D6 de dégâts, Mod +10% au jet de Lancer."
     ),
     Skill(
       id: 17, 
@@ -227,7 +227,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "2D10 de dégâts, Effet Incendiaire, doit être posé et déclenchée, prend la place de 2 Bombes dans l'inventaire."
+      description: "2D10 de dégâts, Effet Incendiaire, doit être posée et déclenchée, prend la place de 2 Bombes dans l'inventaire."
     ),
     Skill(
       id: 24, 
@@ -307,7 +307,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Attaque d'une main libre ou désarmé à D4 contondants."
+      description: "Attaque d'une main libre ou désarmée à D4 contondants."
     ),
     Skill(
       id: 32, 
@@ -325,7 +325,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Vise une partie précise avec Mod 10% sans subir le malus de précision."
+      description: "Vise une partie précise avec Mod +10% sans subir le malus de précision."
     ),
     Skill(
       id: 34, 
@@ -361,7 +361,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Attaque en visant les artères de la cible, inflige l'Effet Saignement Aggravée."
+      description: "Attaque en visant les artères de la cible, inflige l'Effet Saignement Aggravé."
     ),
     Skill(
       id: 38, 
@@ -381,7 +381,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "1PE par tour, Mod 20% parade"
+      description: "1PE par tour, Mod +20% parade"
     ),
     Skill(
       id: 40, 
@@ -504,7 +504,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "L'utilisateur perd 1PV/tour, est pris d'une rage incontrôlable et à sa force grandement accrue (+2 dégâts aux attaques de corps à corps) pendant D4 tours."
+      description: "L'utilisateur perd 1PV/tour, est pris d'une rage incontrôlable et voit sa force grandement accrue (+2 dégâts aux attaques de corps à corps) pendant D4 tours."
     ),
     Skill(
       id: 53, 
@@ -513,7 +513,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Donne l'effet Incendiaire à une Arme Blanche pendant D6 tours."
+      description: "Donne l'Effet Incendiaire à une Arme Blanche pendant D6 tours."
     ),
     Skill(
       id: 54, 
@@ -540,7 +540,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Donne l'effet Argent à une Arme Blanche pendant D6 tours."
+      description: "Donne l'Effet Argent à une Arme Blanche pendant D6 tours."
     ),
     Skill(
       id: 57, 
@@ -549,7 +549,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Donne l'effet Béni à une Arme Blanche pendant D6 tours."
+      description: "Donne l'Effet Béni à une Arme Blanche pendant D6 tours."
     ),
     Skill(
       id: 58, 
@@ -558,7 +558,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "-2PV à l’utilisateur +30% à tout test de perception, Mod 10% à la visée, dure 2D4 tours."
+      description: "-2PV à l’utilisateur +30% à tout test de perception, Mod +10% à la visée, dure 2D4 tours."
     ),
     Skill(
       id: 59, 
@@ -585,7 +585,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Endors la cible, doit être au contact."
+      description: "Endort la cible, doit être au contact."
     ),
 
 
@@ -609,7 +609,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Prend plusieurs tour, permet de protéger du vampirisme et autres effets liés au sang. Inflige un désavantage de 2PE au donneur."
+      description: "Prend plusieurs tours, permet de protéger du vampirisme et autres effets liés au sang. Inflige un désavantage de 2PE au donneur."
     ),
     Skill(
       id: 64, 
@@ -741,7 +741,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Permet d'ignorer les malus de déplacements d'un environnement."
+      description: "Permet d'ignorer les malus de déplacement d'un environnement."
     ),
     Skill(
       id: 78, 
@@ -750,7 +750,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Permet d'avoir un chien dressé pour suivre des pistes et obéir des ordres simples. D4 d'attaque."
+      description: "Permet d'avoir un chien dressé pour suivre des pistes et obéir à des ordres simples. D4 d'attaque."
     ),
     Skill(
       id: 79, 
@@ -786,7 +786,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Si la cible est identifié et connue, permet de se mettre à la place de la cible et reconstitue son parcours ou ses actions."
+      description: "Si la cible est identifiée et connue, permet de se mettre à la place de la cible et reconstitue son parcours ou ses actions."
     ),
     Skill(
       id: 83, 
@@ -804,7 +804,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "1PE par tour passé dans cette position, Mod10% au jet de tir."
+      description: "1PE par tour passé dans cette position, Mod +10% au jet de tir."
     ),
     Skill(
       id: 85, 
@@ -813,7 +813,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Octroie un Mod 15% à la prochaine action si non repéré."
+      description: "Octroie un Mod +15% à la prochaine action si non repéré."
     ),
     Skill(
       id: 86, 
@@ -831,7 +831,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Donne une esquive à Mod 10% à toute attaque."
+      description: "Donne une esquive à Mod +10% à toute attaque."
     ),
     Skill(
       id: 88, 
@@ -873,7 +873,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false, 
-      description: "Mod 10% à l'esquive."
+      description: "Mod +10% à l'esquive."
     ),
     Skill(
       id: 92, 
@@ -882,7 +882,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "1 PE par lancer, nombre de lancer illimités dans cette action."
+      description: "1 PE par lancer, nombre de lancers illimités dans cette action."
     ),
     Skill(
       id: 93, 
@@ -936,7 +936,7 @@ class SkillList {
       costType: CostType.pe, 
       multiCost: false,
       limited: false,
-      description: "Attaque en visant les artères de la cible, inflige l'Effet Saignement Aggravée."
+      description: "Attaque en visant les artères de la cible, inflige l'Effet Saignement Aggravé."
     ),
     Skill(
       id: 99, 
@@ -1363,7 +1363,7 @@ class SkillList {
       costType: CostType.pm, 
       multiCost: false,
       limited: false,
-      description: "+20% au jets de perception, Mod 10% aux esquives."
+      description: "+20% au jets de perception, Mod +10% aux esquives."
     ),
     Skill(
       id: 145, 
@@ -1435,7 +1435,7 @@ class SkillList {
       costType: CostType.pm, 
       multiCost: false,
       limited: false,
-      description: "Nécessite du sang, peut être placé sur un d'autre, Absorbe D6 dégâts avant de disparaître."
+      description: "Nécessite du sang, peut être placé sur quelqu'un d'autre, Absorbe D6 dégâts avant de disparaître."
     ),
     Skill(
       id: 155, 
@@ -1444,7 +1444,7 @@ class SkillList {
       costType: CostType.pm, 
       multiCost: false,
       limited: false, 
-      description: "Mod 15% aux jets de Physique, +3PV, entre en frénésie si blessé dans cet état."
+      description: "Mod +15% aux jets de Physique, +3PV, entre en frénésie si blessé dans cet état."
     ),
     Skill(
       id: 156, 
@@ -1462,7 +1462,7 @@ class SkillList {
       costType: CostType.pm, 
       multiCost: false,
       limited: true, 
-      description: "Permet de contrôler mentalement un vampire durant contact physique."
+      description: "Permet de contrôler mentalement un vampire durant un contact physique."
     ),
     Skill(
       id: 158, 

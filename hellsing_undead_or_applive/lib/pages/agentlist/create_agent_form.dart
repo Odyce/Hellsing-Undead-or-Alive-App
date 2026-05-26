@@ -739,7 +739,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
               labelText: 'État',
               labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
               helperText:
-                  'Si tu est un robot, empoisonné sur le long termes, ou autre vicissitudes du genre, merci de le mettre ici.',
+                  'Si tu es un robot, empoisonné sur le long terme, ou autres vicissitudes du genre, merci de le mettre ici.',
             ),
             minLines: 1,
             maxLines: 4,
@@ -1025,7 +1025,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
                 labelText: 'Pouvoir',
                 labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
                 helperText:
-                    'Fait un jet de dès auprès d\'un MJ pour remplir.',
+                    'Fais un jet de dès auprès d\'un MJ pour remplir.',
                 errorText: _powerScoreError,
               ),
               onChanged: (_) => _validatePowerScore(),
@@ -1058,9 +1058,6 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
               _updateSkillSlots();
               _validateClassBonuses();
             },
-            decoration: InputDecoration(
-              labelText: 'Classe',
-            ),
           ),
           const SizedBox(height: 12),
           Text('Bonus de classe :'),
@@ -1187,7 +1184,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
                 labelText: 'Argent',
                 labelStyle: GoogleFonts.cinzelDecorative(fontSize: 15),
                 helperText:
-                    'Fait un jet de dès auprès d\'un MJ pour remplir.',
+                    'Fais un jet de dès auprès d\'un MJ pour remplir.',
                 errorText: _moneyError,
               ),
               onChanged: (_) => _validateMoney(),
@@ -1195,7 +1192,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
           
           const SizedBox(height: 32),
           Text(
-            "Contact :",
+            "Contacts :",
             style: Theme.of(context).textTheme.titleMedium,
           ),
 
