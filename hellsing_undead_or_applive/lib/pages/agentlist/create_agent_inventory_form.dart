@@ -31,6 +31,48 @@ String _subAffinityLabel(SubAffinities sub) {
 String _formatSize(double size) =>
     size % 1 == 0 ? size.toInt().toString() : size.toString();
 
+String _calibreLabel(Calibre? c) {
+  if (c == null || c == Calibre.empty) return '—';
+  switch (c) {
+    case Calibre.bolt:      return 'Carreaux';
+    case Calibre.herb:      return 'Herbe';
+    case Calibre.throwable: return 'Lancer';
+    default:
+      final n = c.name;
+      if (n.startsWith('point')) {
+        final rest = n.substring(5);
+        final idx  = rest.indexOf(RegExp(r'[A-Z]'));
+        return idx == -1 ? '.$rest' : '.${rest.substring(0, idx)} ${rest.substring(idx)}';
+      }
+      if (n.startsWith('gauge')) return 'Gauge ${n.substring(5)}';
+      if (n.startsWith('bore'))  return 'Bore ${n.substring(4)}';
+      return n;
+  }
+}
+
+String _firingLabel(Firing? f) {
+  if (f == null || f == Firing.none) return 'Simple';
+  switch (f) {
+    case Firing.sA:             return 'Simple action';
+    case Firing.dA:             return 'Double action';
+    case Firing.multiple:       return 'Tir multiple';
+    case Firing.semA:           return 'Semi-automatique';
+    case Firing.separedTrigger: return 'Gâchettes séparées';
+    case Firing.mLev:           return 'Levier';
+    case Firing.mVer:           return 'Verrou';
+    default:                    return f.name;
+  }
+}
+
+String _reloadLabel(double? r) {
+  if (r == null) return '—';
+  if (r % 1 == 0) {
+    final t = r.toInt();
+    return '$t tour${t >= 2 ? "s" : ""}';
+  }
+  return '${r}T';
+}
+
 
 // (Plus de _MuniSlotData : on stocke directement des MuniSlot du domaine.)
 
@@ -100,26 +142,45 @@ class _WeaponBuyPopupState extends State<_WeaponBuyPopup> {
     widget.onBuyKit(s);
   }
 
-  Widget _weaponCard(Weapon w) => Card(
-    margin: const EdgeInsets.symmetric(vertical: 4),
-    child: Padding(
-      padding: const EdgeInsets.all(10),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(w.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 2),
-          Text(w.damage, style: const TextStyle(fontSize: 12)),
-          if (w.feature.isNotEmpty)
-            Text(w.feature, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-          const SizedBox(height: 4),
-          Text('Prix : ${w.price}  •  Taille : ${_formatSize(w.size)}',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-        ])),
-        const SizedBox(width: 8),
-        ElevatedButton(onPressed: () => _buy(w), child: const Text('Acheter')),
-      ]),
-    ),
-  );
+  Widget _weaponCard(Weapon w) {
+    final isFire = w.fire && w.calibre != null && w.calibre != Calibre.empty;
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(w.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Text(w.damage, style: const TextStyle(fontSize: 12)),
+            if (w.feature.isNotEmpty)
+              Text(w.feature, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+            if (isFire) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Calibre : ${_calibreLabel(w.calibre)}  •  Rechargement : ${_reloadLabel(w.reload)}  •  Chargeur : ${w.magazineSize ?? "—"}',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+              ),
+              if (w.secondMagazine == true)
+                Text(
+                  '2nd chargeur : ${w.secondMagazineSize ?? "—"}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                ),
+              Text(
+                'Mode de tir : ${_firingLabel(w.firing)}',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+              ),
+            ],
+            const SizedBox(height: 4),
+            Text('Prix : ${w.price}  •  Taille : ${_formatSize(w.size)}',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+          ])),
+          const SizedBox(width: 8),
+          ElevatedButton(onPressed: () => _buy(w), child: const Text('Acheter')),
+        ]),
+      ),
+    );
+  }
 
   Widget _kitCard(SupportObject s) => Card(
     margin: const EdgeInsets.symmetric(vertical: 4),
@@ -1069,11 +1130,34 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
                 const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    _selectedStartingWeapon!.feature.isNotEmpty
-                        ? _selectedStartingWeapon!.feature
-                        : _selectedStartingWeapon!.legend,
-                    style: const TextStyle(fontSize: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _selectedStartingWeapon!.feature.isNotEmpty
+                            ? _selectedStartingWeapon!.feature
+                            : _selectedStartingWeapon!.legend,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      if (_selectedStartingWeapon!.fire &&
+                          _selectedStartingWeapon!.calibre != null &&
+                          _selectedStartingWeapon!.calibre != Calibre.empty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Calibre : ${_calibreLabel(_selectedStartingWeapon!.calibre)}  •  Rechargement : ${_reloadLabel(_selectedStartingWeapon!.reload)}  •  Chargeur : ${_selectedStartingWeapon!.magazineSize ?? "—"}',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        ),
+                        if (_selectedStartingWeapon!.secondMagazine == true)
+                          Text(
+                            '2nd chargeur : ${_selectedStartingWeapon!.secondMagazineSize ?? "—"}',
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                          ),
+                        Text(
+                          'Mode de tir : ${_firingLabel(_selectedStartingWeapon!.firing)}',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -1277,8 +1361,7 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
           slot.weapon != null ? Icons.security : Icons.medical_services_outlined,
           size: 20),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: subtitle != null
-            ? Text(subtitle, style: const TextStyle(fontSize: 11)) : null,
+        subtitle: _buildWeaponTileSubtitle(slot, subtitle),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Text('Taille : ${_formatSize(size)}', style: const TextStyle(fontSize: 11)),
           const SizedBox(width: 8),
@@ -1296,6 +1379,32 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
             ),
         ]),
       ),
+    );
+  }
+
+  Widget? _buildWeaponTileSubtitle(WeaponSlot slot, String? damage) {
+    final w = slot.weapon;
+    final isFire = w != null && w.fire &&
+        w.calibre != null && w.calibre != Calibre.empty;
+    if (damage == null && !isFire) return null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (damage != null)
+          Text(damage, style: const TextStyle(fontSize: 11)),
+        if (isFire) ...[
+          const SizedBox(height: 2),
+          Text(
+            'Calibre : ${_calibreLabel(w.calibre)}  •  Rechargement : ${_reloadLabel(w.reload)}  •  Chargeur : ${w.magazineSize ?? "—"}${w.secondMagazine == true ? "  •  2nd: ${w.secondMagazineSize ?? "—"}" : ""}',
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          ),
+          Text(
+            'Mode de tir : ${_firingLabel(w.firing)}',
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          ),
+        ],
+      ],
     );
   }
 
