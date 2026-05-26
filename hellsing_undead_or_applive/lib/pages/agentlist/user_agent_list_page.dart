@@ -108,79 +108,112 @@ class _AgentsListPageState extends State<AgentsListPage> {
   }
 }
 
-// ─── Vue utilisateur (inchangée) ─────────────────────────────────────────────
+// ─── Vue utilisateur ─────────────────────────────────────────────────────────
 
-class _UserAgentView extends StatelessWidget {
+class _UserAgentView extends StatefulWidget {
   final String currentUid;
   const _UserAgentView({required this.currentUid});
 
   @override
-  Widget build(BuildContext context) {
-    final agentsRef = FirebaseFirestore.instance
+  State<_UserAgentView> createState() => _UserAgentViewState();
+}
+
+class _UserAgentViewState extends State<_UserAgentView> {
+  late Future<QuerySnapshot> _agentsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _agentsFuture = _fetchAgents();
+  }
+
+  Future<QuerySnapshot> _fetchAgents() {
+    return FirebaseFirestore.instance
         .collection('users')
-        .doc(currentUid)
+        .doc(widget.currentUid)
         .collection('agents')
-        .where(FieldPath.documentId, isNotEqualTo: '_meta_');
+        .get();
+  }
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: agentsRef.snapshots(),
-      builder: (context, snapshot) {
-        //print("debug code Colada");
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return const Center(
-            child: Text("Erreur lors du chargement des agents"),
-          );
-        }
+  void _reload() {
+    setState(() => _agentsFuture = _fetchAgents());
+  }
 
-        final agents = snapshot.data!.docs;
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: () async => _reload(),
+      child: FutureBuilder<QuerySnapshot>(
+        future: _agentsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text("Erreur lors du chargement des agents"),
+            );
+          }
 
-        if (agents.isEmpty) {
-          return Center(
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, Routes.agentCreate);
-              },
-              child: const Text("Créer un nouvel agent"),
-            ),
-          );
-        }
+          final agents = snapshot.data!.docs
+              .where((d) => d.id != '_meta_')
+              .toList();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ListView.separated(
-                itemCount: agents.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 18),
-                itemBuilder: (context, index) {
-                  final agent = agents[index];
-                  return _AgentTile(
-                    agentDoc: agent,
-                    ownerUid: currentUid,
-                    onDelete: () => _confirmDelete(
-                        context, currentUid, agent.id, agent['name'] ?? ''),
-                  );
-                },
+          if (agents.isEmpty) {
+            return ListView(
+              children: [
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 40),
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, Routes.agentCreate),
+                      child: const Text("Créer un nouvel agent"),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  itemCount: agents.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 18),
+                  itemBuilder: (context, index) {
+                    final agent = agents[index];
+                    return _AgentTile(
+                      agentDoc: agent,
+                      ownerUid: widget.currentUid,
+                      onDelete: () async {
+                        await _confirmDelete(
+                            context, widget.currentUid, agent.id, agent['name'] ?? '');
+                        _reload();
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => CreateAgentPage()),
-                  );
-                },
-                child: const Text("Créer un nouvel agent"),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => CreateAgentPage()),
+                    );
+                    _reload();
+                  },
+                  child: const Text("Créer un nouvel agent"),
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -222,15 +255,18 @@ class _AdminAgentViewState extends State<_AdminAgentView> {
             .collection('users')
             .doc(userDoc.id)
             .collection('agents')
-            .where(FieldPath.documentId, isNotEqualTo: '_meta_')
             .get();
 
-        if (agentsSnap.docs.isEmpty && userDoc.id != widget.currentUid) continue;
+        final agentDocs = agentsSnap.docs
+            .where((d) => d.id != '_meta_')
+            .toList();
+
+        if (agentDocs.isEmpty && userDoc.id != widget.currentUid) continue;
 
         groups.add(_UserGroup(
           uid: userDoc.id,
           pseudo: pseudo,
-          agents: agentsSnap.docs,
+          agents: agentDocs,
         ));
       }
 

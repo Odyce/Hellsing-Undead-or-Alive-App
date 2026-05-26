@@ -10,8 +10,40 @@ import 'models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:hellsing_undead_or_applive/theme/app_theme.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String _pseudo = '...';
+  String _role = 'user';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    if (!mounted) return;
+    final data = doc.data();
+    if (data == null) return;
+    setState(() {
+      final pseudo = data['pseudo'];
+      _pseudo = pseudo is String && pseudo.trim().isNotEmpty ? pseudo : 'Pseudo';
+      final role = data['role'];
+      _role = role is String && role.trim().isNotEmpty ? role : 'user';
+    });
+  }
 
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -22,40 +54,6 @@ class HomePage extends StatelessWidget {
       MaterialPageRoute(builder: (_) => const AuthGate()),
       (route) => false,
     );
-  }
-
-  Stream<String> _pseudoStream() {
-      //print("debug code Magnolia");
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return const Stream.empty();
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((doc) {
-      final data = doc.data();
-      if (data == null) return 'Pseudo';
-      final pseudo = data['pseudo'];
-      if (pseudo is String && pseudo.trim().isNotEmpty) return pseudo;
-      return 'Pseudo';
-    });
-  }
-
-  Stream<String> _roleStream() {
-      //print("debug code Kebaba");
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return const Stream.empty();
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((doc) {
-      final data = doc.data();
-      if (data == null) return 'user';
-      final role = data['role'];
-      if (role is String && role.trim().isNotEmpty) return role;
-      return 'user';
-    });
   }
 
   @override
@@ -142,34 +140,23 @@ class HomePage extends StatelessWidget {
               Navigator.pushNamed(context, Routes.notifications),
         ),
         actions: [
-          StreamBuilder<String>(
-            stream: _roleStream(),
-            builder: (context, snap) {
-              //print("debug code Burgera");
-              final role = snap.data;
-              if (role == null) return const SizedBox.shrink();
-              final isAdmin = role == 'admin';
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isAdmin ? AppColors.adminBadge : AppColors.userBadge,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    isAdmin ? 'Admin' : 'User',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: _role == 'admin' ? AppColors.adminBadge : AppColors.userBadge,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _role == 'admin' ? 'Admin' : 'User',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ],
       ),
@@ -200,18 +187,11 @@ class HomePage extends StatelessWidget {
                 // Titre de bienvenue (en haut)
                 Align(
                   alignment: Alignment.center,
-                  child: StreamBuilder<String>(
-                    stream: _pseudoStream(),
-                    builder: (context, snapshot) {
-                      //print("debug code Virtuosa");
-                      final pseudo = snapshot.data ?? '...';
-                      return Text(
-                        'Bienvenue à $pseudo',
-                        style: GoogleFonts.cinzelDecorative(
-                          textStyle: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      );
-                    },
+                  child: Text(
+                    'Bienvenue à $_pseudo',
+                    style: GoogleFonts.cinzelDecorative(
+                      textStyle: Theme.of(context).textTheme.headlineSmall,
+                    ),
                   ),
                 ),
 

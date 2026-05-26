@@ -71,10 +71,28 @@ class _AgentSheetPageState extends State<AgentSheetPage>
   // Upload de photo de profil en cours
   bool _uploadingPicture = false;
 
+  late Future<DocumentSnapshot<Map<String, dynamic>>> _agentFuture;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _loadAgent();
+  }
+
+  void _loadAgent() {
+    final uid = widget.ownerUid ?? FirebaseAuth.instance.currentUser!.uid;
+    _agentFuture = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('agents')
+        .doc(widget.agentDocId)
+        .get();
+  }
+
+  // ignore: unused_element
+  void _reloadAgent() {
+    setState(_loadAgent);
   }
 
   @override
@@ -1223,16 +1241,10 @@ class _AgentSheetPageState extends State<AgentSheetPage>
     }
 
     final uid = widget.ownerUid ?? user.uid;
-    final agentRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('agents')
-        .doc(widget.agentDocId);
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: agentRef.snapshots(),
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: _agentFuture,
       builder: (context, snapshot) {
-        //print("debug code Vida Loca");
         // Titre dynamique — on le lit dès que possible
         final agentName = snapshot.data?.data()?['name'] as String?;
 

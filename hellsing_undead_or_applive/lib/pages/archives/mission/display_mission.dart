@@ -20,6 +20,8 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
 
   Map<String, Set<dynamic>> _activeFilters = {};
 
+  late Future<QuerySnapshot> _missionsFuture;
+
   static String _difficultyLabel(Difficulty d) => switch (d) {
         Difficulty.basse     => 'Basse',
         Difficulty.moyenne   => 'Moyenne',
@@ -68,6 +70,16 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
   void initState() {
     super.initState();
     _loadAgents();
+    _missionsFuture = _fetchMissions();
+  }
+
+  Future<QuerySnapshot> _fetchMissions() {
+    return FirebaseFirestore.instance
+        .collection('common')
+        .doc('archives')
+        .collection('missions')
+        .where('completedAt', isNull: true)
+        .get();
   }
 
   Future<void> _loadAgents() async {
@@ -78,11 +90,12 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
         .collection('users')
         .doc(uid)
         .collection('agents')
-        .where(FieldPath.documentId, isNotEqualTo: '_meta_')
         .get();
 
     if (mounted) {
-      setState(() => _agents = snapshot.docs);
+      setState(() => _agents = snapshot.docs
+          .where((d) => d.id != '_meta_')
+          .toList());
     }
   }
 
@@ -148,46 +161,52 @@ class _DisplayMissionPageState extends State<DisplayMissionPage> {
 
             // ── Liste des missions disponibles ───────────────────────────────
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('common')
-                    .doc('archives')
-                    .collection('missions')
-                    .where('completedAt', isNull: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  //print("debug code Pinata");
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Erreur : ${snapshot.error}',
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    );
-                  }
-
-                  final allDocs = snapshot.data?.docs ?? [];
-                  final docs = allDocs.where((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return _matchesFilters(data);
-                  }).toList();
-
-                  if (docs.isEmpty) {
-                    return const Center(
-                      child: Text('Aucune mission disponible en ce moment.'),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) =>
-                        _buildMissionCard(docs[index]),
-                  );
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() => _missionsFuture = _fetchMissions());
                 },
+                child: FutureBuilder<QuerySnapshot>(
+                  future: _missionsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Erreur : ${snapshot.error}',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      );
+                    }
+
+                    final allDocs = snapshot.data?.docs ?? [];
+                    final docs = allDocs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return _matchesFilters(data);
+                    }).toList();
+
+                    if (docs.isEmpty) {
+                      return ListView(
+                        children: const [
+                          Center(
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 40),
+                              child: Text('Aucune mission disponible en ce moment.'),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) =>
+                          _buildMissionCard(docs[index]),
+                    );
+                  },
+                ),
               ),
             ),
 

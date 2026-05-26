@@ -40,7 +40,7 @@ class _DoorTransitionPageState extends State<DoorTransitionPage> {
       setState(() => _currentFrame = frameInfo.image);
       oldFrame?.dispose();
 
-      await Future.delayed(frameInfo.duration);
+      await Future.delayed(frameInfo.duration ~/ 3);
     }
 
     codec.dispose();

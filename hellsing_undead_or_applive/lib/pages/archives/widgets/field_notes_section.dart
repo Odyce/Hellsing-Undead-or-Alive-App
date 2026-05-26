@@ -75,7 +75,6 @@ class _FieldNotesSectionState extends State<FieldNotesSection> {
         .collection('users')
         .doc(user.uid)
         .collection('agents')
-        .where(FieldPath.documentId, isNotEqualTo: '_meta_')
         .get();
 
     final notesSnap = await _entriesRef.get();
@@ -83,7 +82,9 @@ class _FieldNotesSectionState extends State<FieldNotesSection> {
     if (!mounted) return;
 
     setState(() {
-      _agents = agentsSnap.docs.map((doc) {
+      _agents = agentsSnap.docs
+          .where((d) => d.id != '_meta_')
+          .map((doc) {
         final pic = doc['profilPicturePath'] as String?;
         return _AgentRef(
           doc.id,

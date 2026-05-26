@@ -15,16 +15,30 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
   final _repository = NotificationRepository();
   String? _uid;
 
+  bool? _enabled;
+  Future<List<AppNotification>>? _notifsFuture;
+
   @override
   void initState() {
     super.initState();
     _uid = FirebaseAuth.instance.currentUser?.uid;
-    if (_uid != null) _repository.markAllAsRead(_uid!);
+    if (_uid != null) {
+      _repository.markAllAsRead(_uid!);
+      _loadEnabled();
+      _notifsFuture = _repository.getNotifications(_uid!);
+    }
   }
 
-  Future<void> _toggleNotifications(bool current) async {
+  Future<void> _loadEnabled() async {
     if (_uid == null) return;
-    final next = !current;
+    final val = await _repository.getNotificationsEnabled(_uid!);
+    if (mounted) setState(() => _enabled = val);
+  }
+
+  Future<void> _toggleNotifications() async {
+    if (_uid == null || _enabled == null) return;
+    final next = !_enabled!;
+    setState(() => _enabled = next);
     await _repository.setNotificationsEnabled(_uid!, next);
   }
 
@@ -48,32 +62,25 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
         leading: const SafeBackButton(),
         title: Text('Notifications', style: GoogleFonts.cinzelDecorative()),
         actions: [
-          StreamBuilder<bool>(
-            stream: _repository.notificationsEnabledStream(_uid!),
-            builder: (context, snap) {
-              //print("debug code Lacrimosa");
-              final enabled = snap.data ?? true;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      enabled
-                          ? Icons.notifications_active
-                          : Icons.notifications_off,
-                      size: 18,
-                      color: enabled ? null : Colors.grey,
-                    ),
-                    const SizedBox(width: 4),
-                    Switch(
-                      value: enabled,
-                      onChanged: (_) => _toggleNotifications(enabled),
-                    ),
-                  ],
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  (_enabled ?? true)
+                      ? Icons.notifications_active
+                      : Icons.notifications_off,
+                  size: 18,
+                  color: (_enabled ?? true) ? null : Colors.grey,
                 ),
-              );
-            },
+                const SizedBox(width: 4),
+                Switch(
+                  value: _enabled ?? true,
+                  onChanged: _enabled == null ? null : (_) => _toggleNotifications(),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -83,32 +90,45 @@ class _NotificationMenuPageState extends State<NotificationMenuPage> {
 
             // ── Liste des notifications ───────────────────────────────────────
             Expanded(
-              child: StreamBuilder<List<AppNotification>>(
-                stream: _repository.notificationsStream(_uid!),
-                builder: (context, snap) {
-                  //print("debug code Juanita");
-                  if (snap.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final notifs = snap.data ?? [];
-                  if (notifs.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'Aucune notification',
-                        style: TextStyle(color: Colors.grey),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {
+                    _notifsFuture = _repository.getNotifications(_uid!);
+                  });
+                },
+                child: FutureBuilder<List<AppNotification>>(
+                  future: _notifsFuture,
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final notifs = snap.data ?? [];
+                    if (notifs.isEmpty) {
+                      return ListView(
+                        children: const [
+                          Center(
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 40),
+                              child: Text(
+                                'Aucune notification',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: notifs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (_, i) => _NotifTile(
+                        notif: notifs[i],
+                        formatDate: _formatDate,
                       ),
                     );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: notifs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
-                    itemBuilder: (_, i) => _NotifTile(
-                      notif: notifs[i],
-                      formatDate: _formatDate,
-                    ),
-                  );
-                },
+                  },
+                ),
               ),
             ),
 

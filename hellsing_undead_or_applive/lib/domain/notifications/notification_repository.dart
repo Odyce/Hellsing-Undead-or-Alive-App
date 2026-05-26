@@ -55,6 +55,16 @@ class NotificationRepository {
             .toList());
   }
 
+  // ─── Future : liste des notifications (usage Windows / one-shot) ─────────────
+  Future<List<AppNotification>> getNotifications(String uid) async {
+    final snap = await _notifRef(uid)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snap.docs
+        .map((doc) => AppNotification.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
   // ─── Marquer toutes les notifs non lues comme lues ────────────────────────────
   Future<void> markAllAsRead(String uid) async {
     final snap = await _notifRef(uid)
@@ -77,6 +87,14 @@ class NotificationRepository {
       if (data == null) return true;
       return data['notificationsEnabled'] as bool? ?? true;
     });
+  }
+
+  // ─── Future : état du toggle notifications (usage Windows / one-shot) ────────
+  Future<bool> getNotificationsEnabled(String uid) async {
+    final doc = await _userRef(uid).get();
+    final data = doc.data();
+    if (data == null) return true;
+    return data['notificationsEnabled'] as bool? ?? true;
   }
 
   // ─── Persistance du toggle ────────────────────────────────────────────────────
