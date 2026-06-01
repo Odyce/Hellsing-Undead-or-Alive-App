@@ -733,6 +733,7 @@ class _CreateAgentPageState extends State<CreateAgentPage> {
             minLines: 3,
             maxLines: 10,
           ),
+          const SizedBox(height: 16),
           TextField(
             controller: _stateController,
             decoration: InputDecoration(

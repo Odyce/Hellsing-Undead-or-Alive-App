@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/agent_shop.dart';
-import 'package:hellsing_undead_or_applive/routes/routes.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 import 'package:http/http.dart';
 
@@ -1041,15 +1040,22 @@ class _CreateAgentInventoryPageState extends State<CreateAgentInventoryPage> {
         pc:                widget.pc,
         contacts:          widget.contacts,
       );
-      // Notifier les admins qu'un agent est à valider
-      await NotificationRepository().notifyAdmins(
-        title: 'Agent à valider',
-        body: 'Agent ${widget.name} à valider',
-        data: {'type': 'agent_validation', 'agentName': widget.name},
-      );
+      // Notifier les admins qu'un agent est à valider (échec silencieux volontaire :
+      // un user non-admin ne peut pas lire/écrire dans les sous-collections d'autres users)
+      try {
+        await NotificationRepository().notifyAdmins(
+          title: 'Agent à valider',
+          body: 'Agent ${widget.name} à valider',
+          data: {'type': 'agent_validation', 'agentName': widget.name},
+        );
+      } catch (_) {}
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, Routes.agentList);
+      // Pop inventory page then create form to return to the original AgentsListPage
+      // Using pushReplacementNamed would leave CreateAgentPage in the stack,
+      // causing the back arrow to navigate back to the creation form.
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
     } catch (e) {
       setState(() { _error = e.toString(); });
     } finally {

@@ -150,23 +150,23 @@ class NotificationRepository {
   }
 
   // ─── Notifier tous les admins ───────────────────────────────────────────────
+  // Lit les UID admins depuis /config/admins (lisible par tout user authentifié)
+  // plutôt que de lister tous les users (interdit pour les non-admins).
+  // Les règles Firestore doivent autoriser :
+  //   match /config/{docId} { allow read: if isSignedIn(); }
+  //   match /users/{userId}/notifications/{notifId} { allow create: if isSignedIn(); }
   Future<void> notifyAdmins({
     required String title,
     required String body,
     Map<String, dynamic>? data,
   }) async {
-    final usersSnap = await _firestore.collection('users').get();
+    final configDoc = await _firestore.collection('config').doc('admins').get();
+    final adminUids = List<String>.from(configDoc.data()?['uids'] ?? []);
+    if (adminUids.isEmpty) return;
 
     final batch = _firestore.batch();
-    for (final userDoc in usersSnap.docs) {
-      final userData = userDoc.data();
-      final role = userData['role'] as String? ?? 'user';
-      if (role != 'admin') continue;
-
-      final enabled = userData['notificationsEnabled'] as bool? ?? true;
-      if (!enabled) continue;
-
-      final notifRef = _notifRef(userDoc.id).doc();
+    for (final uid in adminUids) {
+      final notifRef = _notifRef(uid).doc();
       final payload = <String, dynamic>{
         'title': title,
         'body': body,

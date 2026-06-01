@@ -166,8 +166,10 @@ class _UserAgentViewState extends State<_UserAgentView> {
                   child: Padding(
                     padding: const EdgeInsets.only(top: 40),
                     child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, Routes.agentCreate),
+                      onPressed: () async {
+                        await Navigator.pushNamed(context, Routes.agentCreate);
+                        _reload();
+                      },
                       child: const Text("Créer un nouvel agent"),
                     ),
                   ),
