@@ -71,10 +71,23 @@ class _MissionChronologyPageState extends State<MissionChronologyPage> {
       //   de fixer un initialPage, ce qui évite la désynchro entre la position
       //   du PageController et le rendu de l'AnimatedBuilder avant le premier layout
       //   (cause probable du "lag" au démarrage du scroll signalé par l'utilisateur).
+      //
+      // Cas spécial : les missions du Clad 1930 (unNeufTroisZero) sont toujours
+      // intercalées APRÈS les missions "beginning" et AVANT les missions "arthur",
+      // indépendamment de leurs dates réelles.
       missions.sort((a, b) {
         if (a.completedAt == null && b.completedAt == null) return 0;
         if (a.completedAt == null) return 1;
         if (b.completedAt == null) return -1;
+
+        final aIs1930 = a.clade == CladeName.unNeufTroisZero;
+        final bIs1930 = b.clade == CladeName.unNeufTroisZero;
+
+        if (aIs1930 && b.clade == CladeName.arthur) return 1;
+        if (bIs1930 && a.clade == CladeName.arthur) return -1;
+        if (aIs1930 && b.clade == CladeName.beginning) return -1;
+        if (bIs1930 && a.clade == CladeName.beginning) return 1;
+
         return b.completedAt!.compareTo(a.completedAt!);
       });
 
