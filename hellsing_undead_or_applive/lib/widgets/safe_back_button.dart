@@ -14,11 +14,30 @@ class SafeBackButton extends StatelessWidget {
 
   static void pop(BuildContext context) {
     final nav = Navigator.of(context);
-    if (nav.canPop()) {
-      nav.pop();
-    } else {
+
+    // Seule route de la pile : pas de page précédente, on retombe sur l'accueil
+    // pour éviter un écran vide (lien profond, état restauré, etc.).
+    if (!nav.canPop()) {
       nav.pushReplacementNamed(Routes.home);
+      return;
     }
+
+    final currentName = ModalRoute.of(context)?.settings.name;
+
+    // Si on ne connaît pas le nom de la route courante, on se contente d'un
+    // pop simple pour ne pas risquer de sauter des pages par erreur.
+    if (currentName == null) {
+      nav.pop();
+      return;
+    }
+
+    // Pop la page courante, puis saute toute page identique empilée juste en
+    // dessous (ex. un menu réaffiché via pushReplacement après un formulaire),
+    // jusqu'à atteindre une page réellement différente. `route.isFirst` garantit
+    // qu'on ne pop jamais la route racine.
+    nav.popUntil(
+      (route) => route.isFirst || route.settings.name != currentName,
+    );
   }
 
   @override

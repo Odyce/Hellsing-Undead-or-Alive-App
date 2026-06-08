@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
@@ -29,6 +34,10 @@ class _EditMissionPageState extends State<EditMissionPage> {
   DateTime _postedAt = DateTime.now();
   DateTime? _playedAt;
   DateTime? _completedAt;
+
+  // ─── Illustration ──────────────────────────────────────────────────────────
+  String? _illustrationUrl;   // URL existante (Cloudinary), null si supprimée
+  File?   _newIllustration;   // nouveau fichier choisi, à uploader à la sauvegarde
 
   // ─── Listes d'entités ─────────────────────────────────────────────────────
   List<AgentRef> _agentInvolved = [];
@@ -82,6 +91,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
     _postedAt = _original.postedAt;
     _playedAt = _original.playedAt;
     _completedAt = _original.completedAt;
+    _illustrationUrl = _original.illustrationPath;
     // Les listes d'AgentRef sont initialisées vides ici et remplies après
     // le chargement du picker (dans _loadPickerData) car on a besoin des
     // chemins Firestore (ownerUid, agentDocId) qui ne sont pas dans Mission.
@@ -303,6 +313,37 @@ class _EditMissionPageState extends State<EditMissionPage> {
     );
   }
 
+  // ─── Illustration ──────────────────────────────────────────────────────────
+  Future<void> _pickIllustration() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked != null) setState(() => _newIllustration = File(picked.path));
+  }
+
+  Future<String> _uploadIllustration(File image) async {
+    const cloudName    = 'hellsingundeadapp';
+    const uploadPreset = 'Mission_illustrations-unsigned';
+    final uri = Uri.parse(
+      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+    );
+
+    final request = MultipartRequest('POST', uri)
+      ..fields['upload_preset'] = uploadPreset
+      ..files.add(await MultipartFile.fromPath('file', image.path));
+
+    final response = await request.send();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Erreur upload illustration Cloudinary: ${response.statusCode}',
+      );
+    }
+    final body = await response.stream.bytesToString();
+    return jsonDecode(body)['secure_url'] as String;
+  }
+
   // ─── Sauvegarde ────────────────────────────────────────────────────────────
   Future<void> _save() async {
     setState(() {
@@ -314,6 +355,13 @@ class _EditMissionPageState extends State<EditMissionPage> {
       final bountyText = _bountyCtrl.text.trim();
       final bounty = bountyText.isNotEmpty ? int.tryParse(bountyText) : null;
 
+      // Upload de la nouvelle illustration si l'utilisateur en a choisi une.
+      // Sinon on conserve l'URL existante (qui peut être null si supprimée).
+      var illustrationUrl = _illustrationUrl;
+      if (_newIllustration != null) {
+        illustrationUrl = await _uploadIllustration(_newIllustration!);
+      }
+
       final fields = <String, dynamic>{
         'title': _titleCtrl.text.trim(),
         'notesForDM': _notesForDMCtrl.text.trim().isEmpty
@@ -323,6 +371,7 @@ class _EditMissionPageState extends State<EditMissionPage> {
         'descriptionOutro': _descriptionOutroCtrl.text.trim().isEmpty
             ? null
             : _descriptionOutroCtrl.text.trim(),
+        'illustrationPath': illustrationUrl,
         'difficulty': _difficulty.name,
         'clade': _clade.name,
         'urgent': _urgent,
@@ -667,6 +716,64 @@ class _EditMissionPageState extends State<EditMissionPage> {
               ),
             ),
           ],
+          const SizedBox(height: 24),
+
+          // ── Illustration ────────────────────────────────────────────────────
+          Text('Illustration', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+
+          if (_newIllustration != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                _newIllustration!,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => setState(() => _newIllustration = null),
+              icon: const Icon(Icons.delete),
+              label: const Text('Supprimer'),
+            ),
+            const SizedBox(height: 4),
+          ] else if (_illustrationUrl != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                _illustrationUrl!,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.contain,
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : const SizedBox(
+                        height: 180,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => setState(() => _illustrationUrl = null),
+              icon: const Icon(Icons.delete),
+              label: const Text('Supprimer'),
+            ),
+            const SizedBox(height: 4),
+          ],
+
+          ElevatedButton.icon(
+            onPressed: _pickIllustration,
+            icon: const Icon(Icons.image),
+            label: Text(
+              (_newIllustration == null && _illustrationUrl == null)
+                  ? 'Choisir une illustration'
+                  : "Changer l'illustration",
+            ),
+          ),
           const SizedBox(height: 32),
 
           // ── Erreur & bouton sauvegarde ──────────────────────────────────────

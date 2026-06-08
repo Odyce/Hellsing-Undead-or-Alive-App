@@ -8,6 +8,7 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/routes/nav_helpers.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class ResDevProjectFormPage extends StatefulWidget {
@@ -146,7 +147,7 @@ class _ResDevProjectFormPageState extends State<ResDevProjectFormPage> {
         cost:        int.parse(_costCtrl.text.trim()),
       );
 
-      if (mounted) Navigator.of(context).pushReplacementNamed(Routes.resDevList);
+      if (mounted) replaceWithFreshRoute(context, Routes.resDevList);
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }

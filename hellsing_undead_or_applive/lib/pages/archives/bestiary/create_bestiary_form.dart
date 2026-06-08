@@ -6,6 +6,7 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/routes/nav_helpers.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class CreateBestiaryPage extends StatefulWidget {
@@ -148,7 +149,7 @@ class _CreateBestiaryPageState extends State<CreateBestiaryPage> {
       );
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, Routes.bestiary);
+      replaceWithFreshRoute(context, Routes.bestiary);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {

@@ -12,6 +12,7 @@ import 'package:hellsing_undead_or_applive/domain/stats/stats_repository.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/agent_shop.dart';
 import 'package:hellsing_undead_or_applive/pages/agentlist/level_up_page.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/routes/nav_helpers.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 // ─── Constantes upload Cloudinary photo de profil ─────────────────────────
@@ -1262,7 +1263,7 @@ class _AgentSheetPageState extends State<AgentSheetPage>
               if (context.mounted) Navigator.of(context).pop(); // ferme le dialog
             }
             if (context.mounted) {
-              Navigator.pushReplacementNamed(context, Routes.agentList);
+              replaceWithFreshRoute(context, Routes.agentList);
             }
           },
           child: Scaffold(

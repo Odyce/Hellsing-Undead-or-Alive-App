@@ -7,6 +7,7 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellsing_undead_or_applive/domain/models.dart';
 import 'package:hellsing_undead_or_applive/routes/routes.dart';
+import 'package:hellsing_undead_or_applive/routes/nav_helpers.dart';
 import 'package:hellsing_undead_or_applive/widgets/safe_back_button.dart';
 
 class CreateArtefactPage extends StatefulWidget {
@@ -200,7 +201,7 @@ class _CreateArtefactPageState extends State<CreateArtefactPage> {
       }
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, Routes.artefacts);
+      replaceWithFreshRoute(context, Routes.artefacts);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
